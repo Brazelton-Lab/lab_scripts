@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # counts number of FASTA sequences and total bases for each file with given extension
 # example usage:
 # python fasta-summary.py .fa

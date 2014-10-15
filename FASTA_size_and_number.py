@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # report length of each FASTA sequence and report average
 # usage: python FASTA_size_and_number.py infilename
 # usage: python FASTA_size_and_number.py infilename report sort

@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # rename files according to provided table, which should be tab-delimited
 # directory of files to be renamed must be specified. if files are in same directory, enter: ./
 # usage:
