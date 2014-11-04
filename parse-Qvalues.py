@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # parses output from my combine_matrix_pqvalues.py script
 # exports rows that have p and q values both greater than 0.05
 # usage:

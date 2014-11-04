@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # report column with the highest number
 # assumes comma-separated-values and unix linebreaks
 # usage:

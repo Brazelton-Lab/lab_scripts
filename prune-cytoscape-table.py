@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # prune tab-delimited text file according to user-provided list of IDs
 # i.e. will export those rows that include one of the user-provided IDs
 # usage:

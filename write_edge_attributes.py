@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # THIS SCRIPT NOT NECESSARY - JUST CLICK ON THE COLUMN IN CYTOSCAPE IMPORT WINDOW THAT YOU WANT TO BE THE EDGE ATTRIBUTES
 
 # from file with variable names and correlation coefficient, export Edge Attributes file for importing with Cytoscape

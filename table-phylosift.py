@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # this script can be run before or after kraken or other programs
 # only requirement is that contig name is in first column of input file and that the appropriate phylosift sequence_taxa_summary file is provided
 # example usage:

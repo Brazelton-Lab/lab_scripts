@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # parses p values output from rcor.test in R
 # usage:
 # python parse-pvalues.py yourfilename.rcortest.pvalues

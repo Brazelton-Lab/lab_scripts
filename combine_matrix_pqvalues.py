@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # extract pairwise distances from matrix and combine with pairs in columns from another file
 # use with cor.mat file from rcor.test function in R and output file from QVALUE
 

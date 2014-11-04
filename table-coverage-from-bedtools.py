@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # calculates avg coverage per contig from bedtools genomecov output
 # and adds the avg coverage number to the last column of a provided tab-delimited file
 # only requirement for the tab-delimited file is that the first column contains contig names that match the contig names in the bedtools-generated file

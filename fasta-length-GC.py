@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # output is a new file with length and GC for each contig provided in input file
 # will process any file with given extension
 # example usage:
