@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # outputs FASTA sequence corresponding to subject start and subject end in m8 file
 # if subject has match over E value cutoff
 # some subjects will be written multiple times, depending on how many hits they have

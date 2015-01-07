@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # make group file where the sample name is the fasta filename, not in the fasta header
 # in other words, takes a folder full of .fasta files and makes one group file
 # specify the extension in the command

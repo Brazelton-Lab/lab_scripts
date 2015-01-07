@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # export FASTA according to taxonomy listed in VAMPS spreadsheet
 
 keep=[]

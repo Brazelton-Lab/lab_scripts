@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # this version has the name parsing commented out in order to include the full sample name
 
 import sys

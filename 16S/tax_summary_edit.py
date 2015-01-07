@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # edits mothur taxonomy summary file
 # transfers last name that is not "unclassified" or "uncultured" to "unclassified" or "uncultured" assignment
 # make sure that the file has default sorting (by rankID)

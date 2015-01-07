@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # runs prinseq-lite on all .fastq files in a folder
 
 import os

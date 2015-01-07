@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # sort FASTA entries according to their abundance provided in .names file
 # typically used after the unique.seqs command in mothur
 # usage:

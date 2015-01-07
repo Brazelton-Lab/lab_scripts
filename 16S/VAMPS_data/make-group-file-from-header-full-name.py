@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # sort sequences in standard.fasta according to bar code
 # files saved with filenames according to barcodes_distribution.txt
 # this version has the name parsing commented out in order to include the full sample name

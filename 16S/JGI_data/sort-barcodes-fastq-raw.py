@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # sort sequences in fastq according to bar code
 # files saved with filenames according to barcodes_distribution.txt
 # also sorts forward and reverse reads, so there will be two files per sample

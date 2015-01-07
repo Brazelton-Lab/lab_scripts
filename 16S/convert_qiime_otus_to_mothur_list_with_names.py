@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # converts OTU file from QIIME into .list file for mothur
 # incorporates sequence names from provided .names file
 

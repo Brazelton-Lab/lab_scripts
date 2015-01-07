@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # from folder of .fastq files, will generate one file listing the sample name, file1name, file2name
 # assumes filenames have structure: name.1.fastq and name.2.fastq
 

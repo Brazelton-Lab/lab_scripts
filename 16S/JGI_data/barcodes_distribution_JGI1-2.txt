@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 ==========Distribution of concatenation of assembled reads and reads_1==============
 ===BARCODES DISTRIBUTION===
 #name	sequence	count	perc

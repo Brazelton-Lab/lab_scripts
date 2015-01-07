@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # converts .data file from metawatt to 136-dimension matrix for ESOM
 # will process all files ending in .data
 # outfile is in .lrn format: http://databionic-esom.sourceforge.net/user.html#Data_files____lrn_

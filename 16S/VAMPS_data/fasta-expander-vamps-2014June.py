@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # expand VAMPS fasta file according to abundance indicate at end of header
 
 import sys

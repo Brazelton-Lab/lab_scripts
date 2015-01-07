@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # report length of each FASTA sequence and report average
 
 infile = open('WHC2B_dereplicated_large_Geneious_contigs.fasta').read()

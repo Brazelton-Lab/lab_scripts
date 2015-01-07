@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # count A,C,T,G in a file ignoring headers designated as >
 # write name of file and GC proportion to outfile
 

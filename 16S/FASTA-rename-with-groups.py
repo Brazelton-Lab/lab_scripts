@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # renames FASTA file according to .groups file
 # use when sending FASTA file from mothur to Qiime
 # usage:

@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 import sys
 infilename = sys.argv[1]
 outfilename = infilename + '.transposed'

@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # reports total number of seqs in VAMPS fasta file that contains only unique seqs
 # the script just adds the numbers provided at the end of each fasta header
 # will process all files with given extension

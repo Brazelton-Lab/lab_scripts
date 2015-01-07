@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # partition FASTA file into multiple files according to header
 
 import sys

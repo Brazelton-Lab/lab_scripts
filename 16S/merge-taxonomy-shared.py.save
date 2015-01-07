@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
 # to make shared.transposed file:
 # open .shared file in excel

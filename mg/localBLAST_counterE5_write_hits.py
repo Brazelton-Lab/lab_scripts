@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # count number of unique subjects with BLAST hits with greater than X E-value
 # use m8 flag formatted output from BLAST
 # results will print to screen

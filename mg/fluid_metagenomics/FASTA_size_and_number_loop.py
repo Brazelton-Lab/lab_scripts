@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # report length of each FASTA sequence and report average
 
 

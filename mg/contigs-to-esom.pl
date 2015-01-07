@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 #! /usr/bin/env perl
 
 # This script is part of the Metagenomics Assembly workflow
