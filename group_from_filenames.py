@@ -6,13 +6,16 @@ import sys
 import argparse
 
 def argument_parser():
-    parser = argparse.ArgumentParser(description="create a group file using a "
-                                     "file containing a newline-separated "
-                                     "list of fasta files with the sample "
-                                     "name in the tiles.")
+    parser = argparse.ArgumentParser(description="create a group file from a "
+                                     "text file containing a newline-separated "
+                                     "list of fasta file names. The fasta "
+                                     "files should be located in the same "
+                                     "directory as the text file and the titles "
+                                     "should contain the name of the sample"
+                                     "")
     parser.add_argument('infile', metavar='FILE',
                         help="file containing a newline-separated list of "
-                        "fasta files with sample names in the file names")
+                        "fasta files with sample names in the title")
     parser.add_argument('-s', '--separator', metavar='CHAR',
                         type=str,
                         default='.',
