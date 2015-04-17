@@ -1,44 +1,62 @@
 #! /usr/bin/env python
-# transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
-# to make shared.transposed file:
-# open .shared file in excel
-# copy and paste>transpose all data 
-# save as tab-delimited text
-# open in TextWrangler and chance line breaks to Unix (LF)
-# then run script:
-# usage:
-# python merge-taxonomy-shared.py myfile.taxonomy myfile.shared.transposed
-
+"""
+transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
+to make shared.transposed file run transpose-table.py on shared file
+"""
+from __future__ import print_function
 import sys
-taxfilename = sys.argv[1]
-sharedfilename = sys.argv[2]
-outfilename = sharedfilename + ".taxonomy"
+import argparse
+
+def argument_parser():
+    parser = argparse.ArgumentParser(description="add taxonomy information to "
+                                     "OTUs in shared file")
+    parser.add_argument('taxonomy', metavar='TAX',
+                        type=io_check,
+                        help="mothur-formatted otu taxonomy file")
+    parser.add_argument('shared', metavar='SHARE', 
+                        type=io_check,
+                        help="transposed shared file")
+    return parser
+
+def io_check(infile, mode='rU'):
+    try:
+        fh = open(infile, mode)
+        fh.close()
+    except IOError as e:
+        print(e)
+        sys.exit(1)
+    return infile
+
+args = argument_parser().parse_args()
+outfile = io_check("{}.taxonomy".format(args.shared), 'w')
 
 D = {}
-with open(taxfilename) as taxfile:
-	for line in taxfile:
-		cols = line.split('\t')
-		otu = cols[0].split('Otu')
-		#print cols
-		try: 
-			otu = otu[1].lstrip('0')	# because mothur is not consistent in how many digits it uses to represent OTU numbers
-			D[otu] = cols[2].replace(';','\t') 	
-		except: pass
+with open(args.taxonomy) as taxfile:
+    header = taxfile.readline()
+    for line in taxfile:
+        cols = line.strip().split('\t')
+        otu = cols[0]
+        tax = cols[2].replace(';', '\t')
+        D[otu] = tax
 
-with open(sharedfilename) as sharedfile:
-	for line in sharedfile:
-		if "label" in line:
-			with open(outfilename,'a') as outfile: outfile.write(line)
-		elif "Group\t" in line: 
-			with open(outfilename,'a') as outfile: outfile.write(line)
-		elif "numOtus\t" in line: 
-			with open(outfilename,'a') as outfile: outfile.write(line)
-		else:
-			with open(outfilename,'a') as outfile:
-				outfile.write(line.strip('\n'))
-				otu = line.split('\t')
-				try: 
-					otunum = otu[0].split('Otu')
-					otunum = otunum[1].lstrip('0')
-					outfile.write('\t' + D[otunum])			
-				except: outfile.write(line)
+with open(outfile, 'w') as out:
+    with open(args.shared) as sharedfile:
+        for line in sharedfile:
+            if "label" in line:
+                out.write(line)
+            elif "Group\t" in line:
+                num_col = len(line.strip().split())
+                out.write(line)
+            elif "numOtus\t" in line: 
+                out.write(line)
+            else:
+                line = line.strip().split()
+                if len(line) != num_col:
+                    continue
+                shared_otu = line[0]
+                try: 
+                    tax = D[shared_otu]
+                except KeyError as e:
+                    print(e)
+                    sys.exit(e)
+                out.write("{}\t{}\n".format('\t'.join(line), tax))
