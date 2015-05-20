@@ -29,26 +29,26 @@ HelpMsg() if ($help);
 
 die "Sample name required. See $0 --help for usage." unless ($smpl);
 
-my $outfile = "all.$smpl.contig.fa";
-my $logfile = "all.$smpl.contig.log";
+my $outfile = "$smpl.contigs.fa";
+my $logfile = "$smpl.contigs.log";
 my $contig = "contig-$k.fa";
 my @files = <$path/*.idba.ud/$contig>;
 
 print "Starting $0\n";
 CatFile();
 LogFile();
-print "\ncontigs-to-esom.pl has finished processing contig files\noutput is in $outfile and notes on the processed files can be found in $logfile\n\n";
+print "\nfinished processing contig files\noutput is in $outfile and notes on the processed files can be found in $logfile\n\n";
 
 exit 0;
 
 ## Subroutines
 sub HelpMsg {
-die "contigs-to-esom.pl, version 1.0
-contigs-to-esom.pl takes all contig files of a specified k value from partition 
+die "merge_assembled.pl, version 1.0
+merge_assembled.pl takes all contig files of a specified k value from partition 
 groups assembled with idba_ud, concatenates them, and formats the concatenated file 
 for use in esomWrapper.pl
 
-usage: contigs-to-esom.pl -sample [sample_name] [option]...  
+usage: merge_assembled.pl -sample [sample_name] [option]...  
 
   -s, --sample [sample_name] :  name of the sample (required argument)
   -k, --k_value [k_value]    :  k value to use (default is 40). The matching 
@@ -82,7 +82,7 @@ sub LogFile {
 	open my $log, "> $logfile"
                 or die $!;
 	my $length = scalar(@files);
-	my $logmessage = "## contigs-to-esom.pl ##\nFile Name: $outfile\nk value: $k (-k)\nFiles Processed: $length\nFiles combined:\n";
+	my $logmessage = "## merge_assembled.pl ##\nFile Name: $outfile\nk value: $k (-k)\nFiles Processed: $length\nFiles combined:\n";
 	print $log $logmessage;
         foreach my $file (@files) { 
                 open my $in, "$file"
