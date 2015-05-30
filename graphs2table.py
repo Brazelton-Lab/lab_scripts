@@ -44,7 +44,7 @@ def parse_html(infile, table, sample_order):
         else:
             # don't know why this would happen, but check anyway
             if name != table[ident]['name']:
-                print_out("error: something weird happened the with names")
+                print_text("error: something weird happened the with names")
                 sys.exit(1)
             # add sample's abundance value for this taxon
             table[ident]['values'].append(magnitude)
@@ -57,28 +57,35 @@ def parse_html(infile, table, sample_order):
             table[taxon_id]['values'].append(str(0))
     return table
 
-def print_out(text):
+def print_text(text):
     print(textwrap.fill(text, 79))
 
-def main():
-    outfile = args.prefix + '.csv'
+def final_output(fh, output):
     try:
-        fh = open(outfile)
-    except IOError:
+        fh.write(output + '\n')
+    except AttributeError:
+        print(output)
+
+def main():
+    if args.out:
+        outfile = args.out
         try:
-            fh = open(outfile, 'w')
-        except IOError as e:
-            print(e)
-            sys.exit(1)
+            fh = open(outfile)
+        except IOError:
+            try:
+                fh = open(outfile, 'w')
+            except IOError as e:
+                print(e)
+                sys.exit(1)
+            else:
+                fh.close()
         else:
             fh.close()
-    else:
-        fh.close()
-        if not args.force:
-            print_out("error: {} already exists in the current working "
-                      "directory. Use {} with the --force flag to overwrite"
-                      .format(outfile, os.path.basename(__file__)))
-            sys.exit(1)
+            if not args.force:
+                print_text("error: {} already exists in the current working "
+                          "directory. Use {} with the --force flag to overwrite"
+                          .format(outfile, os.path.basename(__file__)))
+                sys.exit(1)
 
     table = {}
     samples = []
@@ -89,7 +96,7 @@ def main():
             fh.close()
         except IOError as e:
             file_name = os.path.basename(infile)
-            print_out("warning: {}. The content of {} will not be included in "
+            print_text("warning: {}. The content of {} will not be included in "
                       "the output".format(e, file_name))
             continue
         prefix = infile.split('.')[0]
@@ -98,8 +105,13 @@ def main():
         table = parse_html(infile, table, iteration)
         iteration += 1
 
+    try:
+        out_h = open(outfile, 'w')
+    except NameError:
+        out_h = None
+
     header = "Level\tID\tName\t{}".format('\t'.join(samples))
-    print(header)
+    final_output(out_h, header)
     for ident in sorted(table):
         level = len(ident.split('.')) -1
         if args.level:
@@ -107,7 +119,14 @@ def main():
                 continue
         name = table[ident]['name']
         values = table[ident]['values']
-        print("{}\t{}\t{}\t{}".format(str(level), ident, name, '\t'.join(values)))
+        final_output(out_h, "{}\t{}\t{}\t{}".format(str(level), ident, name, '\t'.join(values)))
+
+    try:
+        out_h.close()
+    except AttributeError:
+        sys.exit(0)
+    else:
+        sys.exit(0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="create table from kronagraphs")
@@ -117,13 +136,11 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--level', metavar='VALUE',
                         type=int,
                         help="create table for level \"LEVEL\" [default: all-in-one]")
-    parser.add_argument('-p', '--prefix', metavar='PREF',
+    parser.add_argument('-o', '--out', metavar='FILE',
                         type=str,
-                        default='krona_table',
-                        help="prefix for output file")
+                        help="write to outfile instead of STDOUT")
     parser.add_argument('-f', '--force',
                         action='store_true',
                         help="force overwrite of previous existing output file")
     args = parser.parse_args()
     main()
-    sys.exit(0)
