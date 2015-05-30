@@ -91,17 +91,17 @@ def main():
     samples = []
     iteration = 1
     for infile in args.infiles:
+        file_name = os.path.basename(infile)
         try:
             fh = open(infile)
             fh.close()
         except IOError as e:
-            file_name = os.path.basename(infile)
             print_text("warning: {}. The content of {} will not be included in "
                       "the output".format(e, file_name))
             continue
-        prefix = file_name.split('.')[0]
+        sample = file_name.split('.')[0]
         # for writing header in order to get values to correspond with correct file
-        samples.append(prefix)
+        samples.append(sample)
         table = parse_html(infile, table, iteration)
         iteration += 1
 
