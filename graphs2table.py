@@ -99,7 +99,7 @@ def main():
             print_text("warning: {}. The content of {} will not be included in "
                       "the output".format(e, file_name))
             continue
-        prefix = infile.split('.')[0]
+        prefix = file_name.split('.')[0]
         # for writing header in order to get values to correspond with correct file
         samples.append(prefix)
         table = parse_html(infile, table, iteration)
