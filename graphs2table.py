@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 """
+This program takes one or more html krona graphs from phylosift and converts 
+the information into a table.
 """
 
 from __future__ import print_function
@@ -8,9 +10,26 @@ import sys
 import argparse
 import re
 import textwrap
-from HTMLParser import HTMLParser
 
-def parse_html(infile, table, sample_order):
+def add_value(table, ident, name, magnitude, order):
+    try:
+        row_size = len(table[ident]['values'])
+    except KeyError as e:
+        table[ident] = {'name': name, 'values': []}
+        # add zeros to previous samples that did not contain this taxon
+        for number in range(1, order):
+            table[ident]['values'].append(str(0))
+        table[ident]['values'].append(str(magnitude))
+    else:
+        # don't know why this would happen, but check anyway
+        if name != table[ident]['name']:
+            print_text("error: different ids used for same taxon")
+            sys.exit(1)
+        # add sample's abundance value for this taxon
+        table[ident]['values'].append(str(magnitude))
+    return table
+
+def parse_html(infile, table, order):
     r = re.compile("(?<=name=\")(?P<name>.*?)(?=\").*?(?<=id=)(?P<id>\d+)(?=\").*?(?<=<val>)(?P<value>\d+\.?\d+)(?=</val>).*?>")
     # parse through file until tax information encountered
     with open(infile, 'rU') as in_h:
@@ -23,40 +42,54 @@ def parse_html(infile, table, sample_order):
     nodes = line[start_index:]
     # break into segments for recursion
     nodes = nodes.split('<node ')[1:]
+
     full_ident = [] # to keep track of parent tax ids
     used = [] # to keep track of taxa encountered in this iteration
     for node in nodes:
         match = r.search(node)
-        name = match.group('name')
+        if not match:
+            print("error: format incorrect for {}".format(os.path.basename(infile)))
+            sys.exit(1)
+        taxon_name = match.group('name')
         ncbi_id = match.group('id')
         full_ident.append(ncbi_id)
-        ident = '.'.join(full_ident)
-        used.append(ident)
-        magnitude = match.group('value')
-        try:
-            row_size = len(table[ident]['values'])
-        except KeyError as e:
-            table[ident] = {'name': name, 'values': []}
-            # add zeros to previous samples that did not contain this taxon
-            for number in range(1, sample_order):
-                table[ident]['values'].append(str(0))
-            table[ident]['values'].append(magnitude)
-        else:
-            # don't know why this would happen, but check anyway
-            if name != table[ident]['name']:
-                print_text("error: something weird happened the with names")
-                sys.exit(1)
-            # add sample's abundance value for this taxon
-            table[ident]['values'].append(magnitude)
+        taxon_id = '.'.join(full_ident)
+        used.append(taxon_id)
+        taxon_mag = match.group('value')
+        table = add_value(table, taxon_id, taxon_name, taxon_mag, order)
         # determine how far up the tax tree to ascend
         end_tags = node.count('</node>')
         if end_tags:
-          full_ident = full_ident[:-(end_tags)]
+          full_ident = full_ident[: -(end_tags)]
+
+    # at each level, create unassigned group if the sum of immediate 
+    # subroups do not match the magnitude of the group
+    unassigned = []
+    for parent_id in used:
+        subs = []
+        parent_level = len(parent_id.split('.'))
+        parent_mag = float(table[parent_id]['values'][order - 1])
+        sub_ids = [i for i in used if ((len(i.split('.')) == parent_level + 1) and (parent_id.split('.') == i.split('.')[:parent_level]))]
+        for sub_id in sub_ids:
+            sub_mag = float(table[sub_id]['values'][order - 1])
+            subs.append(sub_mag)
+        if not subs:
+            continue
+        subs_mag = sum(subs)
+        if parent_mag > subs_mag:
+            unassigned_id = parent_id + '.0'
+            unassigned.append(unassigned_id)
+            unassigned_name = "unassigned " + table[parent_id]['name']
+            unassigned_mag = parent_mag - subs_mag
+            table = add_value(table, unassigned_id, unassigned_name, unassigned_mag, order)
+        else:
+           continue
+    # add a zero value to unused taxon
     for taxon_id in table:
-        if taxon_id not in used:
+        if (taxon_id not in used) and (taxon_id not in unassigned):
             table[taxon_id]['values'].append(str(0))
     return table
-
+    
 def print_text(text):
     print(textwrap.fill(text, 79))
 
@@ -113,13 +146,16 @@ def main():
     header = "Level\tID\tName\t{}".format('\t'.join(samples))
     final_output(out_h, header)
     for ident in sorted(table):
-        level = len(ident.split('.')) -1
+        level = len(ident.split('.')) - 1
         if args.level:
             if level != args.level:
                 continue
         name = table[ident]['name']
         values = table[ident]['values']
-        final_output(out_h, "{}\t{}\t{}\t{}".format(str(level), ident, name, '\t'.join(values)))
+        if args.no_id:
+            final_output(out_h, "{}\t{}\t{}".format(str(level), name, '\t'.join([str(i) for i in values])))
+        else:
+            final_output(out_h, "{}\t{}\t{}\t{}".format(str(level), ident, name, '\t'.join([str(i) for i in values])))
 
     try:
         out_h.close()
@@ -142,5 +178,9 @@ if __name__ == "__main__":
     parser.add_argument('-f', '--force',
                         action='store_true',
                         help="force overwrite of previous existing output file")
+    parser.add_argument('--no-id',
+                        dest='no_id',
+                        action='store_true',
+                        help="do not output taxon ids")
     args = parser.parse_args()
     main()
