@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 '''convert between database ids
 
 THIS PROGRAM IS UNDER CONSTRUCTION AND CURRENTLY DOESN't DO WHAT IT CLAIMS
@@ -8,11 +10,10 @@ To DO.
 
 __authors__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
-__version__ = '0.0.0.2'
+__version__ = '0.0.0.3'
 
 import argparse
 from collections import defaultdict
-from __future__ import print_function
 import math
 import os
 import sys
@@ -44,6 +45,46 @@ def append_table(conversion_files, table_file, annotation_file):
             to the annotation file from the conversion files
     '''
 
+    header, tableLines = read_table(table_file, 'md5')
+    header = header.strip().split('\t')
+    originalColumnNumber = len(header) - 1
+    table = {}
+    for key in tableLines:
+        items = []
+        for item in header:
+            if not item == 'md5':
+                items.append(tableLines[key][item])
+        table[key] = items
+    annotations = read_annotation(annotation_file)
+    for file in conversion_files:
+        db = file.split('.')[0]
+        try:
+            db = db.split(os.sep)[-1]
+        except:
+            pass
+        with open(file, 'rU') as in_handle:
+            conversionLines = {}
+            for line in conversion_file_iter(in_handle):
+                conversionLines[line['md5']] = (line['dbID'],\
+                                                line['annotation'])
+            header.append(db)
+            for key in table:
+                if key in annotations:
+                    table[key] = [annotations[key]] + table[key]
+                else:
+                    table[key] = ['None'] + table[key]
+                if key in conversionLines:
+                    table[key].append(conversionLines[key][0])
+                else:
+                    table[key].append('None')
+            for key in conversionLines:
+                if key not in table:
+                    table[key] = [conversionLines[key][1]] +\
+                                 ['None' for i in range(originalColumnNumber)]\
+                                 + [conversionLines[key][0]]
+        header = '\t'.join(header) + '\n'
+        write_tables(table_file, annotation_file, header, table)
+
 def create_table(conversion_files, out_table, out_annotation):
     '''creates a table to allow for easy conversion between database IDs
 
@@ -61,7 +102,6 @@ def create_table(conversion_files, out_table, out_annotation):
                 File to write annotation table to
 
     Output:
-
             Two table files: one consisting of all the different database
             identifiers for a given gene and another containing the M5nr
             identifier and annotation for each gene.
@@ -69,37 +109,59 @@ def create_table(conversion_files, out_table, out_annotation):
     Note: This function can be very RAM intensive.
     '''
 
-    split = str.split
     header = ['md5']
     annotation = ''
     numberOfFiles = len(conversion_files)
-    identifiers = defaultdict(lambda: [annotation] + \
+    identifiers = defaultdict(lambda: [line['annotation']] + \
                               ['None' for i in range(numberOfFiles)])
     for file in enumerate(conversion_files):
-        db = split(file[1], '.')[0]
-        db = split(db, r'/')[1]
+        db = file[1].split('.')[0]
+        try:
+            db = db.split(os.sep)[-1]
+        except:
+            pass
         header.append(db)
-        split = str.split
         with open(file[1], 'rU') as in_handle:
-            for line in in_handle:
-                # [:-1] is to leave out the database name from M5nr
-                cols = split(line[:-1], '\t')
-                md5 = cols[0]
-                dbID = cols[1]
-                annotation = cols[2:]
-                identifiers[md5][file[0]] = dbID
-    with open(out_table, 'w') as conversion_handle:
-        headerStr = '\t'.join(header) + '\n'
-        conversion_handle.write(headerStr)
-        with open(out_annotation, 'w') as annotation_handle:
-            annHeader = 'md5\tannotation\n'
-            annotation_handle.write(annHeader)
-            for key in identifiers.keys():
-                annotation = identifiers[key][0]
-                dbIDs = key + '\t' + '\t'.join(identifiers[key][1:]) + '\n'
-                annotation_output = key + '\t' + ' '.join(annotation) + '\n'
-                conversion_handle.write(dbIDs)
-                annotation_handle.write(annotation_output)
+            for line in conversion_file_iter(in_handle):
+                identifiers[line['md5']][file[0] + 1] = line['dbID']
+    headerStr = '\t'.join(header) + '\n'
+    write_tables(out_table, out_annotation, headerStr, identifiers)
+
+def conversion_file_iter(handle):
+    '''iterates over each line of a conversion file formatted as follows
+
+    M5nr ID	Database ID	Annotations	Database
+
+    Each line is returned as a dictionary consisting fo the first three
+    columns with the respective keys: md5, dbID, annotation
+    '''
+
+    for line in handle:
+        lineData = {}
+        # [:-1] is to leave out the database name from M5nr
+        cols = line.strip().split('\t')[:-1]
+        lineData['md5'] = cols[0]
+        lineData['dbID'] = cols[1]
+        lineData['annotation'] = ' - '.join(cols[2:])
+        yield lineData
+
+def format_create_table_args(args):
+    '''Formats args to fit generalized conversion table related functions'''
+    
+    if args.create:
+        create_table(args.create, args.conversionTable, args.annotationTable)
+    elif args.append:
+       append_table(args.append, args.conversionTable, args.annotationTable)
+    
+def read_annotation(annotation_file):
+    '''reads in the annotation_file as a dictionary'''
+
+    annotations = {}
+    with open(annotation_file, 'rU') as in_handle:
+        for line in in_handle:
+            lineSplit = line.strip().split('\t')
+            annotations[lineSplit[0]] = lineSplit[1]
+    return annotations
 
 def read_table(table_file, key_db):
     '''reads in the table file as a nested dictionary and returns the dictionary
@@ -113,7 +175,8 @@ def read_table(table_file, key_db):
                 Which database values to use as the key 
 
     Output:
-            A dictionary where the each key is an entry in the database
+            A tuple containing the table header and a dictionary.
+            The dictionary where the each key is an entry in the database
             specified by key_db. Each value is a dictionary where each
             key is a different database and each value is the equivalent
             database ID to the parent dictionary database ID.
@@ -123,33 +186,58 @@ def read_table(table_file, key_db):
     table = {}
     with open(table_file, 'rU') as in_handle:
         firstLine = in_handle.readline()
-        splitFirstLine.strip().split('\t')
+        splitFirstLine = firstLine.strip().split('\t')
         if key_db in splitFirstLine:
             keyColumn = splitFirstLine.index(key_db)
         else:
-            print('{} not in {}').format(key_db, table_file)
-            print('Databases in {} follow:').format(table_file)
+            print('{0} not in {1}'.format(key_db, table_file))
+            print('Databases in {0} follow:'.format(table_file))
             databases = '\n'.join(splitFirstLine)
             print(databases)
             sys.exit(1)
         for line in in_handle:
             temp = {}
-            lineSplit.strip().split('\t')
+	    lineSplit = line.strip().split('\t')
             dbKey = lineSplit[keyColumn]
             if dbKey != 'None':
                 for id in enumerate(lineSplit):
-                    temp[splitFirstLine[lineSplit[0]]] = lineSplit[1]
+                    temp[splitFirstLine[id[0]]] = id[1]
                 table[dbKey] = temp
-    return table
-            
+    return (firstLine, table)
 
-def format_create_table_args(args):
-    '''Formats args to fit generalized conversion table related functions'''
-    
-    if args.create:
-        create_table(args.create, args.conversionTable, args.annotationTable)
-    elif args.append:
-       append_table(args.append, args.conversionTable, args.annotationTable)
+def write_tables(out_table, out_annotation, header_str, identifiers):
+    '''writes a conversion table and annotation table
+
+    Input:
+
+        out_table:
+                The converesion table to write
+
+        out_annotation:
+                The annotation table to write
+
+        header_str:
+                The header to write to the converion table
+
+        identifiers:
+                A dictionary of each M5nr checksum and each equivalent
+                database ID
+
+    Output:
+            A database ID conversion table and a annotation table
+    '''
+
+    with open(out_table, 'w') as conversion_handle:
+        conversion_handle.write(header_str)
+        with open(out_annotation, 'w') as annotation_handle:
+            annHeader = 'md5\tannotation\n'
+            annotation_handle.write(annHeader)
+            for key in identifiers:
+                annotation = identifiers[key][0]
+                dbIDs = key + '\t' + '\t'.join(identifiers[key][1:]) + '\n'
+                annotationOutput = key + '\t' + annotation + '\n'
+                conversion_handle.write(dbIDs)
+                annotation_handle.write(annotationOutput)
 
 if __name__ == '__main__':
     parentParser = MyParser(description = __doc__,
@@ -168,12 +256,13 @@ if __name__ == '__main__':
                                            'or appended to')
     createTableParser.add_argument('annotationTable',
                                     help = 'annotation table for conversion table')
-    createTableParser.add_argument('--create',
-                                    nargs = '+',
-                                    help = 'create new conversion table')
-    createTableParser.add_argument('--append',
-                                    nargs = '+',
-                                    help = 'add database conversion to table')
+    editMode = createTableParser.add_mutually_exclusive_group(required = True)
+    editMode.add_argument('--create',
+                          nargs = '+',
+                          help = 'create new conversion table')
+    editMode.add_argument('--append',
+                          nargs = '+',
+                          help = 'add database conversion to table')
     createTableParser.set_defaults(func=format_create_table_args)
 
     convertIdFile = subParsers.add_parser('convertIdFile',
