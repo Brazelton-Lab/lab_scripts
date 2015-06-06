@@ -53,8 +53,8 @@ def main():
             .format(in_ext, proper_ext), 79))
         sys.exit(1)
     out_type = args.out_type
-    out_ext = ext[out_type]
-    outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext))
+    out_ext = exts[out_type]
+    outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext), 'w')
     SearchIO.convert(infile, in_type, outfile, out_type, out_kwargs=kwargs)
 
 if __name__ == "__main__":
