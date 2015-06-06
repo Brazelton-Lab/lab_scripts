@@ -94,7 +94,7 @@ if __name__ == "__main__":
                         type=parse_kwargs,
                         help="additional format-specific arguments to be "
                         "passed to the converter [ex: -k key:value key:value]")
-    parser.add_argument('-o', '--out', metavar='FILE',
+    parser.add_argument('-o', '--output', metavar='FILE',
                         help="output file name")
     args = parser.parse_args()
     main()
