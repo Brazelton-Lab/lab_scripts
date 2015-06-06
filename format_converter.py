@@ -39,22 +39,25 @@ def parse_kwargs(format_arguments):
     return keywords
 
 def main():
-    exts = {'blast-tab': 'csv', 'blast-text': 'txt', 'blast-xml': 'xml',
-            'blat-psl': 'psl', 'hmmer3-tab': 'csv', 'hmmer3-text': 'txt', 
-            'hmmer2': 'txt', 'exonerate-text': 'txt'}
+    extensions = {'blast-tab': ['tsv', 'csv', 'blast', 'm8', 'blastm8'], 
+        'blast-text': ['txt', 'bls', 'blast'], 'blast-xml': ['xml'], 
+        'blat-psl': ['psl'], 'hmmer3-tab': ['tsv', 'csv'], 
+        'hmmer3-text': ['txt'], 'hmmer2-text': ['txt'], 
+        'exonerate-text': ['txt']}
     kwargs = args.keywords
     infile = args.infile
     in_type = args.in_type
     in_ext = infile.split('.')[-1]
-    proper_ext = exts[in_type]
-    if in_ext != exts[in_type]:
-        print(textwrap.fill("error: invalid input file extension \"{}\". The "
+    proper_ext = extensions[in_type][0]
+    if in_ext not in extensions[in_type]:
+        print(textwrap.fill("error: invalid input file extension \"{}\". An "
             "appropriate extension for this input type is {}"
             .format(in_ext, proper_ext), 79))
         sys.exit(1)
     out_type = args.out_type
-    out_ext = exts[out_type]
+    out_ext = extensions[out_type][0]
     outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext), 'w')
+    print("output will be in {}".format(outfile))
     SearchIO.convert(infile, in_type, outfile, out_type, out_kwargs=kwargs)
 
 if __name__ == "__main__":
