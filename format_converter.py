@@ -9,6 +9,7 @@ import os
 import argparse
 from Bio import SearchIO
 import textwrap
+import re
 
 def io_check(infile, mode='rU'):
     try:
@@ -16,7 +17,7 @@ def io_check(infile, mode='rU'):
     except IOError:
         try:
             fh = open(infile, mode)
-        except IOErroras e:
+        except IOError as e:
             print(e)
             sys.exit(1)
     else:
@@ -27,15 +28,21 @@ def io_check(infile, mode='rU'):
     return infile
 
 def parse_kwargs(format_arguments):
+    r = re.compile("(?P<key>):(?P<value>)")
     keywords = {}
-    
+    for argument in format_arguments:
+        matched = r.search(argument)
+        if not matched:
+            print("")
+            sys.exit(1)
+        kewords[matched.group('key')] = matched.group('value')
     return keywords
 
 def main():
     exts = {'blast-tab': 'csv', 'blast-text': 'txt', 'blast-xml': 'xml',
             'blat-psl': 'psl', 'hmmer3-tab': 'csv', 'hmmer3-text': 'txt', 
             'hmmer2': 'txt', 'exonerate-text': 'txt'}
-    kwargs = args.options
+    kwargs = args.keywords
     infile = args.infile
     in_type = args.in_type
     in_ext = infile.split('.')[-1]
@@ -53,23 +60,32 @@ def main():
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="convert the results of a "
                         "database search from one file format to another")
-    parser.add_argument('infile', metavar='<input blast>',
+    parser.add_argument('infile', metavar='<input file>',
                         type=io_check,
-                        help="")
+                        help="input file")
     parser.add_argument('--in-type', metavar='TYPE',
                         dest='in_type',
-                        default='blast-text'
-                        choices=['blast-text','blast-tab','blast-xml','hmmer3-text','hmmer3-tab','hmmer2-text','exonerate-text','blat-psl'],
-                        help="input file format [default: blast-text]")
+                        default='blast-text',
+                        choices=['blast-text', 'blast-tab', 'blast-xml', 
+                                 'hmmer3-text', 'hmmer3-tab', 'hmmer2-text', 
+                                 'exonerate-text', 'blat-psl'],
+                        help="input file format. Available options are "
+                        "blast-text, blast-tab, blast-xml, blat-psl, "
+                        "hmmer3-tab, hmmer3-text, and hmmer2-text [default: "
+                        "blast-text]")
     parser.add_argument('--out-type', metavar='TYPE',
                         dest='out_type',
                         default='blast-xml',
-                        choices=['blast-tab','blast-xml','blat-psl','hmmer3-tab'],
-                        help="output file format [default: blast-xml]")
-    parser.add_argument('-k', '--keywords',
+                        choices=['blast-tab', 'blast-xml', 'blat-psl', 
+                                 'hmmer3-tab'],
+                        help="output file format. Available options are "
+                        "blast-tab, blast-xml, blat-psl, and hmmer3-tab "
+                        "[default: blast-xml]")
+    parser.add_argument('-k', '--keywords', metavar='KEY',
                         nargs='+',
                         type=parse_kwargs,
-                        help="[ex: --op")
+                        help="additional format-specific arguments to be "
+                        "passed to the converter [ex: -k key:value key:value]")
     args = parser.parse_args()
     main()
     sys.exit(0)
