@@ -54,10 +54,15 @@ def main():
             "appropriate extension for this input type is {}"
             .format(in_ext, proper_ext), 79))
         sys.exit(1)
+
     out_type = args.out_type
-    out_ext = extensions[out_type][0]
-    outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext), 'w')
-    print("output will be in {}".format(outfile))
+    if args.out:
+        outfile = io_check(args.out)
+    else:
+        out_ext = extensions[out_type][0]
+        outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext), 'w')
+
+    print("output will be in {} and formatted as {}".format(outfile, out_type))
     SearchIO.convert(infile, in_type, outfile, out_type, out_kwargs=kwargs)
 
 if __name__ == "__main__":
@@ -89,6 +94,8 @@ if __name__ == "__main__":
                         type=parse_kwargs,
                         help="additional format-specific arguments to be "
                         "passed to the converter [ex: -k key:value key:value]")
+    parser.add_argument('-o', '--out', metavar='FILE',
+                        help="output file name")
     args = parser.parse_args()
     main()
     sys.exit(0)
