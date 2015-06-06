@@ -71,7 +71,7 @@ if __name__ == "__main__":
     parser.add_argument('infile', metavar='<input file>',
                         type=io_check,
                         help="input file")
-    parser.add_argument('--in-type', metavar='TYPE',
+    parser.add_argument('--in-format', metavar='TYPE',
                         dest='in_type',
                         default='blast-text',
                         choices=['blast-text', 'blast-tab', 'blast-xml', 
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                         "blast-text, blast-tab, blast-xml, blat-psl, "
                         "hmmer3-tab, hmmer3-text, and hmmer2-text [default: "
                         "blast-text]")
-    parser.add_argument('--out-type', metavar='TYPE',
+    parser.add_argument('--out-format', metavar='TYPE',
                         dest='out_type',
                         default='blast-xml',
                         choices=['blast-tab', 'blast-xml', 'blat-psl', 
