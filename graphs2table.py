@@ -37,14 +37,15 @@ def parse_html(infile, table, order):
             if line.startswith('<br>'):
                 line = line.strip()
                 break
-    # remove non-useful information from line
+    # remove non-informative parts of line
     start_index = line.index('<node')
     nodes = line[start_index:]
     # break into segments for recursion
     nodes = nodes.split('<node ')[1:]
 
     full_ident = [] # to keep track of parent tax ids
-    used = [] # to keep track of taxa encountered in this iteration
+    used = [] # to keep track of the taxa encountered in this iteration
+    max_level = 0
     for node in nodes:
         match = r.search(node)
         if not match:
@@ -53,6 +54,8 @@ def parse_html(infile, table, order):
         taxon_name = match.group('name')
         ncbi_id = match.group('id')
         full_ident.append(ncbi_id)
+        if len(full_ident) > max_level:
+            max_level = len(full_ident)
         taxon_id = '.'.join(full_ident)
         used.append(taxon_id)
         taxon_mag = match.group('value')
@@ -61,6 +64,8 @@ def parse_html(infile, table, order):
         end_tags = node.count('</node>')
         if end_tags:
           full_ident = full_ident[: -(end_tags)]
+
+    print(str(max_level - 1))
 
     # at each level, create unassigned group if the sum of immediate 
     # subroups do not match the magnitude of the group
@@ -78,15 +83,16 @@ def parse_html(infile, table, order):
         subs_mag = sum(subs)
         if parent_mag > subs_mag:
             unassigned_id = parent_id + '.0'
-            unassigned.append(unassigned_id)
             unassigned_name = "unassigned " + table[parent_id]['name']
             unassigned_mag = parent_mag - subs_mag
+            unassigned.append((unassigned_id, unassigned_mag))
             table = add_value(table, unassigned_id, unassigned_name, unassigned_mag, order)
         else:
            continue
-    # add a zero value to unused taxon
+    # add a zero value to unused taxon (because each sample has different 
+    # taxonomic profile)
     for taxon_id in table:
-        if (taxon_id not in used) and (taxon_id not in unassigned):
+        if (taxon_id not in used) and (taxon_id not in [i[0] for i in unassigned]):
             table[taxon_id]['values'].append(str(0))
     return table
     
@@ -152,6 +158,7 @@ def main():
                 continue
         name = table[ident]['name']
         values = table[ident]['values']
+        included_values.append(sum([float(i) for i in values]))
         if args.no_id:
             final_output(out_h, "{}\t{}\t{}".format(str(level), name, '\t'.join([str(i) for i in values])))
         else:
@@ -174,7 +181,7 @@ if __name__ == "__main__":
                         help="create table for level \"LEVEL\" [default: all-in-one]")
     parser.add_argument('-o', '--out', metavar='FILE',
                         type=str,
-                        help="write to outfile instead of STDOUT")
+                        help="write to outfile [default: write to STDOUT]")
     parser.add_argument('-f', '--force',
                         action='store_true',
                         help="force overwrite of previous existing output file")
