@@ -158,7 +158,6 @@ def main():
                 continue
         name = table[ident]['name']
         values = table[ident]['values']
-        included_values.append(sum([float(i) for i in values]))
         if args.no_id:
             final_output(out_h, "{}\t{}\t{}".format(str(level), name, '\t'.join([str(i) for i in values])))
         else:
