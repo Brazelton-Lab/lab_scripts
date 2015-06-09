@@ -10,16 +10,14 @@ To DO.
 
 __authors__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
-__version__ = '0.0.0.3'
+__version__ = '0.0.0.4'
 
 import argparse
 from collections import defaultdict
+import copy
 import math
 import os
-import psutil
 import sys
-
-process = psutil.Process(os.getpid())
 
 class MyParser(argparse.ArgumentParser):
     def error(self, message):
@@ -48,55 +46,77 @@ def append_table(conversion_files, table_file, annotation_file):
             to the annotation file from the conversion files
     '''
 
-    header, tableLines = read_table(table_file, 'md5')
-    header = header.strip().split('\t')
-    originalColumnNumber = len(header) - 1
-    table = {}
-    for key in tableLines:
-        items = []
-        for item in header:
-            if not item == 'md5':
-                items.append(tableLines[key][item])
-        table[key] = items
+    header, originalTable = index_table(table_file, 'md5')
     annotations = read_annotation(annotation_file)
+    header = header.strip().split('\t')
+    originalHeader = copy.deepcopy(header)
+    originalNumberColumns = len(header)
+    tables = [originalTable]
+    files = [table_file]
     for file in conversion_files:
         db = file.split('.')[0]
         try:
             db = db.split(os.sep)[-1]
         except:
             pass
-        with open(file, 'rU') as in_handle:
-            conversionLines = {}
-            for line in conversion_file_iter(in_handle):
-                conversionLines[line['md5']] = (line['dbID'],\
-                                                line['annotation'])
-            header.append(db)
-            for key in table:
-                if key in annotations:
-                    table[key] = [annotations[key]] + table[key]
+        header.append(db)
+        firstLine, table = index_table(file, 0, header = False)
+        tables.append(table)
+        files.append(file)
+    del table, file, firstLine, db
+    conversionHeader = ['md5', 'ID', 'Annotation']
+    outTable = table_file + '.tmp'
+    with open(outTable, 'w') as out_table:
+       out_table.write('\t'.join(header) + '\n')
+    outAnn = annotation_file + '.tmp'
+    with open(outAnn, 'w') as out_ann:
+        out_ann.write('md5\tannotation\n')
+    uniqueIDs = unique_ids(tables)
+    del tables
+    for id in uniqueIDs:
+        firstItem = True
+        toWrite = {}
+        toWrite[id] = []
+        for file, index in zip(files, uniqueIDs[id]):
+            if firstItem:
+                if index == 'None':
+                    toWrite[id] = ['None' for i in range(originalNumberColumns)]
                 else:
-                    table[key] = ['None'] + table[key]
-                if key in conversionLines:
-                    table[key].append(conversionLines[key][0])
+                    with open(file, 'rU') as in_handle:
+                        data = read_indexed_table(in_handle, originalHeader,\
+                                                  index)
+                        for item in originalHeader:
+                            toWrite[id].append(data[item])
+                    toWrite[id][0] = annotations[id]
+                firstItem = False
+            else:
+                if index == 'None':
+                    toWrite[id].append('None')
                 else:
-                    table[key].append('None')
-            for key in conversionLines:
-                if key not in table:
-                    table[key] = [conversionLines[key][1]] +\
-                                 ['None' for i in range(originalColumnNumber)]\
-                                 + [conversionLines[key][0]]
-        header = '\t'.join(header) + '\n'
-        write_tables(table_file, annotation_file, header, table)
+                    with open(file, 'rU') as in_handle:
+                        data = read_indexed_table(in_handle, conversionHeader,\
+                                                  index)
+                        toWrite[id].append(data['ID'])
+                        if toWrite[id][0] == 'None':
+                            # Remove database at end of line
+                            newAnn = data['Annotation'].split(' ')[:-1]
+                            toWrite[id][0] = ' '.join(newAnn)
+        write_tables(outTable, outAnn, '', toWrite)
+    os.remove(table_file)
+    os.remove(annotation_file)
+    os.rename(outTable, table_file)
+    os.rename(outAnn, annotation_file)
 
-def create_table(conversion_files, out_table, out_annotation):
+def create_table(conversion_files, table_file, annotation_file):
     '''creates a table to allow for easy conversion between database IDs
 
     Input:
 
         conversion_files:
                 A list of files from M5nr of the file name "*.md52id2func".
-                Each file must have three columns containg the md52 checksum,
-                database-specific id, and annotation on the gene respecitvely.
+                Each file must have four columns containg the md52 checksum,
+                database-specific id, annotation, and database for a given
+                gene.
 
         out_table:
                 File to conversion write table to
@@ -108,32 +128,36 @@ def create_table(conversion_files, out_table, out_annotation):
             Two table files: one consisting of all the different database
             identifiers for a given gene and another containing the M5nr
             identifier and annotation for each gene.
-
-    Note: This function can be very RAM intensive.
     '''
 
     header = ['md5']
-    annotation = ''
-    numberOfFiles = len(conversion_files)
-    identifiers = defaultdict(lambda: [line['annotation']] + \
-                              ['None' for i in range(numberOfFiles)])
-    for file in enumerate(conversion_files):
-        db = file[1].split('.')[0]
-        try:
-            db = db.split(os.sep)[-1]
-        except:
-            pass
-        header.append(db)
-        with open(file[1], 'rU') as in_handle:
-            for line in conversion_file_iter(in_handle):
-                identifiers[line['md5']][file[0] + 1] = line['dbID']
+    db = conversion_files[0].split('.')[0]
+    try:
+        db = db.split(os.sep)[-1]
+    except:
+        pass
+    header.append(db)
     headerStr = '\t'.join(header) + '\n'
-    write_tables(out_table, out_annotation, headerStr, identifiers)
+    with open(table_file, 'w') as table_handle:
+        table_handle.write(headerStr) 
+        with open(annotation_file, 'w') as ann_handle:
+            ann_handle.write('md5\tannotation\n')
+            with open(conversion_files[0], 'rU') as in_handle:
+                for line in conversion_file_iter(in_handle):
+                    tableOut = '{}\t{}\n'.format(line['md5'], line['dbID'])
+                    annOut = '{}\t{}\n'.format(line['md5'], line['annotation']) 
+                    table_handle.write(tableOut)
+                    ann_handle.write(annOut)
+    conversionFiles = conversion_files[1:]
+    append_table(conversionFiles, table_file, annotation_file)
 
-def create_sub_table(out_prefix, databases, table_file, annotation_file):
+def create_sub_table(out_table, databases, table_file, annotation_file):
     '''creates a new conversion table from existing table
 
     Input:
+
+        out_table:
+                The new table to write
 
         databases:
                 The list of database names to write to the sub-table
@@ -149,33 +173,36 @@ def create_sub_table(out_prefix, databases, table_file, annotation_file):
             specified databases
     '''
 
-    outDict = defaultdict(lambda: ['None' for i in range(len(databases))])
-    firstLine, table = read_table(table_file, 'md5')
+    firstLine, table = index_table(table_file, 'md5')
     annotations = read_annotation(annotation_file)
     tableDatabases = firstLine.strip().split('\t')
     for database in databases:
         if not database in tableDatabases:
             print('{} not in {}'.format(database, table_file))
             print('The databases in {} follow:'.format(table_file))
-            for tableDatabase in tableDatabases:
-                print(tableDatabase)
+            print('\n'.join(tableDatabases))
             sys.exit(1)
-    for key in table:
-        allNone = True
-        for database in databases:
-            if table[key][database] != 'None':
-                allNone = False
-                break
-        if not allNone:
-            for database in enumerate(databases):
-                outDict[key][database[0]] = table[key][database[1]]
-    for key in outDict:
-        if key in annotations:
-            outDict[key] = [annotations[key]] + outDict[key]
-    headerStr = 'md5' + '\t' + '\t'.join(databases) + '\n'
-    out_table = out_prefix
-    out_annotation = out_prefix + '.ann.txt'
-    write_tables(out_table, out_annotation, headerStr, outDict)
+    with open(out_table, 'w') as table_handle:
+        table_handle.write('md5' + '\t' + '\t'.join(databases)+'\n')
+    outAnnotation = out_table + '.ann'
+    with open(outAnnotation, 'w') as annotation_handle:
+        annotation_handle.write('md5\tannotation\n')
+    with open(table_file, 'rU') as in_handle:
+        for id in table:
+            allNone = True
+            index = table[id]
+            data = read_indexed_table(in_handle, tableDatabases, index)
+            for database in databases:
+                if data[database] != 'None':
+                    allNone = False
+                    break
+            if not allNone:
+                outDict = {}
+                outDict[id] = ['None' for i in range(len(databases))]
+                for database in enumerate(databases):
+                    outDict[id][database[0]] = data[database[1]]
+                outDict[id] = [annotations[id]] + outDict[id]
+                write_tables(out_table, outAnnotation, '', outDict)
 
 def convert_column_ids(in_file, out_file, column_number, table_file,\
                         original_db, target_db, delimiter = '\t',\
@@ -208,7 +235,7 @@ def convert_column_ids(in_file, out_file, column_number, table_file,\
                 to stdin
     '''
     
-    firstLine, table = read_table(table_file, original_db)
+    firstLine, table = index_table(table_file, original_db)
     with open(in_file, 'rU') as in_handle:
         with open(out_file, 'w') as out_handle:
             # Write header from in_handle
@@ -261,7 +288,7 @@ def conversion_file_iter(handle):
         lineData['annotation'] = ' - '.join(cols[2:])
         yield lineData
 
-def format_create_table_args(args):
+def format_table_tools_args(args):
     '''Formats args to fit generalized conversion table related functions'''
     
     if args.create:
@@ -269,9 +296,9 @@ def format_create_table_args(args):
     elif args.append:
        append_table(args.append, args.conversionTable, args.annotationTable)
     elif args.create_sub_table:
-        outPrefix = args.create_sub_table[0]
+        outTable = args.create_sub_table[0]
         databases = args.create_sub_table[1:]
-        create_sub_table(outPrefix, databases, args.conversionTable,\
+        create_sub_table(outTable, databases, args.conversionTable,\
                          args.annotationTable)
 
 def format_convert_id_file_args(args):
@@ -283,6 +310,55 @@ def format_convert_id_file_args(args):
                        delimiter = args.delimiter,\
                        log_file = args.log_file)
     
+def index_table(table_file, key_db, header = True):
+    '''reads in the table file as a nested dictionary and returns the dictionary
+
+    Input:
+
+        table_file:
+                The table file to be indexed as a dictionary
+
+        key_db:
+                Which database values to use as the key 
+
+        header:
+                Whether or not file has a header, default = True
+
+    Output:
+            A tuple containing the table header and a dictionary.
+            The dictionary contains the database IDs for each ID
+            in key_db as keys and the values are the location
+            of that ID in the table file. 
+    '''
+
+    table = {}
+    with open(table_file, 'rU') as in_handle:
+        if header:
+            firstLine = in_handle.readline()
+            splitFirstLine = firstLine.strip().split('\t')
+            if key_db in splitFirstLine:
+                keyColumn = splitFirstLine.index(key_db)
+            else:
+                print('{0} not in {1}'.format(key_db, table_file))
+                print('Databases in {0} follow:'.format(table_file))
+                databases = '\n'.join(splitFirstLine)
+                print(databases)
+                sys.exit(1)
+        else:
+            keyColumn = int(key_db)
+            firstLine = ''
+        lastPosition = in_handle.tell()
+        while True:
+            line = in_handle.readline()
+            if not line:
+                break
+	    lineSplit = line.strip().split('\t')
+            dbKey = lineSplit[keyColumn]
+            if dbKey != 'None' and dbKey not in table:
+                table[dbKey] = lastPosition
+            lastPosition = in_handle.tell()
+    return (firstLine, table)
+
 def read_annotation(annotation_file):
     '''reads in the annotation_file as a dictionary'''
 
@@ -293,57 +369,69 @@ def read_annotation(annotation_file):
             annotations[lineSplit[0]] = lineSplit[1]
     return annotations
 
-def read_table(table_file, key_db):
-    '''reads in the table file as a nested dictionary and returns the dictionary
+def read_indexed_table(table_handle, header, index):
+    '''reads line of indexed table handle
 
     Input:
 
-        table_file:
-                The table file to be read as a dictionary
+        table_handle:
+                File handle of the indexed table file
+    
+        header:
+                The header of the table file
 
-        key_db:
-                Which database values to use as the key 
+        index:
+                The index of the line to read
 
     Output:
-            A tuple containing the table header and a dictionary.
-            The dictionary where the each key is an entry in the database
-            specified by key_db. Each value is a dictionary where each
-            key is a different database and each value is the equivalent
-            database ID to the parent dictionary database ID.
 
+            A dictionary where each line is a database in the header
+            and each value is that databases ID
     '''
 
-    size = 0
-    table = {}
-    with open(table_file, 'rU') as in_handle:
-        firstLine = in_handle.readline()
-        splitFirstLine = firstLine.strip().split('\t')
-        if key_db in splitFirstLine:
-            keyColumn = splitFirstLine.index(key_db)
-        else:
-            print('{0} not in {1}'.format(key_db, table_file))
-            print('Databases in {0} follow:'.format(table_file))
-            databases = '\n'.join(splitFirstLine)
-            print(databases)
-            sys.exit(1)
-        for line in in_handle:
-            temp = {}
-	    lineSplit = line.strip().split('\t')
-            dbKey = lineSplit[keyColumn]
-            size += sys.getsizeof(dbKey)
-            if dbKey != 'None':
-                for id in enumerate(lineSplit):
-                    temp[splitFirstLine[id[0]]] = id[1]
-                    size += sys.getsizeof(id)
-                if dbKey in table:
-                    print('error {} already in table'.format(dbkey))
-                    sys.exit(1)
-                table[dbKey] = temp
-                #currentMem = float(process.get_memory_info()[0])/1000000000.0
-                #print('Added to dict mem: ' + str(currentMem))
-    size += sys.getsizeof(table)
-    print(float(size/1000000))
-    return (firstLine, table)
+    table_handle.seek(index)
+    line = table_handle.readline()
+    lineSplit = line.strip().split('\t')
+    # Combines all elements in the line beyond the length of the header
+    # into a single element at the end of the list lineSplit
+    if len(lineSplit) > len(header):
+        toStr = ' '.join(i for i in lineSplit[len(header) - 1:])
+        lineSplit = lineSplit[:len(header) - 1]
+        lineSplit.append(toStr)
+    lineDict = {}
+    for key, value in zip(header, lineSplit):
+       lineDict[key] = value
+    return lineDict 
+
+def unique_ids(tables):
+    '''yields unique IDs across tables
+
+    Input:
+
+        tables:
+                A list of dictionaries
+
+    Output:
+        Returns the a dictionary containing only unique IDs
+        across all dictionaries in tables. The keys are the
+        unique IDs and the values are lists containing the value
+        for that ID in each dictionary. If the dictionary does not
+        containg the ID, the value at that position in the list
+        is "None".
+    '''
+
+    uniqueIDs = {}
+    for table in tables:
+       for id in table:
+           if id not in uniqueIDs:
+               uniqueIDs[id] = []
+    for id in uniqueIDs:
+        for table in tables:
+            if id in table:
+                uniqueIDs[id].append(table[id])
+            else:
+                uniqueIDs[id].append('None')
+    return uniqueIDs
 
 def write_tables(out_table, out_annotation, header_str, identifiers):
     '''writes a conversion table and annotation table
@@ -367,15 +455,17 @@ def write_tables(out_table, out_annotation, header_str, identifiers):
             A database ID conversion table and a annotation table
     '''
 
-    with open(out_table, 'w') as conversion_handle:
-        conversion_handle.write(header_str)
-        with open(out_annotation, 'w') as annotation_handle:
-            annHeader = 'md5\tannotation\n'
-            annotation_handle.write(annHeader)
-            for key in identifiers:
-                annotation = identifiers[key][0]
-                dbIDs = key + '\t' + '\t'.join(identifiers[key][1:]) + '\n'
-                annotationOutput = key + '\t' + annotation + '\n'
+    with open(out_table, 'a') as conversion_handle:
+        if header_str:
+            conversion_handle.write(header_str)
+        with open(out_annotation, 'a') as annotation_handle:
+            if header_str:
+                annHeader = 'md5\tannotation\n'
+                annotation_handle.write(annHeader)
+            for id in identifiers:
+                annotation = identifiers[id][0]
+                dbIDs = id + '\t' + '\t'.join(identifiers[id][1:]) + '\n'
+                annotationOutput = id + '\t' + annotation + '\n'
                 conversion_handle.write(dbIDs)
                 annotation_handle.write(annotationOutput)
 
@@ -385,18 +475,18 @@ if __name__ == '__main__':
                             RawDescriptionHelpFormatter)
     parentParser.add_argument('--version',
                               action = 'version',
-                              version = '0.0.0.3')
+                              version = '0.0.0.4')
     subParsers = parentParser.add_subparsers(title = 'sub-commands')
 
-    createTableParser = subParsers.add_parser('createTable',
+    tableToolsParser = subParsers.add_parser('tableTools',
                                                help = 'creates conversion '+\
                                                       'table between databases')
-    createTableParser.add_argument('conversionTable',
+    tableToolsParser.add_argument('conversionTable',
                                     help = 'conversion table to be created '+\
                                            'or appended to')
-    createTableParser.add_argument('annotationTable',
+    tableToolsParser.add_argument('annotationTable',
                                     help = 'annotation table for conversion table')
-    editMode = createTableParser.add_mutually_exclusive_group(required = True)
+    editMode = tableToolsParser.add_mutually_exclusive_group(required = True)
     editMode.add_argument('--create',
                           nargs = '+',
                           help = 'create new conversion table from '+\
@@ -409,7 +499,7 @@ if __name__ == '__main__':
     editMode.add_argument('--append',
                           nargs = '+',
                           help = 'add database conversion data to table')
-    createTableParser.set_defaults(func=format_create_table_args)
+    tableToolsParser.set_defaults(func=format_table_tools_args)
 
     convertIdFile = subParsers.add_parser('convertIdFile',
                                       help = 'converts one database ID to '+\
