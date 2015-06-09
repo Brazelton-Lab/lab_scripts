@@ -56,7 +56,7 @@ def main():
         sys.exit(1)
 
     out_type = args.out_type
-    if args.out:
+    if args.output:
         outfile = io_check(args.out)
     else:
         out_ext = extensions[out_type][0]
