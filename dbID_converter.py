@@ -236,39 +236,45 @@ def convert_column_ids(in_file, out_file, column_number, table_file,\
     '''
     
     firstLine, table = index_table(table_file, original_db)
-    with open(in_file, 'rU') as in_handle:
-        with open(out_file, 'w') as out_handle:
-            # Write header from in_handle
-            out_handle.write(in_handle.readline())
-            for line in in_handle:
-                lineSplit = line.strip().split(delimiter)
-                dbID = lineSplit[column_number]
-                try:
-                    targetID = 'None'
-                    assert dbID in table
+    with open(table_file, 'rU') as table_handle:
+        header = table_handle.readline().strip().split('\t')
+        with open(in_file, 'rU') as in_handle:
+            with open(out_file, 'w') as out_handle:
+                # Write header from in_handle
+                out_handle.write(in_handle.readline())
+                for line in in_handle:
+                    lineSplit = line.strip().split(delimiter)
+                    dbID = lineSplit[column_number]
                     try:
-                        targetID = table[dbID][target_db]
-                    except KeyError:
-                        message = target_db + ' is not in '+\
-                                  table_file
+                        targetID = 'None'
+                        assert dbID in table
+                        try:
+                            index = table[dbID]
+                            data = read_indexed_table(table_handle, header,\
+                                                      index)
+                            targetID = data[target_db]
+                        except KeyError:
+                            message = '{} is not in {}'\
+                                      .format(target_db, table_file)
+                            if log_file:
+                                with open(log_file, 'a') as out_handle:
+                                    out_handle.write(message)
+                            else:
+                                print(message)
+                            sys.exit(1)
+                        if targetID == 'None':
+                            raise AssertionError
+                        lineSplit[column_number] = targetID
+                        toWrite = delimiter.join(lineSplit) + '\n'
+                        out_handle.write(toWrite)
+                    except AssertionError:
+                        message = '{} has no equivalent ID in {}'\
+                                  .format(dbID, target_db)
                         if log_file:
                             with open(log_file, 'a') as out_handle:
                                 out_handle.write(message)
                         else:
                             print(message)
-                        sys.exit(1)
-                    if targetID == 'None':
-                        raise AssertionError
-                    lineSplit[column_number] = targetID
-                    toWrite = delimiter.join(lineSplit) + '\n'
-                    out_handle.write(toWrite)
-                except AssertionError:
-                    message = dbID + ' has no equivalent ID in ' + target_db
-                    if log_file:
-                        with open(log_file, 'a') as out_handle:
-                            out_handle.write(message)
-                    else:
-                        print(message)
 
 def conversion_file_iter(handle):
     '''iterates over each line of a conversion file formatted as follows
