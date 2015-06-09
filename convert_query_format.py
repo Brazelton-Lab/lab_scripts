@@ -57,7 +57,7 @@ def main():
 
     out_type = args.out_type
     if args.output:
-        outfile = io_check(args.output)
+        outfile = io_check(args.output, 'w')
     else:
         out_ext = extensions[out_type][0]
         outfile = io_check("{}.{}".format('.'.join(infile.split('.')[:-1]), out_ext), 'w')
