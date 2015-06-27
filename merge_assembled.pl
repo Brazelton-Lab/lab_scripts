@@ -29,7 +29,7 @@ HelpMsg() if ($help);
 
 die "Sample name required. See $0 --help for usage." unless ($smpl);
 
-my $outfile = "$smpl.contigs.fa";
+my $outfile = "$smpl.contigs.fasta";
 my $logfile = "$smpl.contigs.log";
 my $contig = "contig-$k.fa";
 my @files = <$path/*.idba.ud/$contig>;
@@ -48,7 +48,7 @@ merge_assembled.pl takes all contig files of a specified k value from partition
 groups assembled with idba_ud, concatenates them, and formats the concatenated file 
 for use in esomWrapper.pl
 
-usage: merge_assembled.pl -sample [sample_name] [option]...  
+usage: merge_assembled.pl --sample [sample_name] [option]...  
 
   -s, --sample [sample_name] :  name of the sample (required argument)
   -k, --k_value [k_value]    :  k value to use (default is 40). The matching 
@@ -60,23 +60,27 @@ usage: merge_assembled.pl -sample [sample_name] [option]...
 ";
 }
 sub CatFile {
-	open my $out, "> $outfile"
-		or die $!;
-	my $i = 0;
-	print "\nFiles to be combined:\n";
-	foreach my $file (@files) {
-		print "\t$file\n";
-		open my $in, "$file"
-			or die $!;
-                while (my $line = <$in>) {
-                        if ($line =~ /contig/) {
-                                $line =~ s/contig-\d+_\d+/$i++/ge;
-                        }
-                        print $out $line;
-                }
-                close $in;
+    open my $out, "> $outfile"
+        or die $!;
+    my $i = 0;
+    print "\nFiles to be combined:\n";
+    foreach my $file (@files) {
+        my $formatted = 0;
+        print "\t$file\n";
+        open my $in, "$file"
+            or die $!;
+        while (my $line = <$in>) {
+            if ($line =~ /contig/) {
+                $formatted = 1;
+                my $replacement = $smpl . "_" . $i++;
+                $line =~ s/contig-\d+_\d+/$replacement/ge;
+            }
+            print $out $line;
         }
-        close $out;
+        die "$file: please check that the identifiers have the standard idba format" unless ($formatted);
+        close $in;
+    }
+    close $out;
 }
 sub LogFile {
 	open my $log, "> $logfile"
