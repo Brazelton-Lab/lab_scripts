@@ -63,7 +63,6 @@ def append_table(conversion_files, table_file, annotation_file):
         firstLine, table = index_table(file, 0, header = False)
         tables.append(table)
         files.append(file)
-    del table, file, firstLine, db
     conversionHeader = ['md5', 'ID', 'Annotation']
     outTable = table_file + '.tmp'
     with open(outTable, 'w') as out_table:
