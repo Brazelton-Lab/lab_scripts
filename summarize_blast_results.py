@@ -56,7 +56,7 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                     if contig_id in conversion_table:
                         if prokka_id not in alreadyHit:
                             rpk = (float(conversion_table[contig_id])\
-                                  / float(short_read_length)) / 1000
+                                  / float(short_read_length)) * 1000
                             alreadyHit[prokka_id] = rpk
     return alreadyHit
 
