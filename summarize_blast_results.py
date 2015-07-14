@@ -45,19 +45,21 @@ def read_conversion_table(conversion_table_file, database):
         
 
 def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
-                       short_read_length, output_file):
+                       short_read_length, eValue, alignLen):
     alreadyHit = {}
-    with open(output_file, 'w') as out_handle:
-        with open(blast_table_file, 'rU') as blast_handle:
-            for entry in m8_iter(blast_handle):
-                prokka_id = entry['subjectID']
-                if prokka_id in  id_conversion_dict:
-                    contig_id = id_conversion_dict[prokka_id]
-                    if contig_id in conversion_table:
-                        if prokka_id not in alreadyHit:
-                            rpk = (float(conversion_table[contig_id])\
-                                  / float(short_read_length)) * 1000
-                            alreadyHit[prokka_id] = rpk
+    with open(blast_table_file, 'rU') as blast_handle:
+        for entry in m8_iter(blast_handle):
+            if eValue == None or float(entry['eValue']) <= eValue:
+                if alignLen == None or int(entry['alignLen']) >= alignLen:
+                    prokka_id = entry['subjectID']
+                    if prokka_id in  id_conversion_dict:
+                        contig_id = id_conversion_dict[prokka_id]
+                        if contig_id in conversion_table:
+                            if prokka_id not in alreadyHit:
+                                rpk = (float(conversion_table[contig_id])\
+                                      / float(short_read_length)) * 1000
+                                reads = (rpk / 1000) * float(entry['alignLen'])
+                                alreadyHit[prokka_id] = (rpk, reads)
     return alreadyHit
 
 
@@ -91,6 +93,14 @@ if __name__ == '__main__':
                         help='length of short reads for sample')
     parser.add_argument('output',
                         help='the output file to be written')
+    parser.add_argument('--max_e_value',
+                        type=float,
+                        default=None,
+                        help='maximum E-value to accept')
+    parser.add_argument('--min_align_len',
+                        type=int,
+                        default=None,
+                        help='minimum alignment length to accept')
     args = parser.parse_args() 
 
     id_conversion_dict = create_id_conversion_dict(args.prokka_gff3_file)
@@ -98,13 +108,14 @@ if __name__ == '__main__':
                                              args.database)
     unique_rpks = obtain_unique_rpks(args.blast_table, id_conversion_dict,
                                      conversion_table, args.short_read_length,
-                                     args.output)
+                                     args.max_e_value, args.min_align_len)
     annotations = obtain_annotations(args.fasta_file)
 
     with open(args.output, 'w') as out_handle:
-        out_handle.write('Annotations\tRPK\n')
+        out_handle.write('Annotations\tRPK\tReads\n')
         for prokka_id in unique_rpks:
-            out_handle.write('{0}\t{1}\n'.format(annotations[prokka_id],
-                                                 unique_rpks[prokka_id]))
+            out_handle.write('{0}\t{1}\t{2}\n'.format(annotations[prokka_id],
+                                               unique_rpks[prokka_id][0],
+                                               unique_rpks[prokka_id][1]))
 
     sys.exit(0)
