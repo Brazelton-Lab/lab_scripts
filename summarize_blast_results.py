@@ -103,6 +103,7 @@ if __name__ == '__main__':
                         help='minimum alignment length to accept')
     args = parser.parse_args() 
 
+    print('Warning: Calculating reads and RPK assuming a short read length of {}'.format(args.short_read_length))
     id_conversion_dict = create_id_conversion_dict(args.prokka_gff3_file)
     conversion_table = read_conversion_table(args.contig_coverage_table,
                                              args.database)
