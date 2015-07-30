@@ -45,7 +45,7 @@ from screed.fastq import fastq_iter
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '0.0.0.1'
+__version__ = '0.0.0.2'
 
 
 def compile_ids(ids):
@@ -64,53 +64,35 @@ def fastaq_iter(file_handle, fastq=False):
     for entry in fastaq_iterator(file_handle):
         if not fastq:
             entry['name'] = '{0} {1}'.format(entry['name'], \
-                                             entry['description]')
+                                             entry['description'])
         else:
             entry['name'] = '{0} {1}'.format(entry['name'], \
                                              entry['annotations'])
         yield entry
-            
 
-def multi_id_extraction(ids, input, fastq=False):            
-    """Extracts entries with various IDs from a single sample"""
+
+def extract_ids(ids, files, fastq=False):
+    """Extract entries with multiple IDs from multiple samples"""
 
     entries = []
     compiled_ids = compile_ids(ids)
-    with open(input, 'rU') as in_handle:
-        for entry in fastaq_iter(in_handle, fastq=fastq):
-            for compiled_id in compiled_ids:
-                if len(compiled_id.findall(entry['name'])) == 1:
-                    to_return = ''
-                    if not fastq:
-                        to_return = '>{0}\n{1}\n'.format(entry['name'], \
-                                                         entry['sequence'])
-                    else:
-                        to_return = '@{0}\n{1}\n+\n{2}\n'.format(entry['name'],
-                                                          entry['sequence'],
-                                                          entry['accuracy'])      
-                    entries.append(to_return)
-                    break
-    return entries
-
-
-def multi_sample_extraction(id, input, fastq=False):
-    """Extract entries with a single ID from multiple samples"""
-
-    entries = []
-    compiled_id = compile_ids([id])[0]
-    for file in input:
+    for file in files:
         with open(file, 'rU') as in_handle:
             for entry in fastaq_iter(in_handle, fastq=fastq):
-                if len(compiled_id.findall(entry['name'])) == 1:
-                    to_return = ''
-                    if not fastq:
-                        to_return = '>{0}\n{1}\n'.format(entry['name'], \
-                                                         entry['sequence'])
-                    else:
-                        to_return = '@{0}\n{1}\n+\n{2}\n'.format(entry['name'],
-                                                          entry['sequence'],
-                                                          entry['accuracy'])      
-                    entries.append(to_return)
+                for compiled_id in compiled_ids:
+                    if len(compiled_id.findall(entry['name'])) == 1:
+                        to_return = ''
+                        if not fastq:
+                            to_return = '>{0}\n{1}\n'.format(entry['name'], \
+                                                             entry['sequence'])
+                        else:
+                            to_return = '@{0}\n{1}\n+\n{2}\n'.format( \
+                                                             entry['name'],
+                                                             entry['sequence'],
+                                                             entry['accuracy'])      
+                        # Stop after first ID match
+                        break
+                        entries.append(to_return)
     return entries
                     
 
@@ -124,53 +106,29 @@ if __name__ == '__main__':
                         help='name of FASTA or FASTQ file to write')
     parser.add_argument('--fastq',
                         default=False,
+                        nargs='*',
                         help='specify input file as FASTQ file [Default: FASTA]')
-
-    tools = parser.add_subparsers(dest='tool',
-                                  help='program options')
-
-    multi_sample = tools.add_parser('multi_sample',
-                                    help='extract one ID from ' \
-                                         'multiple samples')
-    multi_sample.add_argument('ids', metavar='ID',
-                              default=None,
-                              nargs='?',
-                              help='ID to extract from samples')
-    multi_sample.add_argument('input',
-                              default=None,
-                              nargs='*',
-                              help='FASTA or FASTQ files to extract ids from')
-
-    multi_id = tools.add_parser('multi_id',
-                                help='extract multiple IDS from ' \
-                                     'one sample') 
-    multi_id.add_argument('input',
-                          default=None,
-                          nargs='?',
-                          help='FASTA or FASTQ file to extract IDs from')
-    multi_id.add_argument('ids', metavar='IDs',
-                          default=None,
-                          nargs='*',
-                          help='IDs to extract from the sample')
-
+    parser.add_argument('--files',
+                        default=None,
+                        nargs='*',
+                        help='Files to extract IDs from')
+    parser.add_argument('--ids', metavar='IDs',
+                        default=None,
+                        help='IDs to extract from input files')
     args = parser.parse_args()
 
     if args.output is None:
         print(__doc__)
         sys.exit(0)
-    elif args.tool == 'multi_sample':
-        entries = multi_sample_extraction(args.ids, args.input, \
-                                          fastq=args.fastq)
-    elif args.tool == 'multi_id':
-        entries = multi_id_extraction(args.ids, args.input,
-                                      fastq=args.fastq)
-    else:
-        print('Must specify multi_sample or multi_id mode.')
+    elif args.ids is None and args.files is None:
+        print('Must specify one or more IDs and one or more files.')
         sys.exit(1)
+    else:
+        entries = extract_ids(args.ids, args.files, fastq=args.fastq)
 
     with open(args.output, 'w') as out_handle:
         for entry in entries:
             out_handle.write(entry)
-
+    
     sys.exit(0)
 
