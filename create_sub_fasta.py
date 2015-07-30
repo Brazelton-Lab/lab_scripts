@@ -4,7 +4,7 @@
 
 Usage:
 
-    create_sub_fasta.py <output> [--fastq] <tool> <ids/input> <ids/input>
+    create_sub_fasta.py <output> [--ids] [--files] [--coverage] [--fastq]
 
 Synopsis:
 
@@ -39,7 +39,7 @@ from screed.fastq import fastq_iter
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '0.0.0.3'
+__version__ = '0.0.0.4'
 
 
 def append_coverages(entries, table, gff3_files):
