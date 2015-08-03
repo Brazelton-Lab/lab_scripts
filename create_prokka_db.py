@@ -32,33 +32,21 @@ def parse_fasta(fasta):
         while line:
             line = line.strip()
             if line.startswith('>'):
-                m5nr = line.strip('>')
+                m5nr = line.strip('>\n')
                 m5nr = m5nr.split()[0]
             else:
-                seq_len = len(line)
                 try:
-                    sequences[m5nr]['sequence'] = sequences[m5nr].get('sequence', '') + line
-                    sequences[m5nr]['length'] = sequences[m5nr].get('length', 0) + seq_len
+                    sequences[m5nr]['sequence'] += line
                 except KeyError:
-                    sequences[m5nr] = {'sequence': line, 'length': seq_len}
+                    sequences[m5nr] = {'sequence': line}
             line = in_h.readline()
     return sequences
 
 def main():
-    out_db = io_check(args.out)
-    out_mapper = io_check("function_idmapper.csv")
+    out_db = io_check(args.out, 'w')
+    out_mapper = io_check("function_idmapper.csv", 'w')
     seqs = parse_fasta(args.fasta)
-
-    ortholog_map = args.go
-    with open(ortholog_map) as in_h:
-        for line in in_h:
-            line = line.strip().split('\t')
-            m5nr = line[0]
-            orth_ident = line[1]
-            try:
-                seqs[m5nr]['gene ortholog'] = orth_ident
-            except KeyError:
-                continue
+    genes = {}
 
     func_map = args.func
     with open(func_map) as in_h:
@@ -66,43 +54,50 @@ def main():
         for line in in_h:
             line = line.strip().split('\t')
             m5nr = line[0]
-            gene_ident = line[1]
+            gene = line[1]
             taxon = line[3]
             matched = r.search(line[2])
             if not matched:
                 product = line[2]
-                ec_num = ''
+                ec = ''
             else:
-                ec_num = matched.group()
-                product = line[2].replace('({})'.format(ec_num), '').rstrip()
+                ec = matched.group()
+                product = line[2].replace('({})'.format(ec), '').rstrip()
+            seqs[m5nr]['gene'] = gene
+            seqs[m5nr]['ec'] = ec
+            seqs[m5nr]['product'] = product
+            seqs[m5nr]['taxon'] = taxon
+            genes[gene] = m5nr
+    
+    ortholog_map = args.go
+    with open(ortholog_map) as in_h:
+        for line in in_h:
+            line = line.strip().split('\t')
+            m5nr = line[0]
+            orth = line[1]
             try:
-                seqs[m5nr]['gene'] = gene_ident
-                seqs[m5nr]['ec'] = ec_num
-                seqs[m5nr]['product'] = product
-                seqs[m5nr]['taxon'] = taxon
+                seqs[m5nr]['gene ortholog'] = orth
             except KeyError:
-                print("mismatch: {}".format(ident))
+                print("no match for ortholog: {}".format(orth))
+                sys.exit(1)
 
     with open(out_db, 'w') as db_h:
         with open(out_mapper, 'w') as mapper_h:
-            for seq_id in seqs:
+            for gene in sorted(genes):
+                seq_id = genes[gene]
+                ec = seqs[seq_id]['ec']
+                product = seqs[seq_id]['product']
                 try:
-                    gene = seqs[seq_id]['gene']
-                    ec = seqs[seq_id]['ec']
-                    product = seqs[seq_id]['product']
+                    go = seqs[seq_id]['gene ortholog']
                 except KeyError:
                     continue
                 seq = seqs[seq_id]['sequence']
-                seq_len = seqs[seq_id]['length']
-                output = ">{} {}~~~{}~~~{}\n{}\n".format(gene, ec, seq_id, product, seq)
+                output = ">{} {}~~~{}~~~{}\n{}\n".format(go, ec, gene, product, seq)
                 db_h.write(output)
-                try:
-                    go = seqs[seq_id]['gene ortholog']
-                    taxon = seqs[seq_id]['taxon']
-                except KeyError:
-                    continue
-                seq_len = seqs[seq_id]['length']
-                output = "{}\t{}\t{}\t{}\n".format(gene, go, seq_len, taxon)
+
+                seq_len = 3 * len(seq)
+                taxon = seqs[seq_id]['taxon']
+                output = "{}\t{}\t{}\t{}\n".format(gene, go, str(seq_len), taxon)
                 mapper_h.write(output)
 
 if __name__ == "__main__":
