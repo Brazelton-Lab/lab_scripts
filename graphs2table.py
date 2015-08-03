@@ -30,7 +30,7 @@ def add_value(table, ident, name, magnitude, order):
         table[ident]['values'].append(str(magnitude))
     return table
 
-def parse_html(infile, table, order, max_level=None):
+def parse_html(infile, table, order, max_level):
     r = re.compile("(?<=name=\")(?P<name>.*?)(?=\").*?(?<=id=)(?P<id>\d+)(?=\")"
         ".*?(?<=<val>)(?P<value>\d+\.?\d+)(?=</val>).*?>")
     # parse through file until tax information encountered
@@ -40,17 +40,21 @@ def parse_html(infile, table, order, max_level=None):
                 line = line.strip()
                 break
     # remove non-informative parts of line
-    start_index = line.index('<node')
+    try:
+        start_index = line.index('<node')
+    except ValueError:
+        print_text("warning: bad format: {}".format(os.path.basename(infile)))
+        sys.exit(1)
     nodes = line[start_index:]
     # break into segments for recursion
     nodes = nodes.split('<node ')[1:]
 
     full_ident = [] # to keep track of parent tax ids
-    used = [] # to keep track of the taxa encountered in this iteration
+    used = [] # to keep track of the taxa encountered in this sample
     for node in nodes:
         match = r.search(node)
         if not match:
-            print("error: bad format: {}".format(os.path.basename(infile)))
+            print_text("error: bad format: {}".format(os.path.basename(infile)))
             sys.exit(1)
         taxon_name = match.group('name')
         ncbi_id = match.group('id')
@@ -90,19 +94,18 @@ def parse_html(infile, table, order, max_level=None):
     m = re.compile("((^unassigned )?(?P<taxon>.+))")
     for ident in sorted(used, reverse=True, key=sort_by_level):
         level = len(ident.split('.')) - 1
-        if max_level != None:
-            if level < max_level:
-               if ident.split('.') in [i.split('.')[:level + 1] for i in parents]:
-                   parents.append(ident)
-               else:
-                   value = table[ident]["values"][order - 1]
-                   name = "unassigned " + m.search(table[ident]['name']).group('taxon')
-                   parents.append(ident)
-                   ident = "{}.{}".format(ident, '.'.join(["0" for i in range(max_level - level)]))
-                   used.append(ident)
-                   table = add_value(table, ident, name, value, order)
-            elif level == max_level:
-                parents.append(ident)
+        if level < max_level:
+           if ident.split('.') in [i.split('.')[:level + 1] for i in parents]:
+               parents.append(ident)
+           else:
+               value = table[ident]["values"][order - 1]
+               name = "unassigned " + m.search(table[ident]['name']).group('taxon')
+               parents.append(ident)
+               ident = "{}.{}".format(ident, '.'.join(["0" for i in range(max_level - level)]))
+               used.append(ident)
+               table = add_value(table, ident, name, value, order)
+        elif level == max_level:
+            parents.append(ident)
 
     # add a zero value to unused taxon (because each sample has different 
     # taxonomic profile)
@@ -127,7 +130,6 @@ def sort_by_level(ident):
     return level
 
 def main():
-    user_level = args.level
     if args.out:
         outfile = args.out
         try:
@@ -150,6 +152,7 @@ def main():
 
     table = {}
     samples = []
+    tax_level = args.level
     iteration = 1
     for infile in args.infiles:
         file_name = os.path.basename(infile)
@@ -163,8 +166,8 @@ def main():
         sample = file_name.split('.')[0]
         # for writing header in order to get values to correspond with the
         # correct file
+        table = parse_html(infile, table, iteration, tax_level)
         samples.append(sample)
-        table = parse_html(infile, table, iteration, max_level=user_level)
         iteration += 1
 
     try:
@@ -177,7 +180,7 @@ def main():
     final_output(out_h, header)
     for ident in sorted(table):
         level = len(ident.split('.')) - 1
-        if level != user_level:
+        if level != tax_level:
             continue
         name = table[ident]['name']
         values = table[ident]['values']
@@ -191,29 +194,29 @@ def main():
         print("sample total(s): {}".format('\t'.join(table["1"]["values"])))
         print("level total(s): {}".format('\t'.join([str(i) for i in totals])))
 
-    try:
-        out_h.close()
-    except AttributeError:
-        sys.exit(0)
-    else:
-        sys.exit(0)
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="create table from kronagraphs")
+    parser = argparse.ArgumentParser(
+        description="Generate a summary table from phylosift html files. For "
+        "example, to covert all html files in the current working directory "
+        "into a table of phylosift matches at taxonomic level 6 run "
+        "\"graphs2table.py -l 6 *.html\"")
     parser.add_argument('infiles', metavar='HTML',
-                        nargs='+',
-                        help="krona html file")
-    parser.add_argument('-l', '--level', metavar='VALUE',
-                        type=int,
-                        help="create table for level \"LEVEL\" [default: all-in-one]")
+        nargs='+',
+        help="krona html file(s) from phylosift")
+    parser.add_argument('-l', '--level', metavar='DEPTH',
+        default=2,
+        type=int,
+        help="desired taxonomic level [default: 2]")
     parser.add_argument('-o', '--out', metavar='FILE',
-                        type=str,
-                        help="write to outfile [default: write to STDOUT]")
+        type=str,
+        help="write to output to a file [default: write to STDOUT]")
     parser.add_argument('-f', '--force',
-                        action='store_true',
-                        help="force overwrite of previous existing output file")
+        action='store_true',
+        help="force overwrite of existing output file")
     parser.add_argument('-d', '--debug',
-                        action='store_true',
-                        help="debug program")
+        action='store_true',
+        help="output information on overall totals and totals for the "
+        "specified level for each sample provided")
     args = parser.parse_args()
     main()
+    sys.exit(0)
