@@ -17,6 +17,14 @@ import statistics
 import sys
 from math import fabs
 
+def gff3_to_dict(gff3_file, database):
+    gff3_dict = {}
+    with open(gff3_file, 'rU') as gff3_handle:
+        for entry in gff3_iter(gff3_handle):
+            db_id = extract_db_id(entry['attributes'], database)
+            gff3_dict[entry['seqid']][db_id] = entry
+    return gff3_dict
+
 def fasta():
     output('Reading ' + args.gff[0], args.verbosity, 1,\
            log_file = args.log_file)
