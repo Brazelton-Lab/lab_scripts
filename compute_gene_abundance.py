@@ -11,8 +11,6 @@ Usage:
 from __future__ import division
 
 import argparse
-from generate_fastr import *
-from metameta_utilities import *
 import re
 import statistics
 import sys
@@ -95,7 +93,6 @@ if __name__ == '__main__':
                                         formatter_class = argparse.\
                                         RawDescriptionHelpFormatter)
     parser.add_argument('gff',
-                        type = file_type,
                         default = None,
                         nargs = '?',
                         help = 'GFF3 file with annotations for the same'\
@@ -105,12 +102,10 @@ if __name__ == '__main__':
                         nargs = '?',
                         help = 'name of GFF3 file to write')
     parser.add_argument('--fasta', metavar='FASTA',
-                        type = file_type,
                         default = None,
                         nargs = '?',
                         help = 'IDBA generated FASTA file')
     parser.add_argument('--fastr', metavar='FASTR',
-                        type = file_type,
                         default = None,
                         nargs = '?',
                         help = 'FASTR file containing read depth data'\
@@ -147,17 +142,6 @@ if __name__ == '__main__':
         output(message, args.verbosity, 0,\
                log_file = args.log_file)
     else:
-        if args.verify:
-            output('Verifying ' + args.fastr[0], args.verbosity, 1,\
-                   log_file = args.log_file)
-            verify_file(args.fastr[0], log_file = args.log_file)
-            output(args.fastr[0] + ' is a valid', args.verbosity, 1,\
-                   log_file = args.log_file)
-            output('Verifying ' + args.gff[0], args.verbosity, 1,\
-                   log_file = args.log_file)
-            verify_file(args.gff[0], log_file = args.log_file)
-            output(args.gff[0] + ' is a valid', args.verbosity, 1,\
-                   log_file = args.log_file)
         if args.fastr != None:
             fastr()
         if args.fasta != None:
