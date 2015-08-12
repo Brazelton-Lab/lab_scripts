@@ -18,7 +18,7 @@ import textwrap
 
 def split_args(arguments):
     levels = []
-    arguments = [i.rstrip() for i in arguments.split(',')]
+    arguments = [i.lstrip() for i in arguments.split(',')]
     for argument in arguments:
         try:
             rank = int(argument)
@@ -136,9 +136,9 @@ if __name__ == "__main__":
     parser.add_argument('-l', '--tax-level', metavar='RANK', dest='rank',
         type=split_args,
         default="5,6",
-        help="depth at which outfiles should be produced. \
-            1: domain, 2: phylum, 3: class, 4: order, 5: family, \
-            6: genus, 7: species, 8: strain [default: 5,6]")
+        help="comma-separated list of ranks for which outfiles should be "
+            "produced. 1: domain, 2: phylum, 3: class, 4: order, 5: family, "
+            "6: genus, 7: species, 8: strain [default: 5,6]")
     args = parser.parse_args()
     script = os.path.basename(__file__)
     main()
