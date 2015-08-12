@@ -1,6 +1,67 @@
 #!/usr/bin/env python
 
-"""
+"""gff3_searcher v. 1.0.0.0 - a program to filter annotations
+
+Usage:
+
+    gff3_searcher.py [--fields] [--gff3_files] [--ids] [--output_directory]
+                     [--output_format]
+
+Synopsis:
+
+    gff3_searcher searches the various fields of a GFF3 file for a match
+    to any of the user-specified IDs. A FASTA or GFF3 file is then written
+    where each entry matched at least one ID.
+
+Required Arguments:
+
+    --ids           One or more IDs to search for in the GFF3 files.
+                    The IDs can be gene names, keywords, gene identifiers,
+                    etc.
+
+Optional Arguments:
+
+    --fields        Specifies which fields of the GFF3 file to search
+                    for IDs in. By default, all fields are searched.
+                    More information on the different fields is found
+                    below.
+    --gff3_files    GFF3 files to search. By default, a config file is read
+                    for a default directory and all GFF3 files in that
+                    directory are searched.
+    --ouput_dir     Directory to write output files to. Default to the
+                    current directory. Output file names are as follows:
+                    [gff3_file].hits.[fasta/gff]
+    --output_format The format to write the output files in. By default,
+                    output is in FASTA format. Currently, the only other
+                    option is GFF3 format.
+
+Fields:
+
+        PROKKA 1.12-beta (and likely other versions of PROKKA) have a very
+    specific format for the last column of a GFF3 file (the attributes column).
+    Below is an explanation of the fields that gff3_searcher can specifically
+    search (as opposed to searching the whole attributes column):
+
+    id:           The unique PROKKA given ID to an annotation. This field is
+                  only useful to search when one wants to specifically pull
+                  out the information on a PROKKA entry of known ID. 
+    gene:         The short gene name, i.e. rnfC, minD_1, etc. This field is
+                  most useful when one knows the short name of the gene they
+                  are searchign for.
+    inference:    The protein in the database that PROKKA was run on that the
+                  annotation was similar to, aka if PROKAK was run on the
+                  UniProt database (default) then this field will contain
+                  the UniProt ID that the annotation had a high similarity to.
+                  This field is most useful when one knows the database ID of
+                  the gene of interest.
+    locus_tag:    Exact same as id above.
+    product:      The 'common name' of the annotation based on the inference.
+                  I.e. Heptaprenyl diphosphate synthase component I,
+                  Rod shape-determining protein MreB, etc. This field is the
+                  one field that is quite general and acts best like a
+                  'search engine'. For example, if one of the IDs to search
+                  with is 'meth', all (or more safely stated, nearly all)
+                  gene related to methane use will be extracted.
 """
 
 from __future__ import print_function
@@ -12,6 +73,9 @@ import glob
 import os
 import re
 import sys
+
+__author__ = 'Alex Hyer'
+__version__ = '1.0.0.0'
 
 
 def compile_ids(ids):
@@ -90,7 +154,7 @@ if __name__ == '__main__':
                         nargs='*',
                         required=True,
                         help='IDs to search GFF3 files for')
-    parser.add_argument('--output_directory', metavar='Output Directory',
+    parser.add_argument('--output_dir', metavar='Output Directory',
                         default=None,
                         help='Directory to write output to')
     parser.add_argument('--output_format', metavar='Output Format',
