@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.0.0.0 - a program to filter annotations
+"""gff3_searcher v. 1.0.1.0 - a program to filter annotations
 
 Usage:
 
-    gff3_searcher.py [--fields] [--gff3_files] [--ids] [--output_directory]
+    gff3_searcher.py [--fields] [--gff3_files] [--ids] [--output_dir]
                      [--output_format]
 
 Synopsis:
@@ -75,7 +75,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.0.0'
+__version__ = '1.0.1.0'
 
 
 def compile_ids(ids):
@@ -194,17 +194,17 @@ if __name__ == '__main__':
                             hit_entry = '>{0}\n{1}\n'.format(hit_name,
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
-                            if args.output_directory is not None:
+                            if args.output_dir is not None:
                                 output = output.split(os.sep)[-1]
-                                output = args.output_directory + output
+                                output = args.output_dir + output
                             with open(output, 'a') as out_handle:
                                 out_handle.write(hit_entry)
 
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
-                if args.output_directory is not None:
+                if args.output_dir is not None:
                     output = output.split(os.sep)[-1]
-                    output = args.output_directory + output
+                    output = args.output_dir + output
                 with open(output, 'w') as out_handle:
                     out_handle.write('##gff-version 3\n')
                     for hit in hits:
