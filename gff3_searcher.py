@@ -29,8 +29,8 @@ Optional Arguments:
                     for a default directory and all GFF3 files in that
                     directory are searched.
     --ouput_dir     Directory to write output files to. Default to the
-                    current directory. Output file names are as follows:
-                    [gff3_file].hits.[fasta/gff]
+                    directory with the GFF3 file. Output file names are as
+                    follows: [gff3_file].hits.[fasta/gff]
     --output_format The format to write the output files in. By default,
                     output is in FASTA format. Currently, the only other
                     option is GFF3 format.
@@ -45,15 +45,11 @@ Fields:
     id:           The unique PROKKA given ID to an annotation. This field is
                   only useful to search when one wants to specifically pull
                   out the information on a PROKKA entry of known ID. 
-    gene:         The short gene name, i.e. rnfC, minD_1, etc. This field is
-                  most useful when one knows the short name of the gene they
-                  are searchign for.
+    gene:         The short gene name, i.e. rnfC, minD_1, etc.
     inference:    The protein in the database that PROKKA was run on that the
                   annotation was similar to, aka if PROKAK was run on the
                   UniProt database (default) then this field will contain
                   the UniProt ID that the annotation had a high similarity to.
-                  This field is most useful when one knows the database ID of
-                  the gene of interest.
     locus_tag:    Exact same as id above.
     product:      The 'common name' of the annotation based on the inference.
                   I.e. Heptaprenyl diphosphate synthase component I,
@@ -62,6 +58,7 @@ Fields:
                   'search engine'. For example, if one of the IDs to search
                   with is 'meth', all (or more safely stated, nearly all)
                   gene related to methane use will be extracted.
+    ec_number:    The Enzyme Commision Number, if one is available.
 """
 
 from __future__ import print_function
@@ -187,10 +184,13 @@ if __name__ == '__main__':
                             start = int(hit['start']) - 1
                             end = int(hit['end']) - 1
                             hit_sequence = entry['sequence'][start:end]
-                            hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
-                                       'annotation_{4}'.format(entry['name'],
-                                       hit['start'], hit['end'], hit['strand'],
-                                       hit['product'])
+                            try:
+                                hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
+                                           'annotation_{4}'.format(entry['name'],
+                                           hit['start'], hit['end'], hit['strand'],
+                                           hit['product'])
+                            except KeyError:
+                                continue
                             hit_entry = '>{0}\n{1}\n'.format(hit_name,
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
