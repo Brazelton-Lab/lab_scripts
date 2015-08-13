@@ -21,6 +21,10 @@ Required Arguments:
 
 Optional Arguments:
 
+    --coverage      Read a table containing coverage data on the contigs
+                    annotated in the GFF3 file. If the output format is FASTA,
+                    then specifying this option will add the coverage data
+                    to the FASTA headers.
     --fields        Specifies which fields of the GFF3 file to search
                     for IDs in. By default, all fields are searched.
                     More information on the different fields is found
