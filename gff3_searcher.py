@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.0.1.0 - a program to filter annotations
+"""gff3_searcher v. 1.1.0.0 - a program to filter annotations
 
 Usage:
 
@@ -28,8 +28,8 @@ Optional Arguments:
     --gff3_files    GFF3 files to search. By default, a config file is read
                     for a default directory and all GFF3 files in that
                     directory are searched.
-    --ouput_dir     Directory to write output files to. Default to the
-                    directory with the GFF3 file. Output file names are as
+    --ouput_dir     Directory to write output files to. Default is the
+                    current working directory. Output file names are as
                     follows: [gff3_file].hits.[fasta/gff]
     --output_format The format to write the output files in. By default,
                     output is in FASTA format. Currently, the only other
@@ -72,7 +72,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.1.0'
+__version__ = '1.1.0.0'
 
 
 def compile_ids(ids):
@@ -105,7 +105,6 @@ def gff3_line_by_id_retriever(gff3_handle, ids, fields='all'):
                  break
              
 
-
 def read_config():
     try:
         with open('/usr/local/etc/gff3_searcher', 'rU') as config_handle:
@@ -125,10 +124,33 @@ def read_config():
             print('or use the --gff3_files option to manually specify files.')
 
 
+def read_conversion_table(conversion_table_file, database):
+    temp_dict = {}
+    with open(conversion_table_file, 'rU') as table_handle:
+        first_line = table_handle.readline()
+        databases = first_line.strip().split('\t')
+        if database in databases:
+            column_number = databases.index(database)
+        else:
+            print('{0} not in {1}. Avaialble databases are:'.format(
+                  database, conversion_table_file))
+            print('\n'.join(databases[1:]))
+        for line in table_handle:
+            columns = line.strip().split('\t')
+            contig_id = columns[0]
+            coverage = columns[column_number]
+            if coverage != 'None':
+                temp_dict[contig_id] = coverage
+    return temp_dict
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
+    parser.add_argument('-c', '--coverage',
+                        default=None,
+                        help='table containing coverage for contigs in GFF3')
     parser.add_argument('-f', '--fields',
                         nargs='*',
                         choices=[
@@ -171,6 +193,9 @@ if __name__ == '__main__':
     compiled_ids = compile_ids(args.ids)
 
     for file in args.gff3_files:
+        if args.coverage is not None:
+            database = 'Subbio' + file.split(os.sep)[-1].rsplit('.', 1)[0]
+            coverages = read_conversion_table(args.coverage, database)
         with open(file, 'rU') as gff3_handle:
             hits = []
             for line in gff3_line_by_id_retriever(gff3_handle, compiled_ids, \
@@ -191,12 +216,18 @@ if __name__ == '__main__':
                                            hit['product'])
                             except KeyError:
                                 continue
+                            if args.coverage is not None:
+                                rpk = coverages[hit['seqid']]
+                                hit_name = hit_name + ' coverage_' + rpk
                             hit_entry = '>{0}\n{1}\n'.format(hit_name,
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
                             if args.output_dir is not None:
                                 output = output.split(os.sep)[-1]
                                 output = args.output_dir + output
+                            else:
+                                output = output.split(os.sep)[-1]
+                                output = os.getcwd() + os.sep + output
                             with open(output, 'a') as out_handle:
                                 out_handle.write(hit_entry)
 
@@ -205,6 +236,9 @@ if __name__ == '__main__':
                 if args.output_dir is not None:
                     output = output.split(os.sep)[-1]
                     output = args.output_dir + output
+                else:
+                    output = output.split(os.sep)[-1]
+                    output = os.getcwd() + os.sep + output
                 with open(output, 'w') as out_handle:
                     out_handle.write('##gff-version 3\n')
                     for hit in hits:
