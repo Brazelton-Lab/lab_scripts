@@ -61,7 +61,7 @@ Fields:
                   one field that is quite general and acts best like a
                   'search engine'. For example, if one of the IDs to search
                   with is 'meth', all (or more safely stated, nearly all)
-                  gene related to methane use will be extracted.
+                  genes related to methane use will be extracted.
     ec_number:    The Enzyme Commision Number, if one is available.
 """
 
