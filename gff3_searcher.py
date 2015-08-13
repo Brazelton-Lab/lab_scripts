@@ -51,7 +51,7 @@ Fields:
                   out the information on a PROKKA entry of known ID. 
     gene:         The short gene name, i.e. rnfC, minD_1, etc.
     inference:    The protein in the database that PROKKA was run on that the
-                  annotation was similar to, aka if PROKAK was run on the
+                  annotation was similar to, aka if PROKKA was run on the
                   UniProt database (default) then this field will contain
                   the UniProt ID that the annotation had a high similarity to.
     locus_tag:    Exact same as id above.
