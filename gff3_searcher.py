@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.1.0.0 - a program to filter annotations
+"""gff3_searcher v. 1.2.0.0 - a program to filter annotations
 
 Usage:
 
-    gff3_searcher.py [--fields] [--gff3_files] [--ids] [--output_dir]
-                     [--output_format]
+    gff3_searcher.py [--coverage] [--exact] [--fields] [--gff3_files]
+                     [--ids] [--output_dir] [--output_format]
 
 Synopsis:
 
@@ -17,14 +17,20 @@ Required Arguments:
 
     --ids           One or more IDs to search for in the GFF3 files.
                     The IDs can be gene names, keywords, gene identifiers,
-                    etc.
+                    etc. The IDs are not case-sensitive. Each ID must be
+                    seperated by a space. If a multi-word ID is desired,
+                    wrap it in quotations, i.e. "ATP synthase" searches for
+                    IDs cpntaing the whole term "ATP synthase". 
 
 Optional Arguments:
 
     --coverage      Read a table containing coverage data on the contigs
                     annotated in the GFF3 file. If the output format is FASTA,
                     then specifying this option will add the coverage data
-                    to the FASTA headers.
+                    to the FASTA headers or GFF3 attributes column.
+    --exact         If this flag is specified, --flags must also be specified.
+                    If present, hits will only be written of a field perfectly
+                    matches an ID.
     --fields        Specifies which fields of the GFF3 file to search
                     for IDs in. By default, all fields are searched.
                     More information on the different fields is found
@@ -36,8 +42,8 @@ Optional Arguments:
                     current working directory. Output file names are as
                     follows: [gff3_file].hits.[fasta/gff]
     --output_format The format to write the output files in. By default,
-                    output is in FASTA format. Currently, the only other
-                    option is GFF3 format.
+                    output is in GFF3 format. Currently, the only other
+                    option is FASTA format.
 
 Fields:
 
@@ -76,13 +82,13 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.1.0.0'
+__version__ = '1.2.0.0'
 
 
 def compile_ids(ids):
     compiled_ids = []
     for id in ids:
-        compiled_ids.append(re.compile(id))
+        compiled_ids.append(re.compile(id, flags=re.IGNORECASE))
     return compiled_ids
 
 
@@ -132,7 +138,8 @@ def read_conversion_table(conversion_table_file, database):
     temp_dict = {}
     with open(conversion_table_file, 'rU') as table_handle:
         first_line = table_handle.readline()
-        databases = first_line.strip().split('\t')
+        databases = first_line.lower().strip().split('\t')
+        database = database.lower()
         if database in databases:
             column_number = databases.index(database)
         else:
@@ -155,6 +162,9 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--coverage',
                         default=None,
                         help='table containing coverage for contigs in GFF3')
+    parser.add_argument('--exact',
+                        action='store_true',
+                        help='only write hits that matche an entire ID')
     parser.add_argument('-f', '--fields',
                         nargs='*',
                         choices=[
@@ -185,15 +195,20 @@ if __name__ == '__main__':
                             'fasta',
                             'gff3'
                         ],
-                        default='fasta',
+                        default='gff3',
                         help='Output Format to write the Output File in ' \
-                             '[Default: fasta]')
+                             '[Default: gff3]')
     args=parser.parse_args()
 
     if not args.gff3_files:
         default_directory = read_config()
         args.gff3_files = glob.glob(default_directory + '*.gff')
 
+    if args.exact and args.fields != 'all':
+        args.ids = ['^' + id + '$' for id in args.ids]
+    elif args.exact and args.fields == 'all':
+        print('Must specify --fields with --exact')
+        sys.exit(1)
     compiled_ids = compile_ids(args.ids)
 
     for file in args.gff3_files:
@@ -251,6 +266,10 @@ if __name__ == '__main__':
                                     hit['type'], hit['start'], hit['end'],
                                     hit['score'], hit['strand'], hit['phase'],
                                     hit['attributes'])
+                        if args.coverage is not None:
+                            rpk = coverages[hit['seqid']]
+                            hit_entry = hit_entry.replace('\n', \
+                                        ';coverage:{0}\n'.format(rpk))
                         out_handle.write(hit_entry)
 
     sys.exit(0)
