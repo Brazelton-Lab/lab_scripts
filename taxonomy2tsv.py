@@ -31,7 +31,8 @@ def main():
             for line in in_h:
                 line = line.strip().split('\t')
                 seq_id = line[0]
-                hierarchy = line[1].rstrip(';').split(';')
+                hierarchy = line[1].rstrip(';').replace('#', '')
+                hierarchy = hierarchy.split(';')
                 good_names = []
                 for index in range(len(hierarchy)):
                     matched = r.match(hierarchy[index])
