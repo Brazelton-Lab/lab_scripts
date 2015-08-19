@@ -29,8 +29,8 @@ HelpMsg() if ($help);
 
 die "Sample name required. See $0 --help for usage." unless ($smpl);
 
-my $outfile = "$smpl.contigs.fasta";
-my $logfile = "$smpl.contigs.log";
+my $outfile = "$smpl.partitioned.contigs.fasta";
+my $logfile = "$smpl.partitioned.contigs.log";
 my $contig = "contig-$k.fa";
 my @files = <$path/*.idba.ud/$contig>;
 
