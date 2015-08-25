@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.2.0.0 - a program to filter annotations
+"""gff3_searcher v. 1.3.0.0 - a program to filter annotations
 
 Usage:
 
@@ -82,7 +82,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.2.0.0'
+__version__ = '1.3.0.0'
 
 
 def compile_ids(ids):
@@ -213,7 +213,7 @@ if __name__ == '__main__':
 
     for file in args.gff3_files:
         if args.coverage is not None:
-            database = 'Subbio' + file.split(os.sep)[-1].rsplit('.', 1)[0]
+            database = file.split(os.sep)[-1].rsplit('.', 1)[0]
             coverages = read_conversion_table(args.coverage, database)
         with open(file, 'rU') as gff3_handle:
             hits = []
