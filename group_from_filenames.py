@@ -20,7 +20,7 @@ def io_check(infile):
 
 def main():
     for infile in sorted(args.infiles):
-        file_name = infile.split(args.separator)
+        file_name = os.path.basename(infile).split(args.separator)
         parts = len(file_name)
         if args.position > parts + 1:
             print(textwrap.fill("Error: invalid position \"{}\". There are "
