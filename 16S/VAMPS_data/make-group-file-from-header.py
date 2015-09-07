@@ -28,7 +28,7 @@ def main():
         default='|',
         help="character that separates the sample name from the rest of the "
         "header [default: | ]")
-    parser.add_argument('-p', '--position', metavar='',
+    parser.add_argument('-p', '--position', metavar='INT',
         type=int,
         default=2,
         help="position of the sample name in the header when separated by "
