@@ -5,7 +5,6 @@
 from __future__ import print_function
 import sys
 import os
-import re
 import argparse
 
 def io_check(infile, mode='rU'):
@@ -18,30 +17,43 @@ def io_check(infile, mode='rU'):
         fh.close()
     return infile
 
-if __name__ == "__main__":
+def main():
     parser = argparse.ArgumentParser(description="creates a mothur-formatted "
         "group file from a fasta file where the sample names are in the "
         "sequence ids")
     parser.add_argument('fasta',
                         type=io_check,
                         help="input fasta file")
+    parser.add_argument('-s', '--separator', metavar='CHAR',
+        default='|',
+        help="character that separates the sample name from the rest of the "
+        "header [default: | ]")
+    parser.add_argument('-p', '--position', metavar='',
+        type=int,
+        default=2,
+        help="position of the sample name in the header when separated by "
+        "the character separator (starting from 0) [default: 2]")
+
     args = parser.parse_args()
     infile = args.fasta
     outfile = os.path.basename(infile) + '.group'
+    position = args.position
+    separator = args.separator
 
-    r = re.compile("(?<=[Ss][Ee][Rr][Pp]_)(?P<name>SE_\w+)(?=\|)")
     with open(infile, 'rU') as in_h:
         with open(outfile, 'w') as out_h:
             for line in in_h:
                 if line.startswith('>'):
                     header = line.strip('>\n')
                     header = header.split()[0]
-                    matched = r.search(header)
-                    if not matched:
-                        print("error: sequence ids are not formatted in such a way that this program can parse")
+                    group = header.split(separator)
+                    size = len(group)
+                    if size <= position:
+                        print("error: the position chosen is outside of range")
                         sys.exit(1)
-                    sample = matched.group('name')
-                    out_h.write("{}\t{}\n".format(header, sample))
-                else:
-                    continue 
+                    group = group[position]
+                    out_h.write("{}\t{}\n".format(header, group))
+
+if __name__ == "__main__":
+    main()
     sys.exit(0)
