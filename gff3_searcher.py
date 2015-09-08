@@ -82,7 +82,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.3.0.0'
+__version__ = '1.4.0.0'
 
 
 def compile_ids(ids):
@@ -198,6 +198,10 @@ if __name__ == '__main__':
                         default='gff3',
                         help='Output Format to write the Output File in ' \
                              '[Default: gff3]')
+    parser.add_argument('--whole_contig', '-w', metavar='Whole Contig',
+                        action='store_true',
+                        help='retrieve entire contig rather then just the ' \
+                             'annotated sequence')
     args=parser.parse_args()
 
     if not args.gff3_files:
@@ -228,6 +232,8 @@ if __name__ == '__main__':
                             start = int(hit['start']) - 1
                             end = int(hit['end']) - 1
                             hit_sequence = entry['sequence'][start:end]
+                            if args.whole_contig:
+                                hit_sequence = entry['sequence']
                             try:
                                 hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
                                            'annotation_{4}'.format(entry['name'],
