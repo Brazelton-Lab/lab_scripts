@@ -5,7 +5,7 @@
 Usage:
 
     gff3_searcher.py [--coverage] [--exact] [--fields] [--gff3_files]
-                     [--ids] [--output_dir] [--output_format]
+                     [--ids] [--output_dir] [--output_format] [--whole-contig]
 
 Synopsis:
 
@@ -44,6 +44,8 @@ Optional Arguments:
     --output_format The format to write the output files in. By default,
                     output is in GFF3 format. Currently, the only other
                     option is FASTA format.
+    --whole_contig  When FASTA output is specified, this argument retrieves the
+                    whole contig rather then just the annotated sequence
 
 Fields:
 
@@ -82,7 +84,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.0.0'
+__version__ = '1.4.1.0'
 
 
 def compile_ids(ids):
@@ -198,7 +200,7 @@ if __name__ == '__main__':
                         default='gff3',
                         help='Output Format to write the Output File in ' \
                              '[Default: gff3]')
-    parser.add_argument('--whole_contig', '-w', metavar='Whole Contig',
+    parser.add_argument('--whole_contig', '-w',
                         action='store_true',
                         help='retrieve entire contig rather then just the ' \
                              'annotated sequence')
