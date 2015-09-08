@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.2.0 - a program to filter annotations
+"""gff3_searcher v. 1.4.3.0 - a program to filter annotations
 
 Usage:
 
@@ -86,7 +86,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.2.0'
+__version__ = '1.4.3.0'
 
 
 def compile_ids(ids):
@@ -254,8 +254,10 @@ if __name__ == '__main__':
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
                             if args.output_dir is not None:
+                                if not os.path.isdir(os.getcwd() + os.sep + args.output_dir):
+                                    os.mkdir(os.getcwd() + os.sep + args.output_dir)
                                 output = output.split(os.sep)[-1]
-                                output = args.output_dir + output
+                                output = args.output_dir + os.sep + output
                             else:
                                 output = output.split(os.sep)[-1]
                                 output = os.getcwd() + os.sep + output
@@ -267,6 +269,8 @@ if __name__ == '__main__':
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
                 if args.output_dir is not None:
+                    if not os.path.isdir(os.getcwd() + os.sep + args.output_dir):
+                        os.mkdir(os.getcwd() + os.sep + args.output_dir)
                     output = output.split(os.sep)[-1]
                     output = args.output_dir + output
                 else:
