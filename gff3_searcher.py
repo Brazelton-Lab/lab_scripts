@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.3.0.0 - a program to filter annotations
+"""gff3_searcher v. 1.4.2.0 - a program to filter annotations
 
 Usage:
 
@@ -45,7 +45,9 @@ Optional Arguments:
                     output is in GFF3 format. Currently, the only other
                     option is FASTA format.
     --whole_contig  When FASTA output is specified, this argument retrieves the
-                    whole contig rather then just the annotated sequence
+                    whole contig rather then just the annotated sequence. Since
+                    multiple proteins ca occur per contig, the annotation data
+                    is removed from the FASTA header.
 
 Fields:
 
@@ -84,7 +86,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.1.0'
+__version__ = '1.4.2.0'
 
 
 def compile_ids(ids):
@@ -243,6 +245,8 @@ if __name__ == '__main__':
                                            hit['product'])
                             except KeyError:
                                 continue
+                            if args.whole_contig:
+                                hit_name = '{0}'.format(entry['name'])
                             if args.coverage is not None:
                                 rpk = coverages[hit['seqid']]
                                 hit_name = hit_name + ' coverage_' + rpk
@@ -257,6 +261,8 @@ if __name__ == '__main__':
                                 output = os.getcwd() + os.sep + output
                             with open(output, 'a') as out_handle:
                                 out_handle.write(hit_entry)
+                            if args.whole_contig:
+                                break
 
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
