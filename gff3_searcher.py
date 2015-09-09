@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.3.0 - a program to filter annotations
+"""gff3_searcher v. 1.4.4.0 - a program to filter annotations
 
 Usage:
 
@@ -86,7 +86,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.3.0'
+__version__ = '1.4.4.0'
 
 
 def compile_ids(ids):
@@ -116,7 +116,6 @@ def gff3_line_by_id_retriever(gff3_handle, ids, fields='all'):
              for id in ids:
                  if len(re.findall(id, entry['attributes'])) != 0:
                      yield entry
-                 break
              
 
 def read_config():
