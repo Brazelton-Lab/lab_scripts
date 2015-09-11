@@ -62,7 +62,8 @@ if __name__ == '__main__':
                         help='Output file to write, ".cls" will be added')
     parser.add_argument('-c', '--coverage',
                         type=int,
-                        default=50,t file to write, ".cls" will be added')
+                        default=50,
+                        help='out file to write, ".cls" will be added')
     parser.add_argument('-c', '--coverage',
                         type=int,
                         default=50,
