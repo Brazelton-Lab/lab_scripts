@@ -63,10 +63,6 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--coverage',
                         type=int,
                         default=50,
-                        help='out file to write, ".cls" will be added')
-    parser.add_argument('-c', '--coverage',
-                        type=int,
-                        default=50,
                         help='minimum number of non-zero base coverages')
     args = parser.parse_args()
 
