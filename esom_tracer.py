@@ -6,7 +6,7 @@ from __future__ import print_function
 
 Usage:
 
-    esom_tracer.py <BAM file> <NAMES file> <OUT file>
+    esom_tracer.py [--coverage] <BAM file> <NAMES file> <OUT file>
 
 Synopsis:
 
@@ -56,19 +56,43 @@ if __name__ == '__main__':
                              'only for reads that aligned to a reference')
     parser.add_argument('names_file', metavar='NAMES file',
                         help='NAMES file for "upstream" ESOM map')
+    parser.add_argument('fasta_file', metavar='FASTA file',
+                        help='FASTA file corresponding ot NAMES file')
     parser.add_argument('out_file', metavar='OUT file',
                         help='Output file to write, ".cls" will be added')
+    parser.add_argument('-c', '--coverage',
+                        type=int,
+                        default=50,t file to write, ".cls" will be added')
+    parser.add_argument('-c', '--coverage',
+                        type=int,
+                        default=50,
+                        help='minimum number of non-zero base coverages')
     args = parser.parse_args()
 
     bamFile = FileChecker(args.bam_file)
     namesFile = FileChecker(args.names_file)
+    fastaFile = FileChecker(args.fasta_file)
     outFile = FileChecker(args.out_file + '.cls')
     bamFile.read_check()
     namesFile.read_check()
+    fastaFile.read_check()
     outFile.write_check()
 
-    bamObject = pysam.AlignmentFile(bamFile.name(), 'rb')
-    references = {ref: None for ref in bamObject.references}
+    references = {}
+    fasta_handle = pysam.FastaFile(fastaFile.name())
+    with pysam.AlignmentFile(bamFile.name(), 'rb') as bam_handle:
+        for reference in bam_handle.references:
+            read_count = bam_handle.count(reference=reference)
+            if read_count != 0:
+                bases = 0
+                for base in bam_handle.pileup(reference=reference):
+                    bases += 1
+                referenceLength = fasta_handle.get_reference_length(reference)
+                baseCoverage = float(bases) / float(referenceLength)
+                coverageThreshold = float(args.coverage) / 100.0
+                if baseCoverage >= coverageThreshold:
+                    references[reference.rsplit('_', 1)[0]] = ''
+    fasta_handle.close()
     namesDict = names_dict(namesFile.name())
     classes = defaultdict(int)
     for name in namesDict:
@@ -85,3 +109,4 @@ if __name__ == '__main__':
 
     sys.exit(0)
 
+                                                       
