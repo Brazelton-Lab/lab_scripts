@@ -32,7 +32,7 @@ import pysam
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.0.0'
+__version__ = '1.0.1.0'
 
 
 def names_dict(names_file):
@@ -88,7 +88,7 @@ if __name__ == '__main__':
                 baseCoverage = float(bases) / float(referenceLength)
                 coverageThreshold = float(args.coverage) / 100.0
                 if baseCoverage >= coverageThreshold:
-                    references[reference.rsplit('_', 1)[0]] = ''
+                    references[reference] = ''
     fasta_handle.close()
     namesDict = names_dict(namesFile.name())
     classes = defaultdict(int)
