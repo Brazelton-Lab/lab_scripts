@@ -34,7 +34,6 @@ def appendStringToHeaders(in_file, string_to_append):
         with open(out_file, 'a') as out_handle:
             for seq_record in SeqIO.parse(in_handle, fileType):
                 seq_record.description +=  string_to_append
-                seq_record.id = ''
                 SeqIO.write(seq_record, out_handle, fileType)
     qualityCheck(out_file, fileType, in_file, out_file)
 
@@ -51,7 +50,6 @@ def appendNumberToHeaders(in_file):
             counter = 0
             for seq_record in SeqIO.parse(in_handle, fileType):
                 seq_record.description +=  '-' + str(counter)
-                seq_record.id = ''
                 SeqIO.write(seq_record, out_handle, fileType)
                 counter += 1
     qualityCheck(out_file, fileType, in_file, out_file)
