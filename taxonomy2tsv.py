@@ -2,7 +2,7 @@
 """
 Modifies a mothur taxonomy file by transfering the last name that is not 
 "unclassified" or "uncultured" to "unclassified" or "uncultured" assignment,
-also removes numbers in parentheses
+also removes numbers in parentheses and single quotes
 """
 
 from __future__ import print_function
@@ -29,7 +29,7 @@ def main():
     with open(infile, 'rU') as in_h:
         with open(outfile, 'w') as out_h:
             for line in in_h:
-                line = line.strip().split('\t')
+                line = line.replace("'", "").strip().split('\t')
                 seq_id = line[0]
                 hierarchy = line[1].rstrip(';').replace('#', '')
                 hierarchy = hierarchy.split(';')
