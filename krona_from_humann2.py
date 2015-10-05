@@ -1,4 +1,4 @@
-#!/usrlocal/bin python
+#!/usr/local/env python
 
 """Rearranges HumanN2 abundance output into a TSV for use with ktImportText"""
 
