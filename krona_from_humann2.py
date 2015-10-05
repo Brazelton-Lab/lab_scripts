@@ -11,8 +11,9 @@ def main():
     with open(args.abundance_file, 'rU') as in_handle:
         with open(outFile, 'w') as out_handle:
             # Skip header
-            in_handle.readline()
             for line in in_handle:
+                if line.startswith('#'):
+                    pass
                 columns = line.strip().split('\t')
                 pathways = columns[0].split(';')
                 out_handle.write('{0}\t{1}\n'.format(columns[1],
