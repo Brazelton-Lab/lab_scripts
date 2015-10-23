@@ -32,7 +32,7 @@ def add_value(table, ident, name, magnitude, order):
 
 def parse_html(infile, table, order, max_level):
     r = re.compile("(?<=name=\")(?P<name>.*?)(?=\").*?(?<=id=)(?P<id>\d+)(?=\")"
-        ".*?(?<=<val>)(?P<value>\d+\.?\d+)(?=</val>).*?>")
+        ".*?(?<=<val>)(?P<value>\d+\.?\d*)(?=</val>).*?>")
     # parse through file until tax information encountered
     with open(infile, 'rU') as in_h:
         for line in in_h:
