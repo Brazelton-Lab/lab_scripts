@@ -34,14 +34,19 @@ def parse_html(infile, table, order, max_level):
     r = re.compile("(?<=name=\")(?P<name>.*?)(?=\").*?(?<=id=)(?P<id>\d+)(?=\")"
         ".*?(?<=<val>)(?P<value>\d+\.?\d*)(?=</val>).*?>")
     # parse through file until tax information encountered
+    data = ''
     with open(infile, 'rU') as in_h:
         for line in in_h:
-            if line.startswith('<br>'):
-                line = line.strip()
+            if '<krona ' in line:
+                in_h.seek(in_h.tell())
+                data += line.strip()
+                while '</krona>' not in line:
+                    line = in_h.readline()
+                    data += line.strip()
                 break
     # remove non-informative parts of line
     try:
-        start_index = line.index('<node')
+        start_index = data.index('<node')
     except ValueError:
         print_text("warning: bad format: {}".format(os.path.basename(infile)))
         sys.exit(1)
