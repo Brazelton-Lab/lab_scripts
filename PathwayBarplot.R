@@ -20,6 +20,9 @@ parser$add_argument('--base', '-b',
                     default=0,
                     type='integer',
                     help='base to take log of for all data, 0=don\'t take log [Default: 0]')
+parser$add_argument('--ratio', '-r',
+                    action='store_true',
+                    help='specifies to graph all abundances as ratios of total abundance')
 parser$add_argument('--file_type', '-t',
                     default='png',
                     choices=c(
@@ -35,10 +38,10 @@ args$level = args$level + 1
 # Create and populate list of table data frames from files
 tables = list()
 for (i in 1:length(args$files)) {
-  table = read.table(args$files[i])
+  table = read.table(args$files[i], header=FALSE, fill=TRUE)
   split.file.name = strsplit(args$files[i], '/')
   file.parts = split.file.name[[1]]
-  attr(table, 'file_name') = tail(file.parts, n=1)
+  attr(table, 'file_name') = substr(tail(file.parts, n=1), 1, 13)
   tables[[length(tables)+1]] = table
 }
 
@@ -68,16 +71,25 @@ for (i in 1:length(tables)) {
     }
     
     # Finally, add appropriate value
-    master.table[category.num, col.num] = 
-      master.table[category.num, col.num] + abundance
+    if (!category=='UNDEFINED') {
+      master.table[category.num, col.num] = 
+        master.table[category.num, col.num] + abundance
+    }
   }
 }
 
 # Remove seed from table
-master.table = master.table[-1, -1]
+master.table = master.table[-1, -1, drop=FALSE]
 
-# Take log of data if specified
-if (!args$base==0) {
+# Take ratio or log of data if specified
+if (args$ratio==TRUE) {
+  for (c in 1:ncol(master.table)) {
+    total = sum(master.table[,c])
+    for (r in 1:nrow(master.table)) {
+      master.table[r, c] = master.table[r, c] / total
+    }
+  }
+} else if (!args$base==0) {
   for (r in 1:nrow(master.table)) {
     for (c in 1:ncol(master.table)) {
       if (!master.table[r, c]==0) {
@@ -107,12 +119,12 @@ if (args$file_type=='bmp'){
 legend = rownames(master.table)
 colors = rainbow(length(legend))
 
-# Detect and define needed graph boundraries
-bottom.width = length(legend) + 3
-par(xpd=TRUE, mar=par()$mar+c(bottom.width, 0, 0, 0))
+layout(rbind(1,2), heights=c(3,1))
 
 # Format x-axis label
-if (!args$base==0) {
+if (args$ratio==TRUE){
+  x.label = 'Ratio of Total Abudnance per Sample'
+} else if (!args$base==0) {
   x.label = paste('Abundance (log', args$base, '(RPK))', sep='')
 } else {
   x.label = 'Abudnance (RPK)'
@@ -123,4 +135,8 @@ barplot(as.matrix(master.table), horiz=TRUE,
         col=colors,
         main='Metagenomic Pathway Profiles',
         xlab=x.label)
-legend(-0.25, legend, fill=colors)
+
+# Format legend
+par(mar=c(0,0,0,0))
+plot.new()
+legend('center', legend, fill=colors, ncol=2)
