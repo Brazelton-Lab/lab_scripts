@@ -23,7 +23,7 @@ parser$add_argument('-p', '--percent_merge',
                     default=2.5,
                     help=paste('Defines the upper threshold for low-abundance', 
                                'sequences. Any sequences below this threshold',
-                               'in all samples are merged into "Misc."'))
+                               'in all samples are merged into "Low-abundance"'))
 parser$add_argument('--level', '-l',
                     default='Class',
                     choices = c(
