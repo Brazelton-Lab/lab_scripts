@@ -132,6 +132,6 @@ plot_bar(merged.props.level, 'Sample', 'Abundance', args$level,
          coord_flip() + ylab('Percent Sequences') + theme(legend.position=legend.position) +
          guides(fill=guide_legend(keywidth=1, keyheight=1, ncol=4, label.position="right",
                 title.position="top", title.hjust=0.5)) + 
-         scale_fill_manual(values=colorRampPalette(cbPalette)(scale))
+         scale_fill_manual(values=colorRampPalette(cbPalette)(scale)))
 
 invisible(dev.off())
