@@ -127,7 +127,8 @@ if (args$no_legend==TRUE) {
 } else {
     legend.position = 'bottom'
 }
-plot_bar(merged.props.level, 'Sample', 'Abundance', args$level, title='Taxonomy by Sample') + 
+plot_bar(merged.props.level, 'Sample', 'Abundance', args$level,
+         title=paste('Taxonomy by Sample (', args$level, ')', sep='') + 
          coord_flip() + ylab('Percent Sequences') + theme(legend.position=legend.position) +
          guides(fill=guide_legend(keywidth=1, keyheight=1, ncol=4, label.position="right",
                 title.position="top", title.hjust=0.5)) + 
