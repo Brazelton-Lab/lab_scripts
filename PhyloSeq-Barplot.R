@@ -60,7 +60,7 @@ otus = otu_table(otus, taxa_are_rows=TRUE)
 otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the mothur count_table
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
-if (!args$sample_data) {
+if (!args$sample_data==FALSE) {
     sam = read.table(args$sample_data)
     rownames(sam) = sample_names(otus) 
     sam = sample_data(sam)
