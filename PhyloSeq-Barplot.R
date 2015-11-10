@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 # Author: Alex Hyer
-# Last Updated: 11-9-2015
+# Last Updated: 11-10-2015
 
 suppressPackageStartupMessages(library('argparse'))
 suppressPackageStartupMessages(library('ggplot2'))
@@ -15,14 +15,10 @@ parser$add_argument('--count_table', '-c',
 parser$add_argument('--tsv', '-t',
                     required=TRUE,
                     help='taxonomy2tsv tsv file')
-parser$add_argument('--sample_data', '-s',
-                    default=FALSE,
-                    help=paste('table with samples as rows and',
-                               'textual or numeric data as columns'))
 parser$add_argument('--output', '-o',
                     required=TRUE,
                     help='name of image file to output')
-parser$add_argument('-p', '--percent_merge',
+parser$add_argument('-m', '--merge_threshold',
                     type='double',
                     default=2.5,
                     help=paste('Defines the upper threshold for low-abundance', 
@@ -60,14 +56,7 @@ otus = otu_table(otus, taxa_are_rows=TRUE)
 otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the mothur count_table
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
-if (!args$sample_data==FALSE) {
-    sam = read.table(args$sample_data)
-    rownames(sam) = sample_names(otus) 
-    sam = sample_data(sam)
-    merged = phyloseq(otus, tax, sam)
-} else {
-    merged = phyloseq(otus, tax)
-}
+merged = phyloseq(otus, tax)
 colnames(tax_table(merged)) = c('Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species')
 merged.props = transform_sample_counts(merged, function(x) 100 * x / sum(x))
 merged.props.level = tax_glom(merged.props, args$level)
@@ -80,7 +69,7 @@ sample.otus.to.check = list()
 for (col in 1:length(colnames(otu_table(merged.props.level)))) {
     sample.otus.to.check[[length(sample.otus.to.check)+1]] = c('seed')
     for (row in 1:length(otu_table(merged.props.level)[, col])) {
-        if (otu_table(merged.props.level)[row, col] < args$percent_merge) {
+        if (otu_table(merged.props.level)[row, col] < args$merge_threshold) {
             sample.otus.to.check[[length(sample.otus.to.check)]] =  c(sample.otus.to.check[[length(sample.otus.to.check)]], rownames(otu_table(merged.props.level))[row])
         }
     }
@@ -108,7 +97,7 @@ for (i in 1:length(sample.otus.to.check)) {
 otus.to.merge = unique(otus.to.merge)
 merged.props.level = invisible(merge_taxa(merged.props.level, otus.to.merge, archetype=otus.to.merge[1]))
 index = which(rownames(tax_table(merged.props.level))==otus.to.merge[1])
-tax_table(merged.props.level)[index,] = rep(c(paste('Low-abundance (<', args$percent_merge, '%)', sep='')), 
+tax_table(merged.props.level)[index,] = rep(c(paste('Low-abundance (<', args$merge_threshold, '%)', sep='')), 
                                         times=length(tax_table(merged.props.level)[index,]))
 
 # Calculate image proprotions
