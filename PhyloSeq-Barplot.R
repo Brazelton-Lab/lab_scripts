@@ -15,6 +15,10 @@ parser$add_argument('--count_table', '-c',
 parser$add_argument('--tsv', '-t',
                     required=TRUE,
                     help='taxonomy2tsv tsv file')
+parser$add_argument('--sample_data', '-s',
+                    default=NA,
+                    help=paste('table with samples as rows and',
+                               'textual or numeric data as columns'))
 parser$add_argument('--output', '-o',
                     required=TRUE,
                     help='name of image file to output')
@@ -56,7 +60,14 @@ otus = otu_table(otus, taxa_are_rows=TRUE)
 otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the mothur count_table
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
-merged = phyloseq(otus, tax)
+if (!is.na(args$sample_data)) {
+    sam = read.table(args$sample_data)
+    rownames(sam) = sample_names(otus) 
+    sam = sample_data(sam)
+    merged = phyloseq(otus, tax, sam)
+} else {
+    merged = phyloseq(otus, tax)
+}
 colnames(tax_table(merged)) = c('Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species')
 merged.props = transform_sample_counts(merged, function(x) 100 * x / sum(x))
 merged.props.level = tax_glom(merged.props, args$level)
@@ -64,7 +75,7 @@ merged.props.level = tax_glom(merged.props, args$level)
 # Find universally low-abundance OTUs to merge in order to improve graph readability
 otus.to.merge = c()
 sample.otus.to.check = list()
-
+    
 # Find all low-abundance OTUs 
 for (col in 1:length(colnames(otu_table(merged.props.level)))) {
     sample.otus.to.check[[length(sample.otus.to.check)+1]] = c('seed')
