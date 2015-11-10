@@ -16,7 +16,7 @@ parser$add_argument('--tsv', '-t',
                     required=TRUE,
                     help='taxonomy2tsv tsv file')
 parser$add_argument('--sample_data', '-s',
-                    default=NA,
+                    default=FALSE,
                     help=paste('table with samples as rows and',
                                'textual or numeric data as columns'))
 parser$add_argument('--output', '-o',
@@ -60,7 +60,7 @@ otus = otu_table(otus, taxa_are_rows=TRUE)
 otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the mothur count_table
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
-if (!is.na(args$sample_data)) {
+if (!args$sample_data) {
     sam = read.table(args$sample_data)
     rownames(sam) = sample_names(otus) 
     sam = sample_data(sam)
