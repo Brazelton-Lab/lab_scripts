@@ -49,12 +49,12 @@ def main():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a group file for a "
-        "project by providing one or more fasta files. The file names should "
-        "contain the name of the sample.")
-    parser.add_argument('infiles', metavar='fasta_file',
+        "project by providing one or more fasta or fastq formatted files. The "
+        "file names should contain the name of the sample.")
+    parser.add_argument('infiles', metavar='seq_file',
         nargs='+',
         type=io_check,
-        help="newline-separated list of fasta files")
+        help="newline-separated list of fasta or fastq files")
     parser.add_argument('-s', '--separator', metavar='CHAR',
         default='.',
         help="character that separates the sample name from the rest of the "
