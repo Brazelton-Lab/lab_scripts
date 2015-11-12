@@ -6,6 +6,7 @@ import sys
 import os
 import argparse
 import textwrap
+import screed
 
 def io_check(infile):
     try:
@@ -17,6 +18,9 @@ def io_check(infile):
     else:
         fh.close()
     return infile
+
+def print_out(header, sample):
+    print("{}\t{}".format(header.replace(':', '_'), sample))
 
 def main():
     for infile in sorted(args.infiles):
@@ -30,13 +34,18 @@ def main():
             sys.exit(1)
         sample = file_name[args.position - 1]
         with open(infile, 'rU') as in_h:
-            for line in in_h:
-                if not line.startswith('>'):
-                    continue
-                identifier = line.strip('>\n').split()[0]
-                if ':' in identifier:
-                    identifier = identifier.replace(':', '_')
-                print("{}\t{}".format(identifier, sample))
+            line = in_h.readline()
+            in_h.seek(0)
+            if line.startswith('>'):
+                for seq in screed.fasta_iter(in_h):
+                    print_out(seq.name, sample)
+            elif line.startswith('@'):
+                for seq in screed.fastq_iter(in_h):
+                    print_out(seq.name, sample)
+            else:
+                print("Error: unrecognized file format")
+                sys.exit(1)
+    sys.exit(0)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Create a group file for a "
