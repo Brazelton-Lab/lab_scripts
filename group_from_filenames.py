@@ -37,10 +37,10 @@ def main():
             line = in_h.readline()
             in_h.seek(0)
             if line.startswith('>'):
-                for seq in screed.fasta_iter(in_h):
+                for seq in screed.fasta.fasta_iter(in_h):
                     print_out(seq.name, sample)
             elif line.startswith('@'):
-                for seq in screed.fastq_iter(in_h):
+                for seq in screed.fastq.fastq_iter(in_h):
                     print_out(seq.name, sample)
             else:
                 print("Error: unrecognized file format")
