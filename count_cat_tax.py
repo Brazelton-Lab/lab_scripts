@@ -9,25 +9,16 @@ import sys
 
 def main():
     otus = {}
-    header = [
-            'Representative_Sequence',
-            'Kingdom',
-            'Phylum',
-            'Class',
-            'Order',
-            'Family',
-            'Genus',
-            'Species'
-        ]
+    header = ['taxonomy']
     with open(args.tsv, 'rU') as tsv_handle:
         for line in tsv_handle:
             columns = line.strip().split('\t')         
-            otus[columns[0]] = columns[1:]
+            otus[columns[0]] = [';'.join(columns[1:])]
     with open(args.count_table, 'rU') as count_handle:
-        header = header + count_handle.readline().strip().split('\t')[1:]
+        header = count_handle.readline().strip().split('\t') + header
         for line in count_handle:
             columns = line.strip().split('\t')         
-            otus[columns[0]] = otus[columns[0]] + columns[1:]
+            otus[columns[0]] = columns[1:] + otus[columns[0]]
     with open(args.output, 'w') as out_handle:
         out_handle.write('\t'.join(header) + '\n')
         for key in otus.keys():
