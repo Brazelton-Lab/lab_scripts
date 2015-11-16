@@ -20,8 +20,12 @@ def main():
             columns = line.strip().split('\t')         
             otus[columns[0]] = columns[1:] + otus[columns[0]]
     with open(args.output, 'w') as out_handle:
-        out_handle.write('\t'.join(header) + '\n')
+        out_handle.write('Representative Sequences\t'.join(header) + '\n')
         for key in otus.keys():
+            if len(otus[key]) == 1:
+                print('WARNING: {0} may not be in {1}'.format(
+                      key, args.count_table))
+                otus[key] = ['NA' for i in range(header[1:])] + otus[key]
             output = key + '\t' + '\t'.join(otus[key]) + '\n'
             out_handle.write(output)
 
