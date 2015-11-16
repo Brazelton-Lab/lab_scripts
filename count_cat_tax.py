@@ -25,7 +25,7 @@ def main():
             if len(otus[key]) == 1:
                 print('WARNING: {0} may not be in {1}'.format(
                       key, args.count_table))
-                otus[key] = ['NA' for i in range(header[1:])] + otus[key]
+                otus[key] = ['NA' for i in range(len(header[1:]))] + otus[key]
             output = key + '\t' + '\t'.join(otus[key]) + '\n'
             out_handle.write(output)
 
