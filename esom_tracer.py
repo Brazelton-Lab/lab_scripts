@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
 """Creates a class file highlighting 
 
 Usage:
@@ -25,14 +23,17 @@ Required Arguments:
                  will color the appropriate points 
 """
 
+from __future__ import division
+from __future__ import print_function
 import argparse
 from bio_utils.file_tools.file_check import FileChecker
 from collections import defaultdict
+import colorsys
 import pysam
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.1.0'
+__version__ = '1.0.2.0'
 
 
 def names_dict(names_file):
@@ -42,42 +43,78 @@ def names_dict(names_file):
     with open(names_file, 'rU') as names_handle:
         names_handle.readline()
         for line in names_handle:
-            split_line = line.strip().split('\t')
-            temp_dict[split_line[2]][split_line[1]] = split_line[0]
+            columns = line.strip().split('\t')
+            temp_dict[columns[2]][columns[1]] = columns[0]
     return temp_dict
+
+
+def color_taxa(names_dict, references tax_file, tax_level):
+    """Taxes names dictionary from this script and colors by taxa"""
+
+    tax_level = tax_level.lower()
+    taxa = {}
+    classes = {}
+    taxa_number = 1
+    with open(tax_file, 'rU') as tax_handle:
+        tax_handle.readline()
+        for line in tax_handle:
+            line = line.strip()
+            columns = line.split('\t')
+            if columns[0] in names_dict and 
+                    columns[0] in references and
+                    columns[3] == tax_level:
+                if not columns[3] in taxa:
+                    taxa[columns[3]] = taxa_number
+                    taxa_number += 1
+                classes[columns[0]] = taxa[columns[3]]
+    rgb_tuples = rainbow_picker(taxa_number)
+    header_colors = []
+    for rgb_tuple in enumerate(rgb_tuples):
+        color = '%{0} {1}\t{2}\t{3}'.format(rgb_tuple[0],
+                                            rgb_tuple[1][0],
+                                            rgb_tuple[1][1],
+                                            rgb_tuple[1][2])
+        header_colors.append(color)
+    return classes, header_colors
+
+
+def rainbow_picker(scale):
+    """Generates rainbow RBG values"""
+
+    hsv_tuples = [(i / scale, 1.0, 1.0) for i in range(scale)]
+    rgb_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples)
+    return rgb_tuples
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
-    parser.add_argument('bam_file', metavar='BAM file',
+    parser.add_argument('--bam', metavar='BAM file',
                         help='BAM file containing alignment data '
                              'only for reads that aligned to a reference')
-    parser.add_argument('names_file', metavar='NAMES file',
+    parser.add_argument('--names', metavar='NAMES file',
                         help='NAMES file for "upstream" ESOM map')
-    parser.add_argument('fasta_file', metavar='FASTA file',
-                        help='FASTA file corresponding ot NAMES file')
+    parser.add_argument('--fasta', metavar='FASTA file',
+                        help='FASTA file corresponding to NAMES file')
+    parser.add_argument('--taxonomy',
+			help='Phylosift sequence_taxa_summary.1.txt file')
+    parser.add_argument('--tax_level', metavar='Taxonomy level',
+                        help='taxonomic rank to use for color filter')
     parser.add_argument('out_file', metavar='OUT file',
                         help='Output file to write, ".cls" will be added')
     parser.add_argument('-c', '--coverage',
                         type=int,
                         default=50,
-                        help='minimum number of non-zero base coverages')
+                        help='minimum number of non-zero bases to allow')
     args = parser.parse_args()
 
-    bamFile = FileChecker(args.bam_file)
-    namesFile = FileChecker(args.names_file)
-    fastaFile = FileChecker(args.fasta_file)
-    outFile = FileChecker(args.out_file + '.cls')
-    bamFile.read_check()
-    namesFile.read_check()
-    fastaFile.read_check()
-    outFile.write_check()
-
+    if args.taxonomy and not arge.tax_level:
+        print('--taxonomy and --tax_level must be specified together.')
+        sys.exit(1)
     references = {}
-    fasta_handle = pysam.FastaFile(fastaFile.name())
-    with pysam.AlignmentFile(bamFile.name(), 'rb') as bam_handle:
+    with pysam.AlignmentFile(args.bam, 'rb') as bam_handle \
+            pysam.FastaFile(args.fasta):
         for reference in bam_handle.references:
             read_count = bam_handle.count(reference=reference)
             if read_count != 0:
@@ -89,21 +126,22 @@ if __name__ == '__main__':
                 coverageThreshold = float(args.coverage) / 100.0
                 if baseCoverage >= coverageThreshold:
                     references[reference] = ''
-    fasta_handle.close()
-    namesDict = names_dict(namesFile.name())
-    classes = defaultdict(int)
-    for name in namesDict:
-        hit = True if name in references else False
-        for subName in namesDict[name]:
-            classes[int(namesDict[name][subName])] = 1 if hit is True else 0
-    with open(outFile.name(), 'w') as out_handle:
+    namesDict = names_dict(args.names)
+    if not args.taxonomy:
+        classes = defaultdict(int)
+        for name in namesDict:
+            hit = True if name in references else False
+            for subName in namesDict[name]:
+                classes[int(namesDict[name][subName])] = 1 if hit is True else 0
+        header_colors = ['%0 255\t255\t255', '%1 255\t0\t0']
+    else:
+        classes, header_colors = color_taxa(taxonomy, references, args.taxonomy, args.tax_level)
+    with open(args.out + '.cls', 'w') as out_handle:
         out_handle.write('% {0}\n'.format(len(references)))
-        out_handle.write('%0 255\t255\t255\n')
-        out_handle.write('%1 255\t0\t0\n')
+        out_handle.write('{0}\n'.foramt('\n'.join(header_colors)))
         for key in sorted(classes.keys()):
             value = classes[key]
             out_handle.write('{0}\t{1}\n'.format(str(key), str(value)))
 
     sys.exit(0)
 
-                                                       
