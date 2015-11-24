@@ -25,17 +25,9 @@ parser$add_argument('-m', '--merge_threshold',
                                'sequences. Any sequences below this threshold',
                                'in all samples are merged into "Low-abundance"'))
 parser$add_argument('--level', '-l',
-                    default='Class',
-                    choices = c(
-                        'Kingdom',
-                        'Phylum',
-                        'Class',
-                        'Order',
-                        'Family',
-                        'Genus',
-                        'Species'
-                    ),
-                    help='taxonomic level to analyze [Default: Class]')
+                    default=2,
+                    type=int,
+                    help='taxonomic level to analyze [Default: 2]')
 parser$add_argument('--file_type', '-f',
                     default='png',
                     choices=c(
@@ -57,7 +49,12 @@ otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the moth
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
 merged = phyloseq(otus, tax)
-colnames(tax_table(merged)) = c('Kingdom', 'Phylum', 'Class', 'Order', 'Family', 'Genus', 'Species')
+args$level = paste('V', args$level)
+if (!is.element(args$level, rank_names(merged))){
+    cat(args$level, 'is not a taxonomic level in', args$tsv)
+    cat('Available options are:', rank_names(merged))
+    stop()
+}
 merged.props = transform_sample_counts(merged, function(x) 100 * x / sum(x))
 merged.props.level = tax_glom(merged.props, args$level)
 
@@ -127,7 +124,7 @@ if (args$no_legend==TRUE) {
 } else {
     legend.position = 'bottom'
 }
-plot_bar(merged.props.level, 'Sample', 'Abundance', args$level,
+plot_bar(merged.props.level, 'Sample', 'Abundance (count)', args$level,
          title=paste('Taxonomy by Sample (', args$level, ')', sep='')) + 
          coord_flip() + ylab('Percent Sequences') + theme(legend.position=legend.position) +
          guides(fill=guide_legend(keywidth=1, keyheight=1, ncol=4, label.position="right",
