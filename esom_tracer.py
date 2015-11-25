@@ -109,7 +109,7 @@ if __name__ == '__main__':
                         help='minimum percentage of non-zero bases to allow')
     args = parser.parse_args()
 
-    if args.taxonomy and not arge.tax_level:
+    if args.taxonomy and not args.tax_level:
         print('--taxonomy and --tax_level must be specified together.')
         sys.exit(1)
     references = {}
