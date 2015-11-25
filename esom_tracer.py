@@ -142,7 +142,7 @@ if __name__ == '__main__':
                 taxa_handle.write('{0}\t{1}\n'.format(taxa[key], key))
     with open(args.out + '.cls', 'w') as out_handle:
         out_handle.write('% {0}\n'.format(len(references)))
-        out_handle.write('{0}\n'.foramt('\n'.join(header_colors)))
+        out_handle.write('{0}\n'.format('\n'.join(header_colors)))
         for key in sorted(classes.keys()):
             value = classes[key]
             out_handle.write('{0}\t{1}\n'.format(str(key), str(value)))
