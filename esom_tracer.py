@@ -60,8 +60,8 @@ def color_taxa(names_dict, references, tax_file, tax_level):
         for line in tax_handle:
             line = line.strip()
             columns = line.split('\t')
-            if columns[0] in names_dict and 
-                    columns[0] in references and
+            if columns[0] in names_dict and \
+                    columns[0] in references and \
                     columns[3] == tax_level:
                 if not columns[3] in taxa:
                     taxa[columns[3]] = taxa_number
@@ -113,8 +113,8 @@ if __name__ == '__main__':
         print('--taxonomy and --tax_level must be specified together.')
         sys.exit(1)
     references = {}
-    with pysam.AlignmentFile(args.bam, 'rb') as bam_handle \
-            pysam.FastaFile(args.fasta):
+    with pysam.AlignmentFile(args.bam, 'rb') as bam_handle, \
+            pysam.FastaFile(args.fasta) as fasta_handle:
         for reference in bam_handle.references:
             read_count = bam_handle.count(reference=reference)
             if read_count != 0:
