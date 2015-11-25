@@ -101,7 +101,7 @@ if __name__ == '__main__':
 			help='Phylosift sequence_taxa_summary.1.txt file')
     parser.add_argument('--tax_level', metavar='Taxonomy level',
                         help='taxonomic rank to use for color filter')
-    parser.add_argument('out_file', metavar='OUT file',
+    parser.add_argument('out', metavar='OUT file',
                         help='Output file to write, ".cls" will be added')
     parser.add_argument('-c', '--coverage',
                         type=int,
