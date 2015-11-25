@@ -48,7 +48,7 @@ def names_dict(names_file):
     return temp_dict
 
 
-def color_taxa(names_dict, references tax_file, tax_level):
+def color_taxa(names_dict, references, tax_file, tax_level):
     """Taxes names dictionary from this script and colors by taxa"""
 
     tax_level = tax_level.lower()
