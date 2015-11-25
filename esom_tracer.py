@@ -75,7 +75,7 @@ def color_taxa(names_dict, references tax_file, tax_level):
                                             rgb_tuple[1][1],
                                             rgb_tuple[1][2])
         header_colors.append(color)
-    return classes, header_colors
+    return classes, header_colors, taxa
 
 
 def rainbow_picker(scale):
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     parser.add_argument('-c', '--coverage',
                         type=int,
                         default=50,
-                        help='minimum number of non-zero bases to allow')
+                        help='minimum percentage of non-zero bases to allow')
     args = parser.parse_args()
 
     if args.taxonomy and not arge.tax_level:
@@ -135,7 +135,11 @@ if __name__ == '__main__':
                 classes[int(namesDict[name][subName])] = 1 if hit is True else 0
         header_colors = ['%0 255\t255\t255', '%1 255\t0\t0']
     else:
-        classes, header_colors = color_taxa(taxonomy, references, args.taxonomy, args.tax_level)
+        classes, header_colors, taxa = color_taxa(taxonomy, references, args.taxonomy, args.tax_level)
+        with open(args.out + '.taxa', 'rU') as taxa_handle:
+            taxa_handle.write('Class\tTaxonomy\n')
+            for key in taxa.keys():
+                taxa_handle.write('{0}\t{1}\n'.format(taxa[key], key))
     with open(args.out + '.cls', 'w') as out_handle:
         out_handle.write('% {0}\n'.format(len(references)))
         out_handle.write('{0}\n'.foramt('\n'.join(header_colors)))
