@@ -136,7 +136,7 @@ if __name__ == '__main__':
         header_colors = ['%0 255\t255\t255', '%1 255\t0\t0']
     else:
         classes, header_colors, taxa = color_taxa(namesDict, references, args.taxonomy, args.tax_level)
-        with open(args.out + '.taxa', 'rU') as taxa_handle:
+        with open(args.out + '.taxa', 'w') as taxa_handle:
             taxa_handle.write('Class\tTaxonomy\n')
             for key in taxa.keys():
                 taxa_handle.write('{0}\t{1}\n'.format(taxa[key], key))
