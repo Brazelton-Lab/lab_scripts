@@ -61,7 +61,7 @@ def color_taxa(names_dict, references, tax_file, tax_level):
             line = line.strip()
             columns = line.split('\t')
             if not args.bam:
-                references[column[0]] = '' # Bypasses empty dictionary
+                references[columns[0]] = '' # Bypasses empty dictionary
             if columns[0] in names_dict and \
                     columns[0] in references and \
                     columns[3] == tax_level:
