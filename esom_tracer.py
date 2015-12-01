@@ -60,13 +60,21 @@ def color_taxa(names_dict, references, tax_file, tax_level):
         for line in tax_handle:
             line = line.strip()
             columns = line.split('\t')
+            if not args.bam:
+                references[column[0]] = '' # Bypasses empty dictionary
             if columns[0] in names_dict and \
                     columns[0] in references and \
                     columns[3] == tax_level:
-                if not columns[3] in taxa:
-                    taxa[columns[3]] = taxa_number
+                if not columns[4] in taxa:
+                    taxa[columns[4]] = taxa_number
                     taxa_number += 1
-                classes[columns[0]] = taxa[columns[3]]
+                for sub_name in names_dict[columns[0]]:
+                    classes[int(names_dict[columns[0]][sub_name])] \
+                        = taxa[columns[4]]
+    for name in names_dict:
+        for sub_name in names_dict[name]:
+            if int(names_dict[name][sub_name]) not in classes:
+                classes[int(names_dict[name][sub_name])] = 0
     rgb_tuples = rainbow_picker(taxa_number)
     header_colors = []
     for rgb_tuple in enumerate(rgb_tuples):
@@ -79,10 +87,11 @@ def color_taxa(names_dict, references, tax_file, tax_level):
 
 
 def rainbow_picker(scale):
-    """Generates rainbow RBG values"""
+    """Generates rainbow RGB values"""
 
     hsv_tuples = [(i / scale, 1.0, 1.0) for i in range(scale)]
-    rgb_tuples = map(lambda x: colorsys.hsv_to_rgb(*x), hsv_tuples)
+    rgb_tuples = map(lambda x: tuple(i * 255 for i in \
+                     colorsys.hsv_to_rgb(*x)), hsv_tuples)
     return rgb_tuples
 
 
@@ -113,19 +122,20 @@ if __name__ == '__main__':
         print('--taxonomy and --tax_level must be specified together.')
         sys.exit(1)
     references = {}
-    with pysam.AlignmentFile(args.bam, 'rb') as bam_handle, \
-            pysam.FastaFile(args.fasta) as fasta_handle:
-        for reference in bam_handle.references:
-            read_count = bam_handle.count(reference=reference)
-            if read_count != 0:
-                bases = 0
-                for base in bam_handle.pileup(reference=reference):
-                    bases += 1
-                referenceLength = fasta_handle.get_reference_length(reference)
-                baseCoverage = float(bases) / float(referenceLength)
-                coverageThreshold = float(args.coverage) / 100.0
-                if baseCoverage >= coverageThreshold:
-                    references[reference] = ''
+    if args.bam:
+        with pysam.AlignmentFile(args.bam, 'rb') as bam_handle, \
+                pysam.FastaFile(args.fasta) as fasta_handle:
+            for reference in bam_handle.references:
+                read_count = bam_handle.count(reference=reference)
+                if read_count != 0:
+                    bases = 0
+                    for base in bam_handle.pileup(reference=reference):
+                        bases += 1
+                    referenceLength = fasta_handle.get_reference_length(reference)
+                    baseCoverage = float(bases) / float(referenceLength)
+                    coverageThreshold = float(args.coverage) / 100.0
+                    if baseCoverage >= coverageThreshold:
+                        references[reference] = ''
     namesDict = names_dict(args.names)
     if not args.taxonomy:
         classes = defaultdict(int)
@@ -138,8 +148,8 @@ if __name__ == '__main__':
         classes, header_colors, taxa = color_taxa(namesDict, references, args.taxonomy, args.tax_level)
         with open(args.out + '.taxa', 'w') as taxa_handle:
             taxa_handle.write('Class\tTaxonomy\n')
-            for key in taxa.keys():
-                taxa_handle.write('{0}\t{1}\n'.format(taxa[key], key))
+            for key in sorted(taxa.items(), key=lambda x: x[1]):
+                taxa_handle.write('{0}\t{1}\n'.format(key[1], key[0]))
     with open(args.out + '.cls', 'w') as out_handle:
         out_handle.write('% {0}\n'.format(len(references)))
         out_handle.write('{0}\n'.format('\n'.join(header_colors)))
