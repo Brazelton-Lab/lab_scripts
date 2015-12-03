@@ -26,7 +26,7 @@ parser$add_argument('-m', '--merge_threshold',
                                'in all samples are merged into "Low-abundance"'))
 parser$add_argument('--level', '-l',
                     default=2,
-                    type=double,
+                    type='double',
                     help='taxonomic level to analyze [Default: 2]')
 parser$add_argument('--file_type', '-f',
                     default='png',
