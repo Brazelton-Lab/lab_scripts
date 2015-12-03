@@ -49,7 +49,7 @@ otus = subset(otus, select=-c(1:1)) # to delete the "total" column from the moth
 tax = read.table(args$tsv, header=FALSE, row.names=1)
 tax = tax_table(as.matrix(tax))
 merged = phyloseq(otus, tax)
-args$level = paste('V', args$level)
+args$level = paste('V', args$level, sep='')
 if (!is.element(args$level, rank_names(merged))){
     cat(args$level, 'is not a taxonomic level in', args$tsv)
     cat('Available options are:', rank_names(merged))
