@@ -35,12 +35,6 @@ def main():
         required=True,
         type=open_output,
         help="output reverse reads in fastq format")
-    parser.add_argument('-p', '--prefix',
-        action='store_true',
-        help="replicate can be a prefix of a sequence")
-    parser.add_argument('-t', '--threads',
-        type=int,
-        help="number of processors to use")
     args = parser.parse_args()
 
     md5 = hashlib.md5
@@ -52,11 +46,13 @@ def main():
     unique_seqs = {}
     num_pairs = 0
     num_dups = 0
+
     for f_record, r_record in izip(in_f, in_r):
-        tetra = (f_record.sequence[0:3], r_record.sequence[0:3])
-        concat_seq = f_record.sequence + r_record.sequence
-        unique_item = md5(concat_seq).digest()
+        f_seq, r_seq = (f_record.sequence, r_record.sequence)
+        tetra = (f_seq[0:3], r_seq[0:3])
+        unique_item = md5(f_seq + r_seq).digest()
         unique = False
+
         if tetra not in unique_seqs:
             unique_seqs[tetra] = [unique_item]
             unique = True
@@ -76,8 +72,8 @@ def main():
         num_pairs += 1
 
     ratio_dups = num_dups / num_pairs
-    print("\nDereplication Complete\n\nRead pairs processed:\t{!s}\nDuplicates\
-        found:\t{!s} ({:.2%})\n".format(num_pairs, num_dups, ratio_dups))
+    print("\nDereplication Complete\n\nRead pairs processed:\t{!s}\nDuplicates "
+        "found:\t{!s} ({:.2%})\n".format(num_pairs, num_dups, ratio_dups))
 
     out_f.close()
     out_r.close()
