@@ -18,6 +18,47 @@ __author__ = 'Alex Hyer'
 __version__ = '0.0.0a1'
 
 
+class Contig:
+    """Stores phylogenetic data from short reads for a single contig"""
+
+    def __init__(self, contig_id):
+        self.name = contig_id
+        self.taxa_dict = defaultdict(float)
+
+    def add_taxa_data(taxa_name, prob_mass):
+        """Add Phylosift short read data to contig information
+
+        Note: all taxa given are assumed to be at the same taxonomic level
+
+        :param taxa_name: The taxa the short read is associated with
+        :type taxa_name: str
+
+        :param prob_mass: The Phylosift probability mass for the read
+        "type prob_mass: float
+        """
+
+        self.taxa_dict[taxa_name] += prob_mass
+
+    def best_taxa():
+        """Identify the most probable taxa for the contig and return it
+
+        :returns: most probable taxa for the contig
+        :rtype: str
+        """
+
+        taxa = max(self.taxa_dict.iteritems(), key=lambda x: x[1])[0]      
+        return taxa
+
+    def possible_taxa():
+        """Returns all possible taxa for contig
+
+        :returns: all possible taxa for contig
+        :rtype: view
+        """
+
+        return self.taxa_dict.keys()
+
+
 def x_reader(file_name):
     """Detect compression type and return appropriate file handle
 
@@ -28,7 +69,7 @@ def x_reader(file_name):
     :type file_name: str
 
     Supports GZIP, BZIP2, and ZIP compressed files,
-    reutrns a normal file handle if file isn't compressed.
+    returns a normal file handle if file isn't compressed.
     """
 
     supported_files = {
