@@ -100,19 +100,19 @@ def search_replicates(query_id, key, seq_db, prefix=False):
 
 def main():
     parser = argparse.ArgumentParser(description="Remove exact or prefix duplicates from fastq files")
-    parser.add_argument('-f', '--forward', dest='in_f',
+    parser.add_argument('-f', '--forward', dest='in_f', metavar='FASTQ',
         required=True,
         type=str,
         help="paired forward reads in fastq format. Will treat as single-end "
             "reads if the pair is not provided with argument -r/--reverse")
-    parser.add_argument('-r', '--reverse', dest='in_r',
+    parser.add_argument('-r', '--reverse', dest='in_r', metavar='FASTQ',
         type=str,
         help="paired reverse reads in fastq format")
-    parser.add_argument('-o', '--out_forward', dest='out_f',
+    parser.add_argument('-o', '--out_forward', dest='out_f', metavar='FASTQ',
         required=True,
         type=open_output,
         help="output forward reads in fastq format")
-    parser.add_argument('-l', '--out_reverse', dest='out_r',
+    parser.add_argument('-l', '--out_reverse', dest='out_r', metavar='FASTQ',
         type=open_output,
         help="output reverse reads in fastq format (use with -r/--reverse)")
     parser.add_argument('-p', '--prefix',
