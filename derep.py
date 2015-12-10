@@ -7,8 +7,14 @@ compression.
 from __future__ import print_function
 from __future__ import division
 
+__author__ = "Christopher Thornton"
+__date__ = "2015-12-07"
+__version__ = "0.3.1"
+
 from screed.openscreed import open_reader
 from itertools import izip
+import os
+import textwrap
 import sys
 import gzip
 import bz2
@@ -104,14 +110,15 @@ def main():
         required=True,
         type=str,
         help="paired forward reads in fastq format. Will treat as single-end "
-            "reads if the pair is not provided with argument -r/--reverse")
+            "reads if the pair is not provided with argument -r/--reverse "
+            "[required] ")
     parser.add_argument('-r', '--reverse', dest='in_r', metavar='FASTQ',
         type=str,
         help="paired reverse reads in fastq format")
     parser.add_argument('-o', '--out_forward', dest='out_f', metavar='FASTQ',
         required=True,
         type=open_output,
-        help="output forward reads in fastq format")
+        help="output forward reads in fastq format [required]")
     parser.add_argument('-l', '--out_reverse', dest='out_r', metavar='FASTQ',
         type=open_output,
         help="output reverse reads in fastq format (use with -r/--reverse)")
@@ -132,6 +139,9 @@ def main():
 
     seq_iter = get_iterator(in_f, in_r, out_r)
 
+    print(textwrap.fill("Starting {} with arguments: {}"
+        .format(os.path.basename(__file__), ' '.join(sys.argv[1:]), 79)))
+
     records = {}
     items_count = 0
     for record in seq_iter:
@@ -140,10 +150,18 @@ def main():
             ident = record[0].name.split()[0]
             # verify length of seqs is greater than substring
             key_item = fseq[:substring_size] + rseq[:substring_size]
+            min_size = substring_size * 2
         else:
             fseq, rseq = (record.sequence, None)
             ident = record.name.split()[0]
             key_item = fseq[:substring_size]
+            min_size = substring_size
+
+        if len(key_item) < min_size:
+            print(textwrap.fill("warning: some reads are shorter than {!s}bp. "
+                "Consider applying a length filter to the dataset"
+                .format(substring_size), 79), file=sys.stderr)
+            continue
 
         hash_key = md5(key_item).digest()
         if hash_key not in records:
@@ -161,6 +179,7 @@ def main():
 
         items_count += 1
 
+    # time to write the output
     seq_iter = get_iterator(in_f, in_r, out_r)
     uniques_count = 0
     for record in seq_iter:
@@ -189,7 +208,7 @@ def main():
     dups_count = items_count - uniques_count
     ratio_dups = dups_count / items_count
     print("\nDereplication Complete\n\nReads/Pairs processed:\t{!s}\nDuplicates "
-        "found:\t{!s} ({:.2%})\n".format(items_count, dups_count, ratio_dups))
+        "found:\t{!s} ({:.2%})\n\n".format(items_count, dups_count, ratio_dups))
 
 if __name__ == "__main__":
     main()
