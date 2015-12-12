@@ -218,15 +218,13 @@ def main():
     duplicates = search_for_duplicates(fastq_iterator, prefix=prefix, sub_size=substring_size)
     dups_count = len(duplicates)
 
-    print("Number of duplicates: {}".format(dups_count))
-    sys.exit(0)
     # write the output
     fastq_iter = get_iterator(in_f, in_r)
     items_count = 0
     for record in fastq_iter:
         items_count += 1
         if in_r:
-            header = record[0].name
+            header, rheader = (record[0].name, record[1].name)
             seq, rseq = (record[0].sequence, record[1].sequence)
             qual, rqual = (record[0].quality, record[1].quality)
             annot, rannot = (record[0].annotations, record[1].annotations)
@@ -238,9 +236,9 @@ def main():
 
         if header in duplicates:
             continue
-        out_f.write("@{}\n{}\n+\n{}\n".format(header, annot, seq, qual))
+        out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
         if out_r:
-            out_r.write("@{} {}\n{}\n+\n{}\n".format(header, rannot, rseq, rqual))
+            out_r.write("@{}\n{}\n+\n{}\n".format(rheader, rseq, rqual))
 
     dups_count = len(duplicates)
     ratio_dups = dups_count / items_count
