@@ -1,15 +1,14 @@
 #! /usr/bin/env python
 """
-For dereplicating sequencing reads. Can check for exact duplicates and 
-duplicate reads that are prefix of another. Has support for bz2 and gzip 
-compression.
+For dereplicating sequencing reads. Can check for exact, 5' prefix, and 
+reverse-complement duplicates. Has support for bz2 and gzip compression.
 """
 from __future__ import print_function
 from __future__ import division
 
 __author__ = "Christopher Thornton"
 __date__ = "2015-12-07"
-__version__ = "0.4.0"
+__version__ = "0.6.4"
 
 from screed.fastq import fastq_iter
 from itertools import izip
@@ -23,7 +22,7 @@ import argparse
 import hashlib
 
 def open_output(filename):
-    """Decide how to open an outfile for writing based on file extension"""
+    """Decide how to open an output file for writing based on file extension"""
     extension = filename.split('.')[-1]
     if extension == 'gz':
         return gzip.GzipFile(filename, 'wb')
@@ -65,6 +64,9 @@ def open_input(filename):
         file_handle = bufferedfile
 
     return file_handle
+
+def print_message(message, dest=sys.stdout):
+    print(textwrap.fill(message, 79), file=dest)
     
 def get_iterator(forward_reads, reverse_reads=None):
     """Return object to iterate over"""
@@ -75,61 +77,70 @@ def get_iterator(forward_reads, reverse_reads=None):
     else:
         return f_iter
 
-def replicate_status(query, queried):
+def replicate_status(query, template):
     """
     Return the replicate status of a search. A status of zero means not 
-    a replicate, one means that the query is a replicate, and two means that 
-    the queried is a replicate
+    a duplicate, one means query is exactly duplicate, two means template is 
+    a duplicate, and three means query is a prefix duplicate
     """
-    prefix_status = 0
-    exact_status = 0
-    if query == queried:
-        exact_status = 1
+    status = 0
+    query_len, temp_len= (len(query), len(template))
+    if query_len == temp_len:
+        if query == template:
+            status = 1
+    elif query_len > temp_len:
+        if query[:temp_len] == template:
+            status = 2
+    # implies query length < template length
     else:
-        query_len = len(query)
-        queried_len = len(queried)
-        if query_len > queried_len:
-            if query[:queried_len] == queried:
-                prefix_status = 2
-        else:
-            if query == queried[:query_len]:
-                prefix_status = 1
-    return (exact_status, prefix_status)
+        if query == template[:query_len]:
+            status = 3
+    return status
 
-def compare_seqs(query_id, search_id, key, seq_db):
+def compare_seqs(query_f, query_r, search_f, search_r):
     """Return header of replicate sequence"""
     # check forward read first. If it is a duplicate then check reverse
-    query_f, query_r = seq_db[key][query_id]
-    search_f, search_r = seq_db[key][search_id]
-
-    fexact, fprefix = replicate_status(query_f, search_f)
-    if fexact or fprefix:
+    fstatus = replicate_status(query_f, search_f)
+    if fstatus:
         if query_r:
-            rexact, rprefix = replicate_status(query_r, search_r)
-            if ((fexact == 1) and (rexact == 1)) or \
-                ((fexact == 1) and (rprefix == 1)) or \
-                ((fprefix == 1) and (rexact == 1)) or \
-                ((fprefix == 1) and rprefix == 1):
-                return query_id
-            elif ((fexact == 1) and (rprefix == 2)) or \
-                ((fprefix == 2) and (rexact == 1)) or \
-                ((fprefix == 2) and (rprefix == 2)):
-                return search_id
-            # also implies (fexact/fprefix == 1/2) and (rprefix/rexact== 2/1)
+            rstatus = replicate_status(query_r, search_r)
+            if (fstatus == 1 and rstatus == 1) or \
+                (fstatus == 1 and rstatus == 3) or \
+                (fstatus == 3 and rstatus == 1) or \
+                (fstatus == 3 and rstatus == 3):
+                status = 1
+            elif (fstatus == 1 and rstatus == 2) or \
+                (fstatus == 2 and rstatus == 1) or \
+                (fstatus == 2 and rstatus == 2):
+                status = 2
+            # also implies (fstatus/fstatus == 1/2) and (rstatus/rstatus == 2/1)
             else:
-                return None
-        else:
-            if (fexact == 1) or (fprefix == 1):
-                return query_id
-            elif fprefix == 2:
-                return search_id
+                status = 0
+    else:
+        status = 0
 
-def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False, sub_size=40):
+    if status == 1:
+        return 'query'
+    elif status == 2:
+        return 'search'
+    else:
+        return None
+
+def reverse_compliment(sequence):
+    compliments = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
+    sequence = list(sequence)
+    sequence.reverse()
+    sequence = [compliments[i] for i in sequence]
+    return ''.join(sequence)
+
+def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False, 
+    sub_size=40):
     """Return all records found to be duplicates of another"""
     if not dups:
-        dups = []
+        dups = {}
     md5 = hashlib.md5
 
+    num_dups = 0
     records = {}
     for record in seq_iter:
         paired = True if len(record) == 2 else False
@@ -142,36 +153,82 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False, sub_
 
         if not prefix:
             key = md5(fseq + rseq).digest()
-            if key not in records:
-                records[key] = ident
+            if key in records:
+                dups[ident] = (records[key], 'exact')
+                num_dups += 1
                 continue
             else:
-                dups.append(ident)
+                if revcomp:
+                    fcomp, rcomp = (reverse_compliment(rseq), 
+                        reverse_compliment(fseq))
+                    compkey = md5(fcomp + rcomp).digest()
+                    if compkey in records:
+                        dups[ident] = (records[compkey], 'revcomp')
+                        num_dups += 1
+                    else:
+                        records[key] = ident
+                else:
+                    records[key] = ident
+                    continue
         elif prefix and (fseq < sub_size or rseq < sub_size):
-            print(textwrap.fill("warning: some reads are shorter than {!s}bp. "
-                "Consider applying a length filter to the dataset"
-                .format(sub_size), 79), file=sys.stderr)
+            message = ("warning: some reads are shorter than {!s}bp. Consider "
+                "applying a length filter to the dataset".format(sub_size))
+            print_message(message, dest=sys.stderr)
             sys.exit(1)
         else:
+            comp = False
             key = md5(fseq[:sub_size] + rseq[:sub_size]).digest()
+            search_key = key
             if key not in records:
                 records[key] = {ident: (fseq, rseq)}
-                continue
+                if revcomp:
+                    compkey = md5(reverse_compliment(rseq[:sub_size]) + 
+                        reverse_compliment(fseq[:sub_size])).digest()
+                    if compkey in records:
+                        comp = True
+                        fseq, rseq = (reverse_compliment(rseq), 
+                            reverse_compliment(fseq))
+                        search_group = records[compkey].keys()
+                        search_key = compkey
+                    else:
+                        continue
+                else:
+                    continue
             else:
                 search_group = records[key].keys()
                 records[key][ident] = (fseq, rseq)
 
-            for search_ident in search_group:
-                duplicate = compare_seqs(ident, search_ident, key, records)
-                if duplicate:
+            for search_id in search_group:
+                fsearch, rsearch = records[search_key][search_id]
+                duplicate_status = compare_seqs(fseq, rseq, fsearch, rsearch)
+                if not duplicate_status:
+                    continue
+                else:
+                    num_dups += 1
+                    q_size, s_size = (len(fseq + rseq), len(fsearch + rsearch))
+                    if q_size == s_size and not comp:
+                        dup_type = 'exact'
+                    elif q_size == s_size and comp:
+                        dup_type = 'exact-revcomp'
+                    elif q_size != s_size and not comp:
+                        dup_type = 'prefix'
+                    else:
+                        dup_type = 'prefix-revcomp'
+
+                    if duplicate_status == 'search':
+                        duplicate = search_id
+                        dups[duplicate] = (ident, dup_type)
+                    elif duplicate_status == 'query':
+                        duplicate = ident
+                        dups[duplicate] = (search_id, dup_type)
                     del records[key][duplicate]
-                    dups.append(duplicate)
                     break
 
-    return dups
+    return (dups, num_dups)
 
 def main():
-    parser = argparse.ArgumentParser(description="Remove exact or prefix duplicates from fastq files")
+    parser = argparse.ArgumentParser(description=__doc__,        
+        formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-f', '--forward', dest='in_f', metavar='FASTQ',
         required=True,
         type=str,
@@ -185,38 +242,54 @@ def main():
         required=True,
         type=open_output,
         help="output forward reads in fastq format [required]")
-    parser.add_argument('-l', '--out-reverse', dest='out_r', metavar='FASTQ',
+    parser.add_argument('-v', '--out-reverse', dest='out_r', metavar='FASTQ',
         type=open_output,
         help="output reverse reads in fastq format (use with -r/--reverse)")
+    parser.add_argument('-l', '--log', metavar='LOG',
+        type=open_output,
+        help="log file to keep track of duplicates")
     parser.add_argument('-p', '--prefix',
         action='store_true',
         help="replicate can be a 5' prefix of another read")
     parser.add_argument('-m', '--min-size', dest='min_size', metavar='SIZE',
         type=int,
         default=40,
-        help="size of the smallest read in the dataset")
-    parser.add_argument('-c', '--rev-comp',
+        help="size of the smallest read in the dataset. Should be used with "
+            "-p/--prefix [default: 40]")
+    parser.add_argument('-c', '--rev-comp', dest='rev_comp',
         action='store_true',
-        help="replicate can be a reverse compliment of another read")
+        help="replicate can be the reverse compliment of another read")
     args = parser.parse_args()
 
+    prog_name = os.path.basename(__file__)
+    all_args = ' '.join(sys.argv[1:])
     in_f = args.in_f
     in_r = args.in_r
     out_f = args.out_f
     out_r = args.out_r
+    log_h = args.log
     prefix = args.prefix
+    rev_comp = args.rev_comp
     substring_size = args.min_size
 
     if in_r and not out_r:
-        print("error: argument -l/--out-reverse required with use of -r/--reverse")
+        message = ("error: argument -l/--out-reverse required with use of "
+            "-r/--reverse")
+        print_message(message, dest=sys.stderr)
         sys.exit(1)
 
-    print(textwrap.fill("Starting {} with arguments: {}"
-        .format(os.path.basename(__file__), ' '.join(sys.argv[1:]), 79)))
+    message = "Starting {} with arguments: {}".format(prog_name, all_args)
+    print_message(message)
 
     fastq_iterator = get_iterator(in_f, in_r)
-    duplicates = search_for_duplicates(fastq_iterator, prefix=prefix, sub_size=substring_size)
-    dups_count = len(duplicates)
+    duplicates, dups_count = search_for_duplicates(fastq_iterator, 
+        prefix=prefix, revcomp=rev_comp, sub_size=substring_size)
+
+    if log_h:
+        log_h.write("Duplicate\tTemplate\tType\n")
+        for dup in duplicates:
+            template, dup_type = duplicates[dup]
+            log_h.write("{}\t{}\t{}\n".format(dup, template, dup_type))
 
     # write the output
     fastq_iter = get_iterator(in_f, in_r)
@@ -227,20 +300,19 @@ def main():
             header, rheader = (record[0].name, record[1].name)
             seq, rseq = (record[0].sequence, record[1].sequence)
             qual, rqual = (record[0].quality, record[1].quality)
-            annot, rannot = (record[0].annotations, record[1].annotations)
         else:
             header = record.name
             seq = record.sequence
             qual = record.quality
-            annot = record.annotations
 
-        if header in duplicates:
+        try:
+            is_dup = duplicates[header]
+        except KeyError:
             continue
         out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
         if out_r:
             out_r.write("@{}\n{}\n+\n{}\n".format(rheader, rseq, rqual))
 
-    dups_count = len(duplicates)
     ratio_dups = dups_count / items_count
     print("\nDereplication Complete\n\nReads/Pairs processed:\t{!s}\nDuplicates "
         "found:\t{!s} ({:.2%})\n\n".format(items_count, dups_count, ratio_dups))
