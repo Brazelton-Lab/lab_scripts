@@ -92,7 +92,7 @@ def replicate_status(query, template):
         if query[:temp_len] == template:
             status = 2
     # implies query length < template length
-    else:
+    elif query_len < temp_len:
         if query == template[:query_len]:
             status = 3
     return status
@@ -113,11 +113,12 @@ def compare_seqs(query_f, query_r, search_f, search_r):
                 (fstatus == 2 and rstatus == 1) or \
                 (fstatus == 2 and rstatus == 2):
                 status = 2
-            # also implies (fstatus/fstatus == 1/2) and (rstatus/rstatus == 2/1)
             else:
                 status = 0
+        else:
+            status = fstatus
     else:
-        status = 0
+        status = 0 
 
     if status == 1:
         return 'query'
@@ -219,10 +220,11 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                     if duplicate_status == 'search':
                         duplicate = search_id
                         dups[duplicate] = (ident, dup_type)
+                        del records[search_key][duplicate]
                     elif duplicate_status == 'query':
                         duplicate = ident
                         dups[duplicate] = (search_id, dup_type)
-                    del records[key][duplicate]
+                        del records[key][duplicate]
                     break
 
     return (dups, num_dups)
@@ -306,9 +308,7 @@ def main():
             seq = record.sequence
             qual = record.quality
 
-        try:
-            is_dup = duplicates[header]
-        except KeyError:
+        if header in duplicates:
             continue
         out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
         if out_r:
