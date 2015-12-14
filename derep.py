@@ -126,7 +126,8 @@ def compare_seqs(query_f, query_r, search_f, search_r):
     else:
         return None
 
-def reverse_compliment(sequence):
+def reverse_complement(sequence):
+    """Return the reverse-complement of a sequence"""
     compliments = {'A': 'T', 'T': 'A', 'G': 'C', 'C': 'G', 'N': 'N'}
     sequence = list(sequence)
     sequence.reverse()
@@ -159,8 +160,8 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                 continue
             else:
                 if revcomp:
-                    fcomp, rcomp = (reverse_compliment(rseq), 
-                        reverse_compliment(fseq))
+                    fcomp, rcomp = (reverse_complement(rseq), 
+                        reverse_complement(fseq))
                     compkey = md5(fcomp + rcomp).digest()
                     if compkey in records:
                         dups[ident] = (records[compkey], 'revcomp')
@@ -182,12 +183,12 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
             if key not in records:
                 records[key] = {ident: (fseq, rseq)}
                 if revcomp:
-                    compkey = md5(reverse_compliment(rseq[:sub_size]) + 
-                        reverse_compliment(fseq[:sub_size])).digest()
+                    compkey = md5(reverse_complement(rseq[:sub_size]) + 
+                        reverse_complement(fseq[:sub_size])).digest()
                     if compkey in records:
                         comp = True
-                        fseq, rseq = (reverse_compliment(rseq), 
-                            reverse_compliment(fseq))
+                        fseq, rseq = (reverse_complement(rseq), 
+                            reverse_complement(fseq))
                         search_group = records[compkey].keys()
                         search_key = compkey
                     else:
@@ -258,7 +259,7 @@ def main():
             "-p/--prefix [default: 40]")
     parser.add_argument('-c', '--rev-comp', dest='rev_comp',
         action='store_true',
-        help="replicate can be the reverse compliment of another read")
+        help="replicate can be the reverse-complement of another read")
     args = parser.parse_args()
 
     prog_name = os.path.basename(__file__)
