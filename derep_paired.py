@@ -276,7 +276,8 @@ def main():
     items_count = 0
     for record in fastq_iter:
         items_count += 1
-        header, rheader = (record[0].name, record[1].name)
+        header = ("{} {}".format(record[0].name, record[0].annotations)).strip()
+        rheader = ("{} {}".format(record[1].name, record[1].annotations)).strip()
         seq, rseq = (record[0].sequence, record[1].sequence)
         qual, rqual = (record[0].quality, record[1].quality)
         if header.split()[0] in duplicates:
