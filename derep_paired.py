@@ -8,7 +8,7 @@ from __future__ import division
 
 __author__ = "Christopher Thornton"
 __date__ = "2015-12-07"
-__version__ = "0.7.2"
+__version__ = "0.7.5"
 
 from screed.fastq import fastq_iter
 from itertools import izip
@@ -257,13 +257,14 @@ def main():
     rev_comp = args.rev_comp
     substring_size = args.min_size
 
+    print("\n{} {!s}".format(prog_name, __version__))
+
     message = "Starting {} with arguments: {}".format(prog_name, all_args)
     print_message(message)
 
     seq_iterator = get_iterator(in_f, in_r)
     duplicates = search_for_duplicates(seq_iterator, 
         prefix=prefix, revcomp=rev_comp, sub_size=substring_size)
-    dups_count = len(duplicates)
 
     if log_h:
         log_h.write("Duplicate\tTemplate\tType\n")
@@ -285,11 +286,10 @@ def main():
         out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
         out_r.write("@{}\n{}\n+\n{}\n".format(rheader, rseq, rqual))
 
+    print("\nRead pairs processed:\t{!s}".format(items_count))
+    dups_count = len(duplicates)
     ratio_dups = dups_count / items_count
-    message = ("\nDereplication Complete\n\nReads/Pairs processed:\t{!s}\n"
-        "Duplicates found:\t{!s} ({:.2%})\n"
-        .format(items_count, dups_count, ratio_dups))
-    print(message)
+    print("Duplicates found:\t{!s} ({:.2%})\n".format(dups_count, ratio_dups))
 
 if __name__ == "__main__":
     main()
