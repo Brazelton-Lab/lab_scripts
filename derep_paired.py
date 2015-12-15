@@ -134,6 +134,8 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
     for record in seq_iter:
         ident = record[0].name.split()[0]
         fseq, rseq = (record[0].sequence, record[1].sequence)
+        if revcomp:
+            fcomp, rcomp = reverse_complement(fseq, rseq)
 
         if not prefix:
             key = md5(fseq + rseq).digest()
@@ -142,7 +144,6 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                 continue
             else:
                 if revcomp:
-                    fcomp, rcomp = reverse_complement(fseq, rseq)
                     compkey = md5(fcomp + rcomp).digest()
                     if compkey in records:
                         dups[ident] = (records[compkey], 'revcomp')
@@ -157,6 +158,8 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
             sys.exit(1)
         else:
             key = md5(fseq[:sub_size] + rseq[:sub_size]).digest()
+            if revcomp:
+                compkey = md5(fcomp[:sub_size] + rcomp[:sub_size]).digest()
             if key in records:
                 items_to_check = records[key].keys()
                 records[key][ident] = (fseq, rseq)
@@ -175,6 +178,29 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
 
                         if duplicate == 'search':
                             del records[key][search_id]
+                            dups[search_id] = (ident, dup_type)
+                        else:
+                            del records[key][ident]
+                            dups[ident] = (search_id, dup_type)
+                        break
+            elif revcomp and compkey in records:
+                items_to_check = records[compkey].keys()
+                records[key] = {ident: (fseq, rseq)}
+                for search_id in items_to_check:
+                    fsearch, rsearch = records[compkey][search_id]
+                    duplicate = replicate_status(fcomp, rcomp, fsearch, rsearch)
+                    if not duplicate:
+                        continue
+                    else:
+                        query_size, search_size = (len(fcomp + rcomp), 
+                            len(fsearch + rsearch))
+                        if query_size == search_size:
+                            dup_type = 'exact-revcomp'
+                        else:
+                            dup_type = 'prefix-revcomp'
+
+                        if duplicate == 'search':
+                            del records[compkey][search_id]
                             dups[search_id] = (ident, dup_type)
                         else:
                             del records[key][ident]
