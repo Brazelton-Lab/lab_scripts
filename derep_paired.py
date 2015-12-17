@@ -45,7 +45,9 @@ def open_input(filename):
     try:
         bufferedfile = io.open(file=filename, mode='rb', buffering=8192)
     except IOError:
-        return None
+        message = "error: unable to open {} for reading".format(filename)
+        print_message(message, sys.stderr)
+        sys.exit(1)
     num_bytes_to_peek = max(len(x) for x in file_signatures)
     file_start = bufferedfile.peek(num_bytes_to_peek)
     compression = None
@@ -147,6 +149,13 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
     for record in seq_iter:
         num_records += 1
         ident = record[0].name.split()[0]
+        rident = record[1].name.split()[0]
+        if ident != rident:
+            message = ("error: sequence ids do not match. This could be due "
+                "to orphaned reads or that the order of the sequences is "
+                "different between the forward and reverse files")
+            print_message(message, sys.stderr)
+            sys.exit(1)
         fseq, rseq = (record[0].sequence, record[1].sequence)
         if revcomp:
             fcomp, rcomp = reverse_complement(fseq, rseq)
@@ -166,8 +175,9 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                 else:
                     records[key] = ident
         elif prefix and (len(fseq) < sub_size or len(rseq) < sub_size):
-            message = ("warning: some reads are shorter than {!s}bp. Consider "
-                "applying a length filter to the dataset".format(sub_size))
+            message = ("error: some reads are shorter than {!s}bp. Consider "
+                "applying a length filter to the dataset or change the minimum "
+                "length size".format(sub_size))
             print_message(message, dest=sys.stderr)
             sys.exit(1)
         else:
