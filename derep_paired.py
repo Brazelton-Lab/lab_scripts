@@ -143,7 +143,9 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
     md5 = hashlib.md5
 
     records = {}
+    num_records = 0
     for record in seq_iter:
+        num_records += 1
         ident = record[0].name.split()[0]
         fseq, rseq = (record[0].sequence, record[1].sequence)
         if revcomp:
@@ -211,7 +213,7 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
             else:
                 records[key] = {ident: (fseq, rseq)}
 
-    return dups
+    return dups, num_records
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__,        
@@ -269,7 +271,7 @@ def main():
     print_message(message)
 
     seq_iterator = get_iterator(in_f, in_r)
-    duplicates = search_for_duplicates(seq_iterator, 
+    duplicates, items_count = search_for_duplicates(seq_iterator, 
         prefix=prefix, revcomp=rev_comp, sub_size=substring_size)
 
     if log_h:
@@ -281,9 +283,7 @@ def main():
     # write the output
     if out_f:
         fastq_iter = get_iterator(in_f, in_r)
-        items_count = 0
         for record in fastq_iter:
-            items_count += 1
             header = ("{} {}".format(record[0].name, record[0].annotations)).strip()
             rheader = ("{} {}".format(record[1].name, record[1].annotations)).strip()
             seq, rseq = (record[0].sequence, record[1].sequence)
@@ -295,12 +295,9 @@ def main():
         out_r.close()
         out_f.close()
 
-    in_f.close()
-    in_r.close()
-
-    print("\nRead pairs processed:\t{!s}".format(items_count))
     reps_count = len(duplicates)
     ratio_dups = reps_count / items_count
+    print("\nRead pairs processed:\t{!s}".format(items_count))
     print("Replicates found:\t{!s} ({:.2%})\n".format(reps_count, ratio_dups))
 
 if __name__ == "__main__":
