@@ -8,7 +8,7 @@ from __future__ import division
 
 __author__ = "Christopher Thornton"
 __date__ = "2015-12-07"
-__version__ = "0.7.5"
+__version__ = "0.7.6"
 
 from screed.fastq import fastq_iter
 from itertools import izip
@@ -123,8 +123,20 @@ def replicate_status(query_f, query_r, search_f, search_r):
     else:
         return None
 
+def duplicate_type(query, search, revcomp=False):
+    if revcomp:
+        note = ' (rev-comp)'
+    else:
+        note = ''
+    if len(query) == len(search):
+        dup_type = 'exact' + note
+    else:
+        dup_type = 'prefix' + note
+    return dup_type
+
+
 def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False, 
-    sub_size=8):
+    sub_size=50):
     """Return all records found to be duplicates of another"""
     if not dups:
         dups = {}
@@ -169,13 +181,8 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                     if not duplicate:
                         continue
                     else:
-                        query_size, search_size = (len(fseq + rseq), 
-                            len(fsearch + rsearch))
-                        if query_size == search_size:
-                            dup_type = 'exact'
-                        else:
-                            dup_type = 'prefix'
-
+                        dup_type = duplicate_type(fseq + rseq, 
+                            fsearch + rsearch)
                         if duplicate == 'search':
                             del records[key][search_id]
                             dups[search_id] = (ident, dup_type)
@@ -192,13 +199,8 @@ def search_for_duplicates(seq_iter, dups=None, prefix=False, revcomp=False,
                     if not duplicate:
                         continue
                     else:
-                        query_size, search_size = (len(fcomp + rcomp), 
-                            len(fsearch + rsearch))
-                        if query_size == search_size:
-                            dup_type = 'exact-revcomp'
-                        else:
-                            dup_type = 'prefix-revcomp'
-
+                        dup_type = duplicate_type(fcomp + rcomp, 
+                            fsearch + rsearch, revcomp=True)
                         if duplicate == 'search':
                             del records[compkey][search_id]
                             dups[search_id] = (ident, dup_type)
@@ -217,19 +219,17 @@ def main():
     parser.add_argument('-f', '--forward', dest='in_f', metavar='FASTQ',
         required=True,
         type=str,
-        help="paired forward reads in fastq format [required]")
+        help="input forward reads in fastq format [required]")
     parser.add_argument('-r', '--reverse', dest='in_r', metavar='FASTQ',
         required=True,
         type=str,
-        help="paired reverse reads in fastq format")
+        help="input reverse reads in fastq format [required]")
     parser.add_argument('-o', '--out-forward', dest='out_f', metavar='FASTQ',
-        required=True,
         type=open_output,
-        help="output forward reads in fastq format [required]")
+        help="output forward reads in fastq format")
     parser.add_argument('-v', '--out-reverse', dest='out_r', metavar='FASTQ',
-        required=True,
         type=open_output,
-        help="output reverse reads in fastq format (use with -r/--reverse)")
+        help="output reverse reads in fastq format")
     parser.add_argument('-l', '--log', metavar='LOG',
         type=open_output,
         help="log file to keep track of duplicates")
@@ -238,9 +238,9 @@ def main():
         help="replicate can be a 5' prefix of another read")
     parser.add_argument('-m', '--min-size', dest='min_size', metavar='SIZE',
         type=int,
-        default=8,
+        default=50,
         help="size of the smallest read in the dataset. Should be used with "
-            "-p/--prefix [default: 8]")
+            "-p/--prefix [default: 50]")
     parser.add_argument('-c', '--rev-comp', dest='rev_comp',
         action='store_true',
         help="replicate can be the reverse-complement of another read")
@@ -256,6 +256,12 @@ def main():
     prefix = args.prefix
     rev_comp = args.rev_comp
     substring_size = args.min_size
+
+    if out_f and not out_r or out_r and not out_f:
+        message = ("arguments -o/--out-forward and -v/--out-reverse required "
+            "together")
+        print_message(message, dest=sys.stderr)
+        sys.exit(1)
 
     print("\n{} {!s}".format(prog_name, __version__))
 
@@ -273,23 +279,29 @@ def main():
             log_h.write("{}\t{}\t{}\n".format(dup, template, dup_type))
 
     # write the output
-    fastq_iter = get_iterator(in_f, in_r)
-    items_count = 0
-    for record in fastq_iter:
-        items_count += 1
-        header = ("{} {}".format(record[0].name, record[0].annotations)).strip()
-        rheader = ("{} {}".format(record[1].name, record[1].annotations)).strip()
-        seq, rseq = (record[0].sequence, record[1].sequence)
-        qual, rqual = (record[0].quality, record[1].quality)
-        if header.split()[0] in duplicates:
-            continue
-        out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
-        out_r.write("@{}\n{}\n+\n{}\n".format(rheader, rseq, rqual))
+    if out_f:
+        fastq_iter = get_iterator(in_f, in_r)
+        items_count = 0
+        for record in fastq_iter:
+            items_count += 1
+            header = ("{} {}".format(record[0].name, record[0].annotations)).strip()
+            rheader = ("{} {}".format(record[1].name, record[1].annotations)).strip()
+            seq, rseq = (record[0].sequence, record[1].sequence)
+            qual, rqual = (record[0].quality, record[1].quality)
+            if header.split()[0] in duplicates:
+                continue
+            out_f.write("@{}\n{}\n+\n{}\n".format(header, seq, qual))
+            out_r.write("@{}\n{}\n+\n{}\n".format(rheader, rseq, rqual))
+        out_r.close()
+        out_f.close()
+
+    in_f.close()
+    in_r.close()
 
     print("\nRead pairs processed:\t{!s}".format(items_count))
-    dups_count = len(duplicates)
-    ratio_dups = dups_count / items_count
-    print("Duplicates found:\t{!s} ({:.2%})\n".format(dups_count, ratio_dups))
+    reps_count = len(duplicates)
+    ratio_dups = reps_count / items_count
+    print("Replicates found:\t{!s} ({:.2%})\n".format(reps_count, ratio_dups))
 
 if __name__ == "__main__":
     main()
