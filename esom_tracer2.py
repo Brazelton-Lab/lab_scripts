@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 
-"""
+"""Color ESOM data points by Phylogeny
 
+Usage:
+
+    esom_tracer2.py [--bam] [--names] [--taxonomy] [--taxa_level] [--output]
+
+Synopsis:
+
+    Takes alignment data from short reads mapped to an assembly in BAM format
+    and the phylogeny of those short reads from the Phylosift
+    sequence_taxa_summary.txt file to identify and color the phylogeny of each
+    contig in the assembly. 
 """
 
 from __future__ import print_function
@@ -16,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '0.0.0a1'
+__version__ = '1.0.0'
 
 
 class Contig:
@@ -28,18 +38,18 @@ class Contig:
         self.chunk_numbers = []
         self.class_number = None
 
-    def add_chunk_number(chunk_number):
+    def add_chunk_numbers(self, chunk_numbers):
         """Assign ESOM chunk numbers to contig
 
         :param chunk_number: NAMES file number of chunk for contig
-        :type chunk_number: int or list
+        :type chunk_number: int or list of ints
         """
 
-        if type(chunk_number) is int:
-            chunk_number = [chunk_number]
-        self.chunk_numbers += chunk_number
+        if type(chunk_numbers) is int:
+            chunk_numbers = [chunk_numbers]
+        self.chunk_numbers += chunk_numbers
 
-    def assign_class_number(class_number):
+    def assign_class_number(self, class_number):
         """Assign the contig to an ESOM class
 
         :param class_number: the ESOM class to assign the contig to
@@ -48,7 +58,7 @@ class Contig:
 
         self.class_number = class_number
 
-    def add_taxa_data(taxa_name, prob_mass):
+    def add_taxa_data(self, taxa_name, prob_mass):
         """Add Phylosift short read data to contig information
 
         Note: all taxa given are assumed to be at the same taxonomic level
@@ -62,7 +72,7 @@ class Contig:
 
         self.taxa_dict[taxa_name] += prob_mass
 
-    def best_taxa():
+    def best_taxa(self):
         """Identify the most probable taxa for the contig and return it
 
         :returns: most probable taxa for the contig
@@ -75,7 +85,7 @@ class Contig:
             taxa = None
         return taxa
 
-    def possible_taxa():
+    def possible_taxa(self):
         """Returns all possible taxa for contig
 
         :returns: all possible taxa for contig
@@ -94,8 +104,8 @@ def names_dict(names_handle):
     :param names_handle: file handle to NAMES file
     :type names_handle: File Object
 
-    Dictionary Structure (YAML style)
-    ---------------------------------
+    Dictionary Structure (YAML format)
+    ----------------------------------
 
     contig_name:
         contig_chunk: chunk_number
@@ -119,7 +129,7 @@ def rainbow_picker(scale):
     :type scale: int
     """
 
-    hsv_tuples = [(i / scale, 1.0, 1.0) for i in range(scale)]
+    hsv_tuples = [(float(i) / float(scale), 1.0, 1.0) for i in range(scale)]
     rgb_tuples = map(lambda x: tuple(i * 255 for i in \
                      colorsys.hsv_to_rgb(*x)), hsv_tuples)
     return rgb_tuples
@@ -134,8 +144,8 @@ def taxa_dict(taxa_handle):
     :param taxa_handle: file handle to sequence_taxa_summary.txt
     :type taxa_handle: File Object
 
-    Dictionary Structure (YAML style)
-    ---------------------------------
+    Dictionary Structure (YAML format)
+    ----------------------------------
 
     short_read_name:
         taxa_level: [taxa_name,probability_mass]
@@ -181,7 +191,7 @@ def main(args):
     contigs = defaultdict(dict)
     for name in names:
         contigs[name] = Contig(name)
-        chunk_numbers = [names[name][chunk] for chunk in names[name]]
+        chunk_numbers = [int(names[name][chunk]) for chunk in names[name]]
         contigs[name].add_chunk_numbers(chunk_numbers)
 
     # Add taxonomy data to Contig based on what short reads map to them
@@ -192,10 +202,10 @@ def main(args):
     for reference in args.bam.references:
         if reference in contigs:
             for read in args.bam.fetch(reference=reference):
-                read_name = read[0]
-                if read_name in taxa:
+                read_name = read.query_name
+                if read_name in taxa and args.taxa_level in taxa[read_name]:
                     taxa_name = taxa[read_name][args.taxa_level][0]
-                    prob_mass = taxa[read_name][args.taxa_level][1]
+                    prob_mass = float(taxa[read_name][args.taxa_level][1])
                     contigs[reference].add_taxa_data(taxa_name, prob_mass)
                     if taxa_name not in unique_taxa:
                         unique_taxa[taxa_name] = unique_taxa_number
@@ -214,18 +224,20 @@ def main(args):
             class_file_dict[chunk] = class_number
 
     # Color classes
-    header_colors = []
-    rgb_tuples = rainbow_picker(len(unique_taxa))
+    header_colors = ['%1 255	255	255'] # Default class is white
+    rgb_tuples = rainbow_picker(len(unique_taxa) - 1) # Ignore first class
     for rgb_tuple in enumerate(rgb_tuples):
-        color = '%{0} {1}\t{2}\t{3}'.format(rgb_tuple[0],
-                                            rgb_tuple[1][0],
-                                            rgb_tuple[1][1],
-                                            rgb_tuple[1][2])
+        color = '%{0} {1}\t{2}\t{3}'.format(rgb_tuple[0] + 2, # Skip first cls
+                                            int(rgb_tuple[1][0]),
+                                            int(rgb_tuple[1][1]),
+                                            int(rgb_tuple[1][2]))
         header_colors.append(color)
 
     # Write .cls file
     taxa_output = args.output.name.replace('.cls', '.taxa')
-    args.output.write('% {0}\n'.format(len(contigs)))
+    if not taxa_output.endswith('.taxa'):
+        taxa_output += '.taxa'
+    args.output.write('% {0}\n'.format(len(class_file_dict)))
     args.output.write('{0}\n'.format('\n'.join(header_colors))) 
     for key in sorted(class_file_dict.keys()):
         value = class_file_dict[key]
