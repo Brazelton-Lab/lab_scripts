@@ -20,7 +20,7 @@ def io_check(infile):
     return infile
 
 def print_out(header, sample):
-    print("{}\t{}".format(header.replace(':', '_'), sample))
+    print("{}\t{}".format(header.replace(':', '_').split(' ')[0], sample))
 
 def main():
     for infile in sorted(args.infiles):
