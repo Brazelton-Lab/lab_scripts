@@ -54,7 +54,7 @@ if __name__ == "__main__":
     parser.add_argument('infiles', metavar='seq_file',
         nargs='+',
         type=io_check,
-        help="newline-separated list of fasta or fastq files")
+        help="space-separated list of fasta or fastq files")
     parser.add_argument('-s', '--separator', metavar='CHAR',
         default='.',
         help="character that separates the sample name from the rest of the "
