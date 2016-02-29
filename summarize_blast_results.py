@@ -52,7 +52,7 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
             if eValue == None or float(entry['eValue']) <= eValue:
                 if alignLen == None or int(entry['alignLen']) >= alignLen:
                     prokka_id = entry['subjectID']
-                    if prokka_id in  id_conversion_dict:
+                    if prokka_id in id_conversion_dict:
                         contig_id = id_conversion_dict[prokka_id]
                         if contig_id in conversion_table:
                             if prokka_id not in alreadyHit:
@@ -67,8 +67,9 @@ def obtain_annotations(fasta_file):
     temp_dict = {}
     with open(fasta_file, 'rU') as fasta_handle:
         for entry in fasta_iter(fasta_handle):
-            if not entry['name'] in temp_dict:
-                temp_dict[entry['name']] = entry['description']
+            name = entry['name'].split()[0]
+            if not name in temp_dict:
+                temp_dict[name] = ' '.join(entry['name'].split()[1:])
     return temp_dict
 
 
