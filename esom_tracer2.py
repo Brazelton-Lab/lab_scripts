@@ -115,7 +115,8 @@ def names_dict(names_handle):
     names_handle.readline()
     for line in names_handle:
         columns = line.strip().split('\t')
-        temp_dict[columns[2]][columns[1]] = columns[0]
+        name = '-'.join(columns[2].split('_')[0:1])
+        temp_dict[name][columns[1]] = columns[0]
     return temp_dict
 
 
