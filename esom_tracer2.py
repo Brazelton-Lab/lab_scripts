@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.0'
+__version__ = '1.0.2'
 
 
 class Contig:
@@ -115,7 +115,7 @@ def names_dict(names_handle):
     names_handle.readline()
     for line in names_handle:
         columns = line.strip().split('\t')
-        name = '-'.join(columns[2].split('_')[0:1])
+        name = '-'.join(columns[2].split('_')[0:2])
         temp_dict[name][columns[1]] = columns[0]
     return temp_dict
 
