@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.4.0 - a program to filter annotations
+"""gff3_searcher v. 1.4.5 - a program to filter annotations
 
 Usage:
 
@@ -12,15 +12,6 @@ Synopsis:
     gff3_searcher searches the various fields of a GFF3 file for a match
     to any of the user-specified IDs. A FASTA or GFF3 file is then written
     where each entry matched at least one ID.
-
-Required Arguments:
-
-    --ids           One or more IDs to search for in the GFF3 files.
-                    The IDs can be gene names, keywords, gene identifiers,
-                    etc. The IDs are not case-sensitive. Each ID must be
-                    seperated by a space. If a multi-word ID is desired,
-                    wrap it in quotations, i.e. "ATP synthase" searches for
-                    IDs cpntaing the whole term "ATP synthase". 
 
 Optional Arguments:
 
@@ -38,6 +29,14 @@ Optional Arguments:
     --gff3_files    GFF3 files to search. By default, a config file is read
                     for a default directory and all GFF3 files in that
                     directory are searched.
+    --ids           One or more IDs to search for in the GFF3 files.
+                    The IDs can be gene names, keywords, gene identifiers,
+                    etc. The IDs are not case-sensitive. Each ID must be
+                    seperated by a space. If a multi-word ID is desired,
+                    wrap it in quotations, i.e. "ATP synthase" searches for
+                    IDs containing the whole term "ATP synthase". If this
+                    argument is left out, gff3_searcher will read IDs from
+                    stdin line by line.
     --ouput_dir     Directory to write output files to. Default is the
                     current working directory. Output file names are as
                     follows: [gff3_file].hits.[fasta/gff]
@@ -188,7 +187,7 @@ if __name__ == '__main__':
                              '[Default: config file]')
     parser.add_argument('--ids', metavar='IDs',
                         nargs='*',
-                        required=True,
+                        default=sys.stdin,
                         help='IDs to search GFF3 files for')
     parser.add_argument('--output_dir', metavar='Output Directory',
                         default=None,
@@ -252,11 +251,12 @@ if __name__ == '__main__':
                             hit_entry = '>{0}\n{1}\n'.format(hit_name,
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
+                            output_dir = os.getcwd() + os.sep + arg.output_dir
                             if args.output_dir is not None:
-                                if not os.path.isdir(os.getcwd() + os.sep + args.output_dir):
-                                    os.mkdir(os.getcwd() + os.sep + args.output_dir)
+                                if not os.path.isdir(output_dir):
+                                    os.mkdir(output_dir)
                                 output = output.split(os.sep)[-1]
-                                output = args.output_dir + os.sep + output
+                                output = output_dir + os.sep + output
                             else:
                                 output = output.split(os.sep)[-1]
                                 output = os.getcwd() + os.sep + output
@@ -267,11 +267,12 @@ if __name__ == '__main__':
 
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
+                output_dir = os.getcwd() + os.sep + args.output_dir
                 if args.output_dir is not None:
-                    if not os.path.isdir(os.getcwd() + os.sep + args.output_dir):
-                        os.mkdir(os.getcwd() + os.sep + args.output_dir)
+                    if not os.path.isdir(output_dir):
+                        os.mkdir(output_dir)
                     output = output.split(os.sep)[-1]
-                    output = args.output_dir + output
+                    output = output_dir + os.sep + output
                 else:
                     output = output.split(os.sep)[-1]
                     output = os.getcwd() + os.sep + output
