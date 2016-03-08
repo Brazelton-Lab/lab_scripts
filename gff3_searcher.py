@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.5 - a program to filter annotations
+"""gff3_searcher v. 1.4.6 - a program to filter annotations
 
 Usage:
 
@@ -190,7 +190,7 @@ if __name__ == '__main__':
                         default=sys.stdin,
                         help='IDs to search GFF3 files for')
     parser.add_argument('--output_dir', metavar='Output Directory',
-                        default=None,
+                        default='',
                         help='Directory to write output to')
     parser.add_argument('--output_format', metavar='Output Format',
                         choices=[
