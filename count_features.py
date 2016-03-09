@@ -3,11 +3,17 @@
 This script takes an alignment file in SAM/BAM format and a
 feature file in GFF format and calculates for each feature
 the number of reads mapping to it.
+
+This is a modified version of htseq-count
 """
-import sys, argparse, itertools, warnings, traceback, os.path, gzip, bz2
+from __future__ import print_function
+from __future__ import division
+
+import sys, argparse, itertools, warnings, traceback, os.path
 import HTSeq
 
-__version__ = '0.1'
+__author__ = 'Christopher Thornton'
+__version__ = '0.2'
 
 class UnknownChrom( Exception ):
    pass
@@ -27,11 +33,11 @@ def scale_abundance(count, feature_len):
     return count
 
 def count_reads_in_features(sam_filename, gff_filename, samtype, order, 
-      overlap_mode, feature_type, id_attribute, quiet, minaqual, scale_method, log_h):
+      overlap_mode, feature_type, id_attribute, quiet, minaqual, scale_method):
 
     features = HTSeq.GenomicArrayOfSets("auto", False)
     counts = {}
-    feature_sizes = {}
+    lengths = {}
 
     # Try to open samfile to fail early in case it is not there
     if sam_filename != "-":
@@ -41,14 +47,18 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
     i = 0
     try:
         for f in gff:
-            if f.type == feature_type:
+            try:
+                ftype = f.type
+            except ValueError:
+                continue
+            if ftype == feature_type:
                 try:
                     feature_id = f.attr[id_attribute]
                 except KeyError:
                     continue
                 features[f.iv] += feature_id
-                counts[f.attr[id_attribute]] = 0
-                feature_sizes[f.attr[id_attribute]] = abs(last - first)
+                counts[feature_id] = 0
+                lengths[feature_id] = lengths.get(feature_id, abs(f.iv.end - f.iv.start))
             i += 1
             if i % 100000 == 0 and not quiet:
                 sys.stderr.write("{!s} GFF lines processed.\n".format(i))
@@ -178,9 +188,9 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
         sys.stderr.write("{!s} SAM {} processed.\n".format(i, "alignments " if not pe_mode else "alignment pairs"))
 
     for fn in sorted(counts.keys()):
-        feature_len = feature_sizes[fn]
+        feature_len = lengths[fn]
         feature_abund = counts[fn] if scale_method == 'none' else scale_abundance(counts[fn], feature_len)
-        print "{}\t{!s}".format(fn, feature_abund)
+        print("{}\t{!s}".format(fn, feature_abund))
     sys.stderr.write("__no_feature\t{!s}\n".format(empty))
     sys.stderr.write("__ambiguous\t{!s}\n".format(ambiguous))
     sys.stderr.write("__too_low_aQual\t{!s}\n".format(lowqual))
@@ -225,9 +235,9 @@ def main():
             "[default: union]")
 
     parser.add_argument('-n', '--norm', metavar='METHOD',
-        choices=['none', 'rpkb'], default='none',
-        help="normalization method to use [default: None]. Choices are "
-            "reads per kilobase (rpk), reads per base (rpb), or none")
+        choices=['none', 'rpk'], default='none',
+        help="normalization method to use [default: none]. Choices are "
+            "rpk (reads per kilobase) or none")
 
     parser.add_argument('-q', '--minqual', metavar='QUAL',
         type=int, default=10,
@@ -239,7 +249,7 @@ def main():
 
     args = parser.parse_args()
     all_args = sys.argv[1:]
-    prog = 'calculate_abundances.py'
+    prog = 'count_features.py'
 
     sys.stderr.write("{} {!s}\nStarting with arguments: {}\n".format(prog, __version__, ' '.join(all_args)))
 
