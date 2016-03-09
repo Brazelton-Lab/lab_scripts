@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.5 - a program to filter annotations
+"""gff3_searcher v. 1.4.7 - a program to filter annotations
 
 Usage:
 
@@ -96,7 +96,7 @@ def compile_ids(ids):
 
 
 def gff3_line_by_id_retriever(gff3_handle, ids, fields='all'):
-    """ids is list of re.copmpiled ids"""
+    """ids is list of re.compiled ids"""
     for entry in gff3_iter(gff3_handle, prokka=True):
          if fields != 'all':
              second_loop_break = False
@@ -190,7 +190,7 @@ if __name__ == '__main__':
                         default=sys.stdin,
                         help='IDs to search GFF3 files for')
     parser.add_argument('--output_dir', metavar='Output Directory',
-                        default=None,
+                        default='',
                         help='Directory to write output to')
     parser.add_argument('--output_format', metavar='Output Format',
                         choices=[
@@ -210,6 +210,7 @@ if __name__ == '__main__':
         default_directory = read_config()
         args.gff3_files = glob.glob(default_directory + '*.gff')
 
+    args.ids = [id.strip() for id in args.ids]
     if args.exact and args.fields != 'all':
         args.ids = ['^' + id + '$' for id in args.ids]
     elif args.exact and args.fields == 'all':
