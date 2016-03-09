@@ -13,7 +13,8 @@ import sys, argparse, itertools, warnings, traceback, os.path
 import HTSeq
 
 __author__ = 'Christopher Thornton'
-__version__ = '0.2'
+__version__ = '0.3'
+__date__ = '2016-03-09'
 
 class UnknownChrom( Exception ):
    pass
@@ -110,7 +111,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
         i = 0   
         for r in read_seq:
             if i > 0 and i % 100000 == 0 and not quiet:
-                sys.stderr.write("{!s} SAM alignment record{} processed.\n" % (i, "s" if not pe_mode else " pairs"))
+                sys.stderr.write("{!s} SAM alignment record{} processed.\n".format(i, "s" if not pe_mode else " pairs"))
 
             i += 1
             if not pe_mode:
@@ -181,15 +182,18 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
                 empty += 1
 
     except:
-        sys.stderr.write("Error occured when processing SAM input ({}):\n".format(read_seq_file.get_line_number_string()))
+        sys.stderr.write("Error occured when processing SAM input ({}):\n"
+            .format(read_seq_file.get_line_number_string()))
         raise
 
     if not quiet:
-        sys.stderr.write("{!s} SAM {} processed.\n".format(i, "alignments " if not pe_mode else "alignment pairs"))
+        sys.stderr.write("{!s} SAM {} processed.\n"
+            .format(i, "alignments " if not pe_mode else "alignment pairs"))
 
     for fn in sorted(counts.keys()):
         feature_len = lengths[fn]
-        feature_abund = counts[fn] if scale_method == 'none' else scale_abundance(counts[fn], feature_len)
+        feature_abund = (counts[fn] if scale_method == 'none' else 
+            scale_abundance(counts[fn], feature_len))
         print("{}\t{!s}".format(fn, feature_abund))
     sys.stderr.write("__no_feature\t{!s}\n".format(empty))
     sys.stderr.write("__ambiguous\t{!s}\n".format(ambiguous))
@@ -209,8 +213,8 @@ def main():
 
     parser.add_argument('-f', '--format', metavar='FORMAT', dest='aformat',
         choices=['bam', 'sam'], default='bam',
-        help="type of <alignment_file> data [default: bam]. Choice are sam or "
-            "bam")
+        help="type of <alignment_file> data [default: bam]. Choices are 'sam' "
+            "or 'bam'")
 
     parser.add_argument('-o', '--order', metavar='ORDER',
        choices=["position", "name"], default='position',
@@ -221,8 +225,8 @@ def main():
 
     parser.add_argument('-t', '--type', metavar='FEATURETYPE', dest='ftype',
         default= 'CDS', 
-        help="feature type (3rd column in GFF file) to be used [default: CDS]. "
-            "All features of other type are ignored")
+        help="feature type (3rd column in GFF file) to be used [default: CDS]."
+            " All features of other type are ignored")
          
     parser.add_argument('-a', '--attr', metavar='ATTRIBUTE',
         default="gene_id", 
@@ -236,8 +240,8 @@ def main():
 
     parser.add_argument('-n', '--norm', metavar='METHOD',
         choices=['none', 'rpk'], default='none',
-        help="normalization method to use [default: none]. Choices are "
-            "rpk (reads per kilobase) or none")
+        help="normalization method to use [default: none]. Choices are rpk "
+            "(reads per kilobase) or none")
 
     parser.add_argument('-q', '--minqual', metavar='QUAL',
         type=int, default=10,
@@ -251,12 +255,14 @@ def main():
     all_args = sys.argv[1:]
     prog = 'count_features.py'
 
-    sys.stderr.write("{} {!s}\nStarting with arguments: {}\n".format(prog, __version__, ' '.join(all_args)))
+    sys.stderr.write("{} {!s}\nStarting with arguments: {}\n"
+        .format(prog, __version__, ' '.join(all_args)))
 
     warnings.showwarning = my_showwarning
     try:
-        count_reads_in_features(args.alignment_file, args.feature_file, args.aformat, args.order,
-            args.mode, args.ftype, args.attr, args.quiet, args.minqual, args.norm)
+        count_reads_in_features(args.alignment_file, args.feature_file, 
+            args.aformat, args.order, args.mode, args.ftype, args.attr, 
+            args.quiet, args.minqual, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
         sys.stderr.write("  [Exception type: {}, raised in {}:{}]\n"
