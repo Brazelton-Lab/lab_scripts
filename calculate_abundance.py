@@ -4,7 +4,7 @@ This script takes an alignment file in SAM/BAM format and a
 feature file in GFF format and calculates for each feature
 the number of reads mapping to it.
 """
-import sys, optparse, itertools, warnings, traceback, os.path
+import sys, argparse, itertools, warnings, traceback, os.path
 import HTSeq
 
 class UnknownChrom( Exception ):
