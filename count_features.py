@@ -4,12 +4,14 @@ This script takes an alignment file in SAM/BAM format and a
 feature file in GFF format and calculates for each feature
 the number of reads mapping to it.
 """
-import sys, argparse, itertools, warnings, traceback, os.path
+import sys, argparse, itertools, warnings, traceback, os.path, gzip, bz2
 import HTSeq
+
+__version__ = '0.1'
 
 class UnknownChrom( Exception ):
    pass
-   
+
 def invert_strand(iv):
    iv2 = iv.copy()
    if iv2.strand == "+":
@@ -20,19 +22,16 @@ def invert_strand(iv):
       raise ValueError, "Illegal strand"
    return iv2
 
-def scale_abundance_estimate(count, feature_len, read_count, method='rpk'):
-    scale_factor = {
-        'rpk': 1,
-        'rpkm': 1000000,
-        }
-    count = (count / (feature_len / 1000)) * scale_factor[method]
+def scale_abundance(count, feature_len):
+    count = (count / (feature_len / 1000))
     return count
 
 def count_reads_in_features(sam_filename, gff_filename, samtype, order, 
-      overlap_mode, feature_type, id_attribute, quiet, minaqual, normal):
+      overlap_mode, feature_type, id_attribute, quiet, minaqual, scale_method, log_h):
 
     features = HTSeq.GenomicArrayOfSets("auto", False)
     counts = {}
+    feature_sizes = {}
 
     # Try to open samfile to fail early in case it is not there
     if sam_filename != "-":
@@ -49,15 +48,16 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
                     continue
                 features[f.iv] += feature_id
                 counts[f.attr[id_attribute]] = 0
+                feature_sizes[f.attr[id_attribute]] = abs(last - first)
             i += 1
             if i % 100000 == 0 and not quiet:
-                sys.stderr.write( "%d GFF lines processed.\n" % i )
+                sys.stderr.write("{!s} GFF lines processed.\n".format(i))
     except:
-        sys.stderr.write( "Error occured when processing GFF file ({}):\n".format(gff.get_line_number_string()))
+        sys.stderr.write("Error occured when processing GFF file ({}):\n".format(gff.get_line_number_string()))
         raise
 
     if not quiet:
-        sys.stderr.write( "{!s} GFF lines processed.\n".format(i))
+        sys.stderr.write("{!s} GFF lines processed.\n".format(i))
 
     if len(counts) == 0:
         sys.stderr.write("Warning: No features of type '{}' found.\n".format(feature_type))
@@ -81,14 +81,14 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
             read_seq = itertools.chain([first_read], read_seq_iter)
         pe_mode = first_read.paired_end
     except:
-        sys.stderr.write( "Error occured when reading beginning of SAM/BAM file.\n" )
+        sys.stderr.write("Error occured when reading beginning of SAM/BAM file.\n" )
         raise
 
     try:
         if pe_mode:
             if order == "name":
                 read_seq = HTSeq.pair_SAM_alignments(read_seq)
-            elif order == "pos":
+            elif order == "position":
                 read_seq = HTSeq.pair_SAM_alignments_with_buffer(read_seq)
             else:
                 raise ValueError, "Illegal order specified."
@@ -163,7 +163,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
                     sys.exit("Illegal overlap mode.")
                 if fs is None or len(fs) == 0:
                     empty += 1
-                elif len( fs ) > 1:
+                elif len(fs) > 1:
                     ambiguous += 1
                 else:
                     counts[list(fs)[0]] += 1
@@ -175,27 +175,26 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
         raise
 
     if not quiet:
-        sys.stderr.write("{!s} SAM {} processed.\n" % (i, "alignments " if not pe_mode else "alignment pairs"))
-
-    feature_abund = counts[fn] if formula == 'count' else normalize(counts[fn], feature_len, read_count, formula)
+        sys.stderr.write("{!s} SAM {} processed.\n".format(i, "alignments " if not pe_mode else "alignment pairs"))
 
     for fn in sorted(counts.keys()):
+        feature_len = feature_sizes[fn]
+        feature_abund = counts[fn] if scale_method == 'none' else scale_abundance(counts[fn], feature_len)
         print "{}\t{!s}".format(fn, feature_abund)
-    print "__no_feature\t{!s}".format(empty)
-    print "__ambiguous\t{!s}".format(ambiguous)
-    print "__too_low_aQual\t{!s}".format(lowqual)
-    print "__not_aligned\t{!s}".format(notaligned)
-    print "__alignment_not_unique\t{!s}".format(nonunique)
-
+    sys.stderr.write("__no_feature\t{!s}\n".format(empty))
+    sys.stderr.write("__ambiguous\t{!s}\n".format(ambiguous))
+    sys.stderr.write("__too_low_aQual\t{!s}\n".format(lowqual))
+    sys.stderr.write("__not_aligned\t{!s}\n".format(notaligned))
+    sys.stderr.write("__alignment_not_unique\t{!s}\n".format(nonunique))
       
 def main():
     parser = argparse.ArgumentParser(description=__doc__, 
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
-    parser.add_argument('alignment_file', type=str, dest='alignment',
+    parser.add_argument('alignment_file', type=str,
         help="file containing alignments. Must be in SAM or BAM format")
 
-    parser.add_argument('feature_file', type=str, dest='feature',
+    parser.add_argument('feature_file', type=str,
         help="file containing feature annotations. Must be in GFF3 format")
 
     parser.add_argument('-f', '--format', metavar='FORMAT', dest='aformat',
@@ -226,7 +225,7 @@ def main():
             "[default: union]")
 
     parser.add_argument('-n', '--norm', metavar='METHOD',
-        choices=['count', 'rpkb'], default='count',
+        choices=['none', 'rpkb'], default='none',
         help="normalization method to use [default: None]. Choices are "
             "reads per kilobase (rpk), reads per base (rpb), or none")
 
@@ -235,14 +234,18 @@ def main():
         help="skip all reads with alignment quality lower than the given "
          "minimum value [default: 10]")
 
-    parser.add_argument( '-q', '--quiet', action='store_true',
+    parser.add_argument('--quiet', action='store_true',
         help="suppress progress report") # and warnings
 
     args = parser.parse_args()
+    all_args = sys.argv[1:]
+    prog = 'calculate_abundances.py'
+
+    sys.stderr.write("{} {!s}\nStarting with arguments: {}\n".format(prog, __version__, ' '.join(all_args)))
 
     warnings.showwarning = my_showwarning
     try:
-        count_reads_in_features(args.alignment, args.feature, args.aformat, args.order,
+        count_reads_in_features(args.alignment_file, args.feature_file, args.aformat, args.order,
             args.mode, args.ftype, args.attr, args.quiet, args.minqual, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
