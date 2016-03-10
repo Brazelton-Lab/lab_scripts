@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 class Contig:
@@ -115,7 +115,7 @@ def names_dict(names_handle):
     names_handle.readline()
     for line in names_handle:
         columns = line.strip().split('\t')
-        name = '-'.join(columns[2].split('_')[0:2])
+        name = '-'.join(columns[2].split('_')[0:2]).strip()
         temp_dict[name][columns[1]] = columns[0]
     return temp_dict
 
@@ -156,7 +156,7 @@ def taxa_dict(taxa_handle):
     taxa_handle.readline()
     for line in taxa_handle:
         columns = line.strip().split('\t')
-        temp_dict[columns[0]][columns[3]] = [columns[4], columns[5]]
+        temp_dict[columns[0].strip()][columns[3]] = [columns[4], columns[5]]
     return temp_dict
 
 
@@ -287,6 +287,9 @@ def main(args):
         taxa_handle.write('Class\tTaxonomy\n')
         for taxa in sorted(unique_taxa.items(), key=lambda x: x[1]):
             taxa_handle.write('{0}\t{1}\n'.format(taxa[1], taxa[0]))
+    print('> {0} unique taxa written to {1}'.format(
+            str(unique_taxa_number - 1),
+            taxa_output))
 
     print('> Output files written, quitting esom_tracer2.py')
 
