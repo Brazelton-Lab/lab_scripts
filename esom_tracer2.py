@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.2'
+__version__ = '1.1.0'
 
 
 class Contig:
@@ -186,9 +186,14 @@ def x_reader(file_name):
 
 
 def main(args):
+    print(' '.join(sys.argv[:]))
+
     # Instantiate each contig and assign chunk numbers
+    print('> Processing {0}'.format(args.names.name))
     names = names_dict(args.names)
     args.names.close()
+    print('> Processed {0} unique contigs from {1}'.format(str(len(names)),
+                                                         args.names.name))
     contigs = defaultdict(dict)
     for name in names:
         contigs[name] = Contig(name)
@@ -196,15 +201,25 @@ def main(args):
         contigs[name].add_chunk_numbers(chunk_numbers)
 
     # Add taxonomy data to Contig based on what short reads map to them
+    print('> Processing {0}'.format(args.taxonomy.name))
     taxa = taxa_dict(args.taxonomy)
     args.taxonomy.close()
+    print('> Processed {0} short reads from {1}'.format(str(len(taxa)),
+                                                        args.taxonomy.name))
     unique_taxa = {'N/A': 1}
     unique_taxa_number = 2 
+    print('> Processing {0}'.format(args.bam.filename))
+    references_match_contigs = 0
+    reads_mapping_contigs = 0
+    mapped_taxa_reads = 0
     for reference in args.bam.references:
         if reference in contigs:
+            references_match_contigs += 1
             for read in args.bam.fetch(reference=reference):
+                reads_mapping_contigs += 1
                 read_name = read.query_name
                 if read_name in taxa and args.taxa_level in taxa[read_name]:
+                    mapped_taxa_reads += 1
                     taxa_name = taxa[read_name][args.taxa_level][0]
                     prob_mass = float(taxa[read_name][args.taxa_level][1])
                     contigs[reference].add_taxa_data(taxa_name, prob_mass)
@@ -212,17 +227,37 @@ def main(args):
                         unique_taxa[taxa_name] = unique_taxa_number
                         unique_taxa_number += 1
     args.bam.close()
+    print('> {0} contigs in {1} matched contigs in {2}'.format(
+            str(references_match_contigs),
+            args.bam.filename,
+            args.names.name))
+    print('> {0} reads from {1} map to contigs in {2}'.format(
+            str(reads_mapping_contigs),
+            args.bam.filename,
+            args.names.name))
+    print('> {0} reads from {1} map to contigs in {2} and have assigned '
+          'taxa from {3} at the level {4}'.format(str(mapped_taxa_reads),
+                                                  args.bam.filename,
+                                                  args.names.name,
+                                                  args.taxonomy.name,
+                                                  args.taxa_level))
+    print('> Finished processing {0}'.format(args.bam.filename))
 
     # Assign each contig a class number based on most likely taxa
+    print('> Assigning taxa to contigs')
     class_file_dict = defaultdict(int)
+    contigs_with_taxa = 0
     for contig in contigs:
         best_taxa = contigs[contig].best_taxa()
         if best_taxa is None:
             best_taxa = 'N/A'
+        else:
+            contigs_with_taxa += 1
         class_number = unique_taxa[best_taxa]
         # contigs[contig].assign_class_number(class_number)
         for chunk in contigs[contig].chunk_numbers:
             class_file_dict[chunk] = class_number
+    print('> {0} unique contigs assigned taxa'.format(str(contigs_with_taxa)))
 
     # Color classes
     header_colors = ['%1 255	255	255'] # Default class is white
@@ -235,6 +270,7 @@ def main(args):
         header_colors.append(color)
 
     # Write .cls file
+    print('> Writing {0}'.format(args.output.name))
     taxa_output = args.output.name.replace('.cls', '.taxa')
     if not taxa_output.endswith('.taxa'):
         taxa_output += '.taxa'
@@ -246,10 +282,13 @@ def main(args):
     args.output.close()
 
     # Write .taxa file correlating class and taxonomy
+    print('> Writing {0}'.format(taxa_output))
     with open(taxa_output, 'w') as taxa_handle:
         taxa_handle.write('Class\tTaxonomy\n')
         for taxa in sorted(unique_taxa.items(), key=lambda x: x[1]):
             taxa_handle.write('{0}\t{1}\n'.format(taxa[1], taxa[0]))
+
+    print('> Output files written, quitting esom_tracer2.py')
 
 
 if __name__ == '__main__':
