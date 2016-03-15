@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.9 - a program to filter annotations
+"""gff3_searcher v. 1.4.10 - a program to filter annotations
 
 Usage:
 
@@ -44,7 +44,7 @@ Optional Arguments:
                     output is in GFF3 format. Currently, the only other
                     option is FASTA format.
     --whole_contig  When FASTA output is specified, this argument retrieves the
-                    whole contig rather then just the annotated sequence. Since
+                    whole contig rather than just the annotated sequence. Since
                     multiple proteins ca occur per contig, the annotation data
                     is removed from the FASTA header.
 
@@ -85,7 +85,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.9'
+__version__ = '1.4.10'
 
 
 def compile_ids(ids):
@@ -202,7 +202,7 @@ if __name__ == '__main__':
                              '[Default: gff3]')
     parser.add_argument('--whole_contig', '-w',
                         action='store_true',
-                        help='retrieve entire contig rather then just the ' \
+                        help='retrieve entire contig rather than just the ' \
                              'annotated sequence')
     args=parser.parse_args()
 
@@ -235,8 +235,6 @@ if __name__ == '__main__':
                             start = int(hit['start']) - 1
                             end = int(hit['end']) - 1
                             hit_sequence = entry['sequence'][start:end]
-                            if args.whole_contig:
-                                hit_sequence = entry['sequence']
                             try:
                                 hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
                                            'annotation_\"{4}\"'.format(entry['name'],
@@ -245,6 +243,7 @@ if __name__ == '__main__':
                             except KeyError:
                                 continue
                             if args.whole_contig:
+                                hit_sequence = entry['sequence']
                                 hit_name = '{0}'.format(entry['name'])
                             if args.coverage is not None:
                                 rpk = coverages[hit['seqid']]
