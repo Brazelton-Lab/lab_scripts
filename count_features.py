@@ -32,33 +32,31 @@ def scale_abundance(count, feature_len):
     count = (count / (feature_len / 1000))
     return count
 
-def count_reads_in_features(sam_filename, gff_filename, samtype, order, 
-      overlap_mode, feature_type, id_attribute, quiet, minaqual, scale_method):
+def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_mode, 
+    feature_type, id_attribute, quiet, minaqual, mapping_file, scale_method):
 
     features = HTSeq.GenomicArrayOfSets("auto", False)
     counts = {}
-    lengths = {}
 
     # Try to open samfile to fail early in case it is not there
     if sam_filename != "-":
         open(sam_filename).close()
+
+    # Try to open mapping file to fail early in case it is not there
+    if mapping_file:
+        open(mapping_file).close()
       
     gff = HTSeq.GFF_Reader(gff_filename)
     i = 0
     try:
         for f in gff:
-            try:
-                ftype = f.type
-            except ValueError:
-                continue
-            if ftype == feature_type:
+            if f.type == feature_type:
                 try:
                     feature_id = f.attr[id_attribute]
                 except KeyError:
                     continue
                 features[f.iv] += feature_id
                 counts[feature_id] = 0
-                lengths[feature_id] = lengths.get(feature_id, abs(f.iv.end - f.iv.start))
             i += 1
             if i % 100000 == 0 and not quiet:
                 sys.stderr.write("{!s} GFF lines processed.\n".format(i))
@@ -69,7 +67,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
     if not quiet:
         sys.stderr.write("{!s} GFF lines processed.\n".format(i))
 
-    if len(counts) == 0:
+    num_features = len(counts)
+    if num_features == 0:
         sys.stderr.write("Warning: No features of type '{}' found.\n".format(feature_type))
 
     if samtype == "sam":
@@ -187,10 +186,27 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order,
     if not quiet:
         sys.stderr.write("{!s} SAM {} processed.\n".format(i, "alignments " if not pe_mode else "alignment pairs"))
 
-    for fn in sorted(counts.keys()):
-        feature_len = lengths[fn]
-        feature_abund = counts[fn] if scale_method == 'none' else scale_abundance(counts[fn], feature_len)
-        print("{}\t{!s}".format(fn, feature_abund))
+    # map to higher order features if applicable
+    if mapping_file:
+        abundances = {}
+        with open(mapping_file) as mapping_h:
+            for line in mapping_file:
+                try:
+                    feature, feature_category, feature_length, organism = line.strip().split('\t')
+                except ValueError:
+                    sys.stderr.write("Unknown format of '{}'".format(mapping_file))
+                    raise
+                if feature not in counts:
+                    continue
+                abund = counts[feature] if not norm else scale_abundance(counts[feature], feature_length)
+                abundances[feature_caregory] = abundances.get(feature_category, 0) + abund
+        if num_features > 0 and len(abundances) == 0:
+            sys.stderr.write("Warning: No higher order features found. Please make sure the mapping file is formatted correctly.\n")
+    else:
+        abundances = counts
+
+    for fn in sorted(abundances.keys()):
+        print("{}\t{!s}".format(fn, abundances[fn]))
     sys.stderr.write("__no_feature\t{!s}\n".format(empty))
     sys.stderr.write("__ambiguous\t{!s}\n".format(ambiguous))
     sys.stderr.write("__too_low_aQual\t{!s}\n".format(lowqual))
@@ -209,8 +225,8 @@ def main():
 
     parser.add_argument('-f', '--format', metavar='FORMAT', dest='aformat',
         choices=['bam', 'sam'], default='bam',
-        help="type of <alignment_file> data [default: bam]. Choice are sam or "
-            "bam")
+        help="type of <alignment_file> data [default: bam]. Choices are sam "
+            "or bam")
 
     parser.add_argument('-o', '--order', metavar='ORDER',
        choices=["position", "name"], default='position',
@@ -225,8 +241,8 @@ def main():
             "All features of other type are ignored")
          
     parser.add_argument('-a', '--attr', metavar='ATTRIBUTE',
-        default="gene_id", 
-        help="GFF attribute to be used as feature ID [default: gene_id]")
+        default="gene", 
+        help="GFF attribute to be used as feature ID [default: gene]")
 
     parser.add_argument('-m', '--mode', metavar='MODE',
         choices=["union", "intersection-strict", "intersection-nonempty"], 
@@ -237,7 +253,13 @@ def main():
     parser.add_argument('-n', '--norm', metavar='METHOD',
         choices=['none', 'rpk'], default='none',
         help="normalization method to use [default: none]. Choices are "
-            "rpk (reads per kilobase) or none")
+            "rpk (reads per kilobase) or none. Requires the -i/--id-mapping "
+            "argument")
+
+    parser.add_argument('-i', '--id-mapping', metavar='FILE', dest='mapping',
+        help="file mapping features to higher order features, such as genes "
+            "to gene families or exons to genes. The higher order feature "
+            "abundance estimates will be what is then reported")
 
     parser.add_argument('-q', '--minqual', metavar='QUAL',
         type=int, default=10,
@@ -256,7 +278,7 @@ def main():
     warnings.showwarning = my_showwarning
     try:
         count_reads_in_features(args.alignment_file, args.feature_file, args.aformat, args.order,
-            args.mode, args.ftype, args.attr, args.quiet, args.minqual, args.norm)
+            args.mode, args.ftype, args.attr, args.quiet, args.minqual, args.mapping, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
         sys.stderr.write("  [Exception type: {}, raised in {}:{}]\n"
