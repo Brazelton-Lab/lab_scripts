@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.8 - a program to filter annotations
+"""gff3_searcher v. 1.4.9 - a program to filter annotations
 
 Usage:
 
@@ -85,7 +85,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.4.0'
+__version__ = '1.4.9'
 
 
 def compile_ids(ids):
@@ -239,7 +239,7 @@ if __name__ == '__main__':
                                 hit_sequence = entry['sequence']
                             try:
                                 hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
-                                           'annotation_{4}'.format(entry['name'],
+                                           'annotation_\"{4}\"'.format(entry['name'],
                                            hit['start'], hit['end'], hit['strand'],
                                            hit['product'])
                             except KeyError:
