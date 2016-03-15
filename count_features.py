@@ -283,7 +283,7 @@ def main():
     try:
         count_reads_in_features(args.alignment_file, args.feature_file, 
             args.aformat, args.order, args.mode, args.ftype, args.attr, 
-            args.quiet, args.minqual, args.norm)
+            args.quiet, args.minqual, args.mapping, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
         sys.stderr.write("  [Exception type: {}, raised in {}:{}]\n"
