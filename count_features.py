@@ -13,7 +13,8 @@ import sys, argparse, itertools, warnings, traceback, os.path
 import HTSeq
 
 __author__ = 'Christopher Thornton'
-__version__ = '0.2'
+__version__ = '0.5'
+__date__ = '2016-03-09'
 
 class UnknownChrom( Exception ):
    pass
@@ -109,7 +110,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
         i = 0   
         for r in read_seq:
             if i > 0 and i % 100000 == 0 and not quiet:
-                sys.stderr.write("{!s} SAM alignment record{} processed.\n" % (i, "s" if not pe_mode else " pairs"))
+                sys.stderr.write("{!s} SAM alignment record{} processed.\n".format(i, "s" if not pe_mode else " pairs"))
 
             i += 1
             if not pe_mode:
@@ -180,11 +181,13 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                 empty += 1
 
     except:
-        sys.stderr.write("Error occured when processing SAM input ({}):\n".format(read_seq_file.get_line_number_string()))
+        sys.stderr.write("Error occured when processing SAM input ({}):\n"
+            .format(read_seq_file.get_line_number_string()))
         raise
 
     if not quiet:
-        sys.stderr.write("{!s} SAM {} processed.\n".format(i, "alignments " if not pe_mode else "alignment pairs"))
+        sys.stderr.write("{!s} SAM {} processed.\n"
+            .format(i, "alignments " if not pe_mode else "alignment pairs"))
 
     # map to higher order features if applicable
     if mapping_file:
@@ -237,8 +240,8 @@ def main():
 
     parser.add_argument('-t', '--type', metavar='FEATURETYPE', dest='ftype',
         default= 'CDS', 
-        help="feature type (3rd column in GFF file) to be used [default: CDS]. "
-            "All features of other type are ignored")
+        help="feature type (3rd column in GFF file) to be used [default: CDS]."
+            " All features of other type are ignored")
          
     parser.add_argument('-a', '--attr', metavar='ATTRIBUTE',
         default="gene", 
@@ -273,12 +276,14 @@ def main():
     all_args = sys.argv[1:]
     prog = 'count_features.py'
 
-    sys.stderr.write("{} {!s}\nStarting with arguments: {}\n".format(prog, __version__, ' '.join(all_args)))
+    sys.stderr.write("{} {!s}\nStarting with arguments: {}\n"
+        .format(prog, __version__, ' '.join(all_args)))
 
     warnings.showwarning = my_showwarning
     try:
-        count_reads_in_features(args.alignment_file, args.feature_file, args.aformat, args.order,
-            args.mode, args.ftype, args.attr, args.quiet, args.minqual, args.mapping, args.norm)
+        count_reads_in_features(args.alignment_file, args.feature_file, 
+            args.aformat, args.order, args.mode, args.ftype, args.attr, 
+            args.quiet, args.minqual, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
         sys.stderr.write("  [Exception type: {}, raised in {}:{}]\n"
