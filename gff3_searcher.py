@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.10 - a program to filter annotations
+"""gff3_searcher v. 1.4.11 - a program to filter annotations
 
 Usage:
 
@@ -85,7 +85,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.10'
+__version__ = '1.4.11'
 
 
 def compile_ids(ids):
@@ -229,41 +229,45 @@ if __name__ == '__main__':
                 hits.append(line)
 
             if args.output_format == 'fasta':
-                for entry in fasta_iter(gff3_handle):
-                    for hit in hits:
-                        if entry['name'] == hit['seqid']:
-                            start = int(hit['start']) - 1
-                            end = int(hit['end']) - 1
-                            hit_sequence = entry['sequence'][start:end]
-                            try:
-                                hit_name = '{0} start_{1} end_{2} strand_"{3}" ' \
-                                           'annotation_\"{4}\"'.format(entry['name'],
-                                           hit['start'], hit['end'], hit['strand'],
-                                           hit['product'])
-                            except KeyError:
-                                continue
-                            if args.whole_contig:
-                                hit_sequence = entry['sequence']
-                                hit_name = '{0}'.format(entry['name'])
-                            if args.coverage is not None:
-                                rpk = coverages[hit['seqid']]
-                                hit_name = hit_name + ' coverage_' + rpk
-                            hit_entry = '>{0}\n{1}\n'.format(hit_name,
-                                                             hit_sequence)
-                            output = file.replace('.gff', '.hits.fasta')
-                            output_dir = os.getcwd() + os.sep + args.output_dir
-                            if args.output_dir is not None:
-                                if not os.path.isdir(output_dir):
-                                    os.mkdir(output_dir)
-                                output = output.split(os.sep)[-1]
-                                output = output_dir + os.sep + output
-                            else:
-                                output = output.split(os.sep)[-1]
-                                output = os.getcwd() + os.sep + output
-                            with open(output, 'a') as out_handle:
-                                out_handle.write(hit_entry)
-                            if args.whole_contig:
-                                break
+               output = file.replace('.gff', '.hits.fasta')
+               output_dir = os.getcwd() + os.sep + args.output_dir
+               if args.output_dir is not None:
+                   if not os.path.isdir(output_dir):
+                       os.mkdir(output_dir)
+                       output = output.split(os.sep)[-1]
+                       output = output_dir + os.sep + output
+                   else:
+                       output = output.split(os.sep)[-1]
+                       output = os.getcwd() + os.sep + output
+               with open(output, 'w') as out_handle:
+                   for entry in fasta_iter(gff3_handle):
+                       for hit in hits:
+                           if entry['name'] == hit['seqid']:
+                               start = int(hit['start']) - 1
+                               end = int(hit['end']) - 1
+                               hit_sequence = entry['sequence'][start:end]
+                               try:
+                                   hit_name = '{0} start_{1} end_{2} ' \
+                                              'strand_\"{3}\" ' \
+                                              'annotation_\"{4}\"'.format(
+                                                      entry['name'],
+                                                      hit['start'],
+                                                      hit['end'],
+                                                      hit['strand'],
+                                                      hit['product'])
+                               except KeyError:
+                                   continue
+                               if args.whole_contig:
+                                   hit_name += ' whole_contig'
+                                   hit_sequence = entry['sequence']
+                               if args.coverage is not None:
+                                   rpk = coverages[hit['seqid']]
+                                   hit_name = hit_name + ' coverage_' + rpk
+                               hit_entry = '>{0}\n{1}\n'.format(hit_name,
+                                                                hit_sequence)
+                               out_handle.write(hit_entry)
+                               if args.whole_contig:
+                                   break
 
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
