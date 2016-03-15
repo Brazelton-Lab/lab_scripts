@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.7 - a program to filter annotations
+"""gff3_searcher v. 1.4.8 - a program to filter annotations
 
 Usage:
 
@@ -252,7 +252,7 @@ if __name__ == '__main__':
                             hit_entry = '>{0}\n{1}\n'.format(hit_name,
                                                              hit_sequence)
                             output = file.replace('.gff', '.hits.fasta')
-                            output_dir = os.getcwd() + os.sep + arg.output_dir
+                            output_dir = os.getcwd() + os.sep + args.output_dir
                             if args.output_dir is not None:
                                 if not os.path.isdir(output_dir):
                                     os.mkdir(output_dir)
