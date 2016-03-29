@@ -211,6 +211,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
     else:
         abundances = counts
 
+    abundances['UNMAPPED'] = empty + ambiguous + lowqual + notaligned + nonunique
+
     for fn in sorted(abundances.keys()):
         print("{}\t{!s}".format(fn, abundances[fn]))
     sys.stderr.write("__no_feature\t{!s}\n".format(empty))
