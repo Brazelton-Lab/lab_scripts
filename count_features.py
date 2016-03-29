@@ -205,6 +205,9 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                 abundances[feature_category] = abundances.get(feature_category, 0) + abund
         if num_features > 0 and len(abundances) == 0:
             sys.stderr.write("Warning: No higher order features found. Please make sure the mapping file is formatted correctly.\n")
+        for feature in counts:
+            if feature not in abundances:
+                abundances['UNINTEGRATED'] = abundances.get('UNINTEGRATED', 0) + counts[feature]
     else:
         abundances = counts
 
@@ -278,6 +281,10 @@ def main():
 
     sys.stderr.write("{} {!s}\nStarting with arguments: {}\n"
         .format(prog, __version__, ' '.join(all_args)))
+
+    if args.norm and not args.mapping:
+        sys.stderr.write("argument -i/--id-mapping required with -n/--norm")
+        sys.exit(1)
 
     warnings.showwarning = my_showwarning
     try:
