@@ -13,8 +13,8 @@ import sys, argparse, itertools, warnings, traceback, os.path
 import HTSeq
 
 __author__ = 'Christopher Thornton'
-__version__ = '0.5'
-__date__ = '2016-03-09'
+__version__ = '0.7'
+__date__ = '2016-03-30'
 
 class UnknownChrom( Exception ):
    pass
@@ -62,7 +62,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
             if i % 100000 == 0 and not quiet:
                 sys.stderr.write("{!s} GFF lines processed.\n".format(i))
     except:
-        sys.stderr.write("Error occured when processing GFF file ({}):\n".format(gff.get_line_number_string()))
+        sys.stderr.write("Error occured when processing GFF file ({}):\n"
+            .format(gff.get_line_number_string()))
         raise
 
     if not quiet:
@@ -70,7 +71,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
 
     num_features = len(counts)
     if num_features == 0:
-        sys.stderr.write("Warning: No features of type '{}' found.\n".format(feature_type))
+        sys.stderr.write("Warning: No features of type '{}' found.\n"
+            .format(feature_type))
 
     if samtype == "sam":
         align_reader = HTSeq.SAM_Reader
@@ -91,7 +93,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
             read_seq = itertools.chain([first_read], read_seq_iter)
         pe_mode = first_read.paired_end
     except:
-        sys.stderr.write("Error occured when reading beginning of SAM/BAM file.\n" )
+        sys.stderr.write("Error occured when reading SAM/BAM file.\n" )
         raise
 
     try:
@@ -110,7 +112,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
         i = 0   
         for r in read_seq:
             if i > 0 and i % 100000 == 0 and not quiet:
-                sys.stderr.write("{!s} SAM alignment record{} processed.\n".format(i, "s" if not pe_mode else " pairs"))
+                sys.stderr.write("{!s} SAM alignment record{} processed.\n"
+                    .format(i, "s" if not pe_mode else " pairs"))
 
             i += 1
             if not pe_mode:
@@ -203,15 +206,21 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                     continue
                 abund = counts[feature] if scale_method == 'none' else scale_abundance(counts[feature], int(feature_length))
                 abundances[feature_category] = abundances.get(feature_category, 0) + abund
+
         if num_features > 0 and len(abundances) == 0:
-            sys.stderr.write("Warning: No higher order features found. Please make sure the mapping file is formatted correctly.\n")
+            sys.stderr.write("Warning: No higher order features found. Please "
+                "make sure the mapping file is formatted correctly.\n")
+
         for feature in counts:
             if feature not in abundances:
-                abundances['UNINTEGRATED'] = abundances.get('UNINTEGRATED', 0) + counts[feature]
+                abundances['UNMAPPED'] = abundances.get('UNMAPPED', 0) + counts[feature]
+
     else:
         abundances = counts
 
-    abundances['UNMAPPED'] = empty + ambiguous + lowqual + notaligned + nonunique
+    # "UNMAPPED" can be interpreted as a single unknown gene of length 1 
+    # kilobase recruiting all reads that failed to map to known sequences
+    abundances['UNMAPPED'] = (abundances.get('UNMAPPED', 0) + empty + ambiguous + lowqual + notaligned + nonunique)
 
     for fn in sorted(abundances.keys()):
         print("{}\t{!s}".format(fn, abundances[fn]))
