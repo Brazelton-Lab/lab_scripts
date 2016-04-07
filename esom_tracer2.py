@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '1.1.1'
+__version__ = '1.2.0'
 
 
 class Contig:
@@ -260,13 +260,15 @@ def main(args):
     print('> {0} unique contigs assigned taxa'.format(str(contigs_with_taxa)))
 
     # Color classes
-    header_colors = ['%1 255	255	255'] # Default class is white
+    header_colors = ['%1 255\t255\t255'] # Default class is white
     rgb_tuples = rainbow_picker(len(unique_taxa) - 1) # Ignore first class
     for rgb_tuple in enumerate(rgb_tuples):
         color = '%{0} {1}\t{2}\t{3}'.format(rgb_tuple[0] + 2, # Skip first cls
                                             int(rgb_tuple[1][0]),
                                             int(rgb_tuple[1][1]),
                                             int(rgb_tuple[1][2]))
+        if args.bw:
+            color = '%{0} 0\t0\t0'.format(rgb_tuple[0] + 2)
         header_colors.append(color)
 
     # Write .cls file
@@ -303,6 +305,9 @@ if __name__ == '__main__':
                         type=pysam.AlignmentFile,
                         help='BAM file containing alignment data '
                              'for short reads that aligned to the FASTA file')
+    parser.add_argument('--bw',
+                        action='store_true',
+                        help='color all data points black and white')
     parser.add_argument('--names', metavar='NAMES file',
                         required=True,
                         type=x_reader,
