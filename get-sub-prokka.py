@@ -1,4 +1,4 @@
-#!
+#! /bin/sh
 # given a .fasta file of contigs, a .gff file from prokka, a .faa file from prokka, and a .ffn file from prokka,
 # get entries in .faa and .ffn files that have Prokka IDs matching the contigs in the .fasta file as specified in the .gff file
 # to be used to extract predicted genes and proteins from Prokka for a subset of the contigs fed to Prokka. For example, one ESOM bin from a larger assembly
