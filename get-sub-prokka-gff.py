@@ -1,3 +1,4 @@
+#! /bin/sh
 # given a .gff file from prokka and a set of fasta files containing contigs represented in the gff file,
 # divide the gff file into separate gff files, one for each of the provided contig fasta files
 # to be used to extract separate gff files for ESOM bins that are subsets of a larger assembly
