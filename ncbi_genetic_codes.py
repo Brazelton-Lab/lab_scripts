@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 ncbi_gc_table = """
 --**************************************************************************
 --  This is the NCBI genetic code table

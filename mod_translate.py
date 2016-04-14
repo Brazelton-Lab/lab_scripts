@@ -1,4 +1,4 @@
-#!/usr/local/python/bin/python
+#! /usr/bin/env python
 
 #    Copyright 2002,2003,2004,2005 Rasmus Wernersson, Technical University of Denmark
 #
