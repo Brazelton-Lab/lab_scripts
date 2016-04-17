@@ -31,9 +31,11 @@ with open(newfilename,'w') as newfile:
 		newfile.write(filename + '\t')					# write header row
 	newfile.write('\n')	
 		
-	for id in d:
+	for id in l:
 		newfile.write(id + '\t')
-		for value in d[id]: newfile.write(str(value) + '\t')	# assumes same order in d as in list f
-		newfile.write('\n')
+		if id in d:
+			for value in d[id]: newfile.write(str(value) + '\t')	# assumes same order in d as in list f
+			newfile.write('\n')
+		else: newfile.write('\n')
 				
 		
