@@ -11,18 +11,26 @@ l = []
 with open(ids_file) as ids:
 	for id in ids: l.append(id.strip('\n'))
 
-f = []
-d = {}	
+f = []	# need to make defined list of filenames to make sure header row in new file is in correct order
 import glob
 for filename in glob.glob('*.function.tsv'):
+	f.append(filename)
+f.sort()
+
+d = {}	
+for id in l: d[id] = []		# establish entry for each ID in the list
+
+count = 0
+for filename in f:
+	count = count + 1
 	with open(filename) as file:
-		f.append(filename)
 		for line in file:
 			cols = line.split('\t')
-			if cols[0] in l: 
-				if cols[0] in d: d[cols[0]].append(cols[1].strip('\n'))
-				else: d[cols[0]] = list(tuple([cols[1].strip('\n')]))	
-			else: pass				
+			if cols[0] in l: d[cols[0]].append(cols[1].strip('\n'))
+			else: pass
+	for id in d: 
+		if len(d[id]) == count: pass
+		else: d[id].append('0')
 			
 with open(newfilename,'w') as newfile:
 	newfile.write('\t')
