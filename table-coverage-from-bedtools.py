@@ -55,7 +55,6 @@ else:
 			first_line = table_file.readline()
 			outfile.write(first_line.replace('\n','\t'))
 			outfile.write(bedtools_filename + '\n')
-			next(table_file) # skips first line
 			for row in table_file:
 				columns = row.split('\t') 		
 				outfile.write(row.replace('\n','\t'))
