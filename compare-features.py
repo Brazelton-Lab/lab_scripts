@@ -9,7 +9,10 @@ newfilename = sys.argv[2]
 
 l = []
 with open(ids_file) as ids:
-	for id in ids: l.append(id.strip('\n'))
+	for line in ids: 
+		cols = line.split('\t')
+		id = cols[0]
+		l.append(id.strip('\n'))
 
 f = []	# need to make defined list of filenames to make sure header row in new file is in correct order
 import glob
