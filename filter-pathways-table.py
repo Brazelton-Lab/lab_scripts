@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/usr/bin/env python
 # given output from pathways2contigs.py, filter table according to coverage or pathway
 # usage:
 # python filter-pathways-table.py file.IDs.contigs.tsv file.IDs.contigs.filter.tsv 0.5 all
