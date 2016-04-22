@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/env python
 # reports summary counts from prokka gff file
 # usage:
 # python prokka-counts.py <sample.gff>
