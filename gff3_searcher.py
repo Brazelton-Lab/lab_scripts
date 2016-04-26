@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.11 - a program to filter annotations
+"""gff3_searcher v. 1.4.12 - a program to filter annotations
 
 Usage:
 
@@ -85,7 +85,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.11'
+__version__ = '1.4.12'
 
 
 def compile_ids(ids):
@@ -169,14 +169,6 @@ if __name__ == '__main__':
                         help='only write hits that matche an entire ID')
     parser.add_argument('-f', '--fields',
                         nargs='*',
-                        choices=[
-                            'id',
-                            'gene',
-                            'inference',
-                            'locus_tag',
-                            'product',
-                            'ec_number'
-                        ],
                         default='all',
                         help='Which fields of the GFF3 files to search' \
                              'for IDs [Default: all]')
