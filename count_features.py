@@ -293,7 +293,7 @@ def main():
     sys.stderr.write("{} {!s}\nStarting with arguments: {}\n"
         .format(prog, __version__, ' '.join(all_args)))
 
-    if args.norm and not args.mapping:
+    if args.norm != 'none' and not args.mapping:
         sys.stderr.write("argument -i/--id-mapping required with -n/--norm")
         sys.exit(1)
 
