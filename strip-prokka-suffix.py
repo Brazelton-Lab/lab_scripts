@@ -8,6 +8,7 @@ import glob
 for filename in glob.glob(*.gff):
 	with open(filename) as gff:
 		newfilename = filename.replace('.gff','.good.gff')
+		print 'writing' + newfilename
 		with open(newfilename,'w') as newfile:
 			for line in gff:
 				if 'Name=' in line:
