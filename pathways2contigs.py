@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /usr/bin/env python
 # given a pathcoverage.tsv file from humann2 and a .gff file from Prokka, 
 # write a table that lists pathway - coverage - KEGG ID - contig name which contains that KEGG ID
 # also requires ontology file. for example: /srv/databases/ontology/foam
