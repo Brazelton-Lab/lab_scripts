@@ -11,7 +11,7 @@ l = []
 with open(ids_file) as ids:
 	for line in ids: 
 		cols = line.split('\t')
-		id = cols[0]
+		id = cols[0].strip()
 		l.append(id.strip('\n'))
 
 f = []	# need to make defined list of filenames to make sure header row in new file is in correct order
