@@ -26,7 +26,7 @@ import sys
 import zipfile
 
 __author__ = 'Alex Hyer'
-__version__ = '1.2.0'
+__version__ = '1.3.0'
 
 
 class Contig:
@@ -156,7 +156,7 @@ def taxa_dict(taxa_handle):
     taxa_handle.readline()
     for line in taxa_handle:
         columns = line.strip().split('\t')
-        temp_dict[columns[0].strip()][columns[3]] = [columns[4], columns[5]]
+        temp_dict[columns[0].strip().split()[0]][columns[3]] = [columns[4], columns[5]]
     return temp_dict
 
 
