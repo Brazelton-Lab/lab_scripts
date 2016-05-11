@@ -1,10 +1,10 @@
 #!/usr/bin/env Rscript
 # Author: Alex Hyer
-# Last Updated: 11-10-2015
+# Last Updated: 2016-05-11
 
 suppressPackageStartupMessages(library('argparse'))
 suppressPackageStartupMessages(library('ggplot2'))
-suppressPackageStartupMessages(library('phyloseq'))
+invisible(suppressPackageStartupMessages(library('phyloseq')))
 
 doc.string = paste('Create a barplot from Mothur taxonomic data')
 
@@ -126,8 +126,8 @@ if (args$no_legend==TRUE) {
 }
 
 # write tables
-tax.out = paste(args$output, '.tax.tsv', sep='')
-write.table(merged.props.level, file=tax.out, set='\t', na='0')
+tax.out = paste(args$output, '.otu.tsv', sep='')
+write.table(merged.props.level, file=tax.out, sep='\t', na='0')
 
 # Finally, plot the data
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,

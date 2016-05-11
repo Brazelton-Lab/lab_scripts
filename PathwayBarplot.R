@@ -1,4 +1,6 @@
 #!/usr/bin/env Rscript
+# Author: Alex Hyer
+# Last Updated: 2016-05-11
 
 suppressPackageStartupMessages(library('argparse'))
 
