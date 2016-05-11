@@ -126,10 +126,10 @@ if (args$no_legend==TRUE) {
 }
 
 # write tables
-tax.out = paste(args$output, '.otu.tsv', sep='')
-write.table(otu_table(merged.props.level), file=tax.out, sep='\t', na='0')
+tax.out = paste(args$output, '.tax.tsv', sep='')
+write.table(tax_table(merged.props.level), file=tax.out, sep='\t', na='0')
 
-# Finally, plot the data
+# Finally, plot the dataggG
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,
          title=paste('Taxonomy by Sample (', args$level, ')', sep='')) + 
          coord_flip() + ylab('Percent Sequences') + theme(legend.position=legend.position) +
