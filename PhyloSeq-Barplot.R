@@ -127,7 +127,7 @@ if (args$no_legend==TRUE) {
 
 # write tables
 tax.out = paste(args$output, '.otu.tsv', sep='')
-write.table(data.frame(merged.props.level), file=tax.out, sep='\t', na='0')
+write.table(otu_table(merged.props.level), file=tax.out, sep='\t', na='0')
 
 # Finally, plot the data
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,
