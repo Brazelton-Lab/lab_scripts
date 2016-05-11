@@ -100,7 +100,7 @@ if (args$ratio==TRUE) {
 }
 
 # Write raw output table
-table.out = paste(args$output, '.tbl', sep='')
+table.out = paste(args$output, '.tsv', sep='')
 write.table(master.table, file=table.out, sep='\t', na='0')
 
 # Create image file chosen by user
@@ -130,7 +130,7 @@ if (args$ratio==TRUE){
   x.label = 'Abudnance (RPK)'
 }
 
-# Finally plot the data
+# Finally, plot the data
 barplot(as.matrix(master.table), horiz=TRUE,
         col=colors,
         main='Metagenomic Pathway Profiles',

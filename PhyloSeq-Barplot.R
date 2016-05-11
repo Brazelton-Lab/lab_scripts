@@ -125,6 +125,11 @@ if (args$no_legend==TRUE) {
     legend.position = 'bottom'
 }
 
+# write tables
+tax.out = paste(args$output, '.tax.tsv', sep='')
+write.table(merged.props.level, file=tax.out, set='\t', na='0')
+
+# Finally, plot the data
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,
          title=paste('Taxonomy by Sample (', args$level, ')', sep='')) + 
          coord_flip() + ylab('Percent Sequences') + theme(legend.position=legend.position) +
