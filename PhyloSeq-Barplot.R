@@ -128,6 +128,8 @@ if (args$no_legend==TRUE) {
 # write tables
 tax.out = paste(args$output, '.tax.tsv', sep='')
 write.table(tax_table(merged.props.level), file=tax.out, sep='\t', na='0')
+otu.out = paste(args$output, '.otu.tsv', sep='')
+write.table(otu_table(merged.props.level), file=otu.out, sep='\t', na='0')
 
 # Finally, plot the dataggG
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,
