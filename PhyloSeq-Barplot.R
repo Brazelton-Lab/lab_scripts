@@ -2,8 +2,8 @@
 # Author: Alex Hyer
 # Last Updated: 2016-05-11
 
-suppressPackageStartupMessages(library('argparse'))
-suppressPackageStartupMessages(library('ggplot2'))
+invisible(suppressPackageStartupMessages(library('argparse')))
+invisible(suppressPackageStartupMessages(library('ggplot2')))
 invisible(suppressPackageStartupMessages(library('phyloseq')))
 
 doc.string = paste('Create a barplot from Mothur taxonomic data')
@@ -127,7 +127,7 @@ if (args$no_legend==TRUE) {
 
 # write tables
 tax.out = paste(args$output, '.otu.tsv', sep='')
-write.table(merged.props.level, file=tax.out, sep='\t', na='0')
+write.table(data.frame(merged.props.level), file=tax.out, sep='\t', na='0')
 
 # Finally, plot the data
 plot_bar(merged.props.level, x='Sample', y='Abundance', args$level,
