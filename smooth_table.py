@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-"""Extend elements of a table w/ s given string to match the
+"""Extend elements of a table w/ given string to match the
 longest line of the table"""
 
 import argparse
