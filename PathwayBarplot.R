@@ -105,16 +105,21 @@ if (args$ratio==TRUE) {
 table.out = paste(args$output, '.tsv', sep='')
 write.table(master.table, file=table.out, sep='\t', na='0')
 
+# Calculate image proprotions
+scale = nrow(master.table)
+image.height = 1000 + 8 * scale
+
+
 # Create image file chosen by user
 image.out = paste(args$output, '.', args$file_type, sep='')
 if (args$file_type=='bmp'){
-  bmp(filename=image.out, width=1000, height=1000)
+  bmp(filename=image.out, width=1000, height=image.height)
 } else if (args$file_type=='jpeg') {
-  jpeg(filename=image.out, width=1000, height=1000)
+  jpeg(filename=image.out, width=1000, height=image.height)
 } else if (args$file_type=='png') {
-  png(filename=image.out, width=1000, height=1000)
+  png(filename=image.out, width=1000, height=image.height)
 } else if (args$file_type=='tiff') {
-  tiff(filename=image.out, width=1000, height=1000)
+  tiff(filename=image.out, width=1000, height=image.height)
 }
 
 # Set parameters used multiple times later
