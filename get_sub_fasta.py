@@ -16,10 +16,6 @@ Synopsis:
 Required Arguments:
 
     output:        Name of file to write matches to
-    tool:          Which search alorithm to use
-    ids:           One or more IDs to search for (see Tools below)
-                   IDs can be written as regular expressions
-    input:         One or more FASTA or FASTQ files to search (see Tools below)
 
 Optional Arguments:
 
@@ -119,7 +115,7 @@ if __name__ == '__main__':
     elif args.ids is None and args.files is None:
         print('Must specify one or more IDs and one or more files.')
         sys.exit(1)
-    elif args.ids is None and args.file is not None:
+    elif args.ids is None and args.files is not None:
         args.ids = [id for id in args.id_file]
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
     else:
