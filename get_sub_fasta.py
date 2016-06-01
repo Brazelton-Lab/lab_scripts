@@ -113,7 +113,7 @@ if __name__ == '__main__':
                         nargs='*',
                         help='Files to extract IDs from')
     parser.add_argument('--ids', metavar='IDs',
-                        default=None,
+                        default=sys.stdin,
                         help='IDs to extract from input files')
     args = parser.parse_args()
 
