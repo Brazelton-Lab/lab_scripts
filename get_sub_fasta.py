@@ -112,8 +112,11 @@ if __name__ == '__main__':
                         default=None,
                         nargs='*',
                         help='Files to extract IDs from')
-    parser.add_argument('--ids', metavar='IDs',
+    parser.add_argument('--id_file',
+                        type=argparse.FileType('rU'),
                         default=sys.stdin,
+                        help='File where each line is a new ID')
+    parser.add_argument('--ids', metavar='IDs',
                         help='IDs to extract from input files')
     args = parser.parse_args()
 
@@ -123,6 +126,9 @@ if __name__ == '__main__':
     elif args.ids is None and args.files is None:
         print('Must specify one or more IDs and one or more files.')
         sys.exit(1)
+    elif args.ids is None and args.file is not None:
+        args.ids = [id for id in args.id_file]
+        entries = extract_ids(args.ids, args.files, fastq=args.fastq)
     else:
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
 
