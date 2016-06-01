@@ -4,7 +4,8 @@
 
 Usage:
 
-    get_sub_fasta.py <output> [--fastq] <tool> <ids/input> <ids/input>
+    get_sub_fasta.py <output> [--fastq] [--files <file1> <file2> ...]
+                     [--ids <id1> <id2> ... | --id_file <file>]
 
 Synopsis:
 
@@ -23,18 +24,10 @@ Required Arguments:
 Optional Arguments:
 
     --fastq:       Specifies input files as FASTQ files [Default: FASTA]
-
-Tools:
-
-    multi_id:      This tools searchs a single FASTA or FASTQ file with
-                   multiple IDs. If a header matches any of the IDs, it is
-                   written to the output file. If specified, the last two
-                   required arguments are: <input> <ids>
-
-    multi_sample:  This tool searchs multiple FASTA or FASTQ files with a
-                   single ID. All matches are written to the same output file.
-                   If specified, the last two required arguments are:
-                   <ids> <input>
+    --files:       FASTA or FASTQ files to search
+    --ids:         One or more IDs to search for IDs can be written as
+                   regular expressions
+    --id_file:     File where each line is an ID [Default: STDIN]
 """
 
 from __future__ import print_function
