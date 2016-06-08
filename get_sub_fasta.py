@@ -66,7 +66,7 @@ def extract_ids(ids, files, fastq=False):
     entries = []
     compiled_ids = compile_ids(ids)
     for file_ in files:
-        for entry in fastaq_iter(in_handle, fastq=fastq):
+        for entry in fastaq_iter(file_, fastq=fastq):
             for compiled_id in compiled_ids:
                 if len(compiled_id.findall(entry['name'])) == 1:
                     to_return = ''
