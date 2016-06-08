@@ -41,8 +41,8 @@ def compile_ids(ids):
     """Converts IDs to raw strings, compiles them, and returns them as a list"""
 
     compiled_ids = []
-    for id in ids:
-        compiled_ids.append(re.compile(repr(id)))
+    for id_ in ids:
+        compiled_ids.append(re.compile(repr(id_)))
     return compiled_ids
 
 
@@ -65,23 +65,22 @@ def extract_ids(ids, files, fastq=False):
 
     entries = []
     compiled_ids = compile_ids(ids)
-    for file in files:
-        with open(file, 'rU') as in_handle:
-            for entry in fastaq_iter(in_handle, fastq=fastq):
-                for compiled_id in compiled_ids:
-                    if len(compiled_id.findall(entry['name'])) == 1:
-                        to_return = ''
-                        if not fastq:
-                            to_return = '>{0}\n{1}\n'.format(entry['name'], \
-                                                             entry['sequence'])
-                        else:
-                            to_return = '@{0}\n{1}\n+\n{2}\n'.format( \
-                                                             entry['name'],
-                                                             entry['sequence'],
-                                                             entry['accuracy'])      
-                        # Stop after first ID match
-                        break
-                        entries.append(to_return)
+    for file_ in files:
+        for entry in fastaq_iter(in_handle, fastq=fastq):
+            for compiled_id in compiled_ids:
+                if len(compiled_id.findall(entry['name'])) == 1:
+                    to_return = ''
+                    if not fastq:
+                        to_return = '>{0}\n{1}\n'.format(entry['name'], \
+                                                         entry['sequence'])
+                    else:
+                        to_return = '@{0}\n{1}\n+\n{2}\n'.format( \
+                                                         entry['name'],
+                                                         entry['sequence'],
+                                                         entry['accuracy'])      
+                    # Stop after first ID match
+                    break
+                    entries.append(to_return)
     return entries
                     
 
@@ -120,7 +119,6 @@ if __name__ == '__main__':
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
     else:
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
-    print(entries)
 
     with open(args.output, 'w') as out_handle:
         for entry in entries:
