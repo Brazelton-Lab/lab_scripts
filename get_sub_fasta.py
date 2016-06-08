@@ -42,7 +42,9 @@ def compile_ids(ids):
 
     compiled_ids = []
     for id_ in ids:
+        print(repr(id_))
         compiled_ids.append(re.compile(repr(id_)))
+        print(compiled_ids[0])
     return compiled_ids
 
 
@@ -109,8 +111,7 @@ if __name__ == '__main__':
     parser.add_argument('--ids', metavar='IDs',
                         help='IDs to extract from input files')
     args = parser.parse_args()
-    print(args.ids)
-    sys.exit()
+
     if args.output is None:
         print(__doc__)
         sys.exit(0)
