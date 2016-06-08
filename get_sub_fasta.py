@@ -66,21 +66,22 @@ def extract_ids(ids, files, fastq=False):
     entries = []
     compiled_ids = compile_ids(ids)
     for file_ in files:
-        for entry in fastaq_iter(file_, fastq=fastq):
-            for compiled_id in compiled_ids:
-                if len(compiled_id.findall(entry['name'])) == 1:
-                    to_return = ''
-                    if not fastq:
-                        to_return = '>{0}\n{1}\n'.format(entry['name'], \
-                                                         entry['sequence'])
-                    else:
-                        to_return = '@{0}\n{1}\n+\n{2}\n'.format( \
-                                                         entry['name'],
-                                                         entry['sequence'],
-                                                         entry['accuracy'])      
-                    # Stop after first ID match
-                    break
-                    entries.append(to_return)
+        with open(file_, 'rU') as in_handle
+            for entry in fastaq_iter(in_handle, fastq=fastq):
+                for compiled_id in compiled_ids:
+                    if len(compiled_id.findall(entry['name'])) == 1:
+                        to_return = ''
+                        if not fastq:
+                            to_return = '>{0}\n{1}\n'.format(entry['name'], \
+                                                             entry['sequence'])
+                        else:
+                            to_return = '@{0}\n{1}\n+\n{2}\n'.format( \
+                                                             entry['name'],
+                                                             entry['sequence'],
+                                                             entry['accuracy'])      
+                        # Stop after first ID match
+                        break
+                        entries.append(to_return)
     return entries
                     
 
