@@ -108,6 +108,7 @@ if __name__ == '__main__':
                         default=sys.stdin,
                         help='File where each line is a new ID')
     parser.add_argument('--ids', metavar='IDs',
+                        nargs='*',
                         help='IDs to extract from input files')
     args = parser.parse_args()
 
