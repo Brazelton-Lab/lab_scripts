@@ -117,7 +117,9 @@ if __name__ == '__main__':
         print('Must specify one or more IDs and one or more files.')
         sys.exit(1)
     elif args.ids is None and args.files is not None:
-        args.ids = [id for id in args.id_file]
+        args.ids = [id_ for id_ in args.id_file]
+        print(args.ids)
+        sys.exit(0)
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
     else:
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
