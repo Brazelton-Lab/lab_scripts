@@ -109,7 +109,8 @@ if __name__ == '__main__':
     parser.add_argument('--ids', metavar='IDs',
                         help='IDs to extract from input files')
     args = parser.parse_args()
-
+    print(args.ids)
+    sys.exit()
     if args.output is None:
         print(__doc__)
         sys.exit(0)
