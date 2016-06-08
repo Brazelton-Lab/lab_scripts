@@ -43,6 +43,7 @@ def compile_ids(ids):
     compiled_ids = []
     for id_ in ids:
         compiled_ids.append(re.compile(unicode(id_, 'UTF-8')))
+    print([repr(ide) for ide in compiled_ids])
     return compiled_ids
 
 
