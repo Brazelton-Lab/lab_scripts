@@ -80,9 +80,8 @@ def extract_ids(ids, files, fastq=False):
                                                              entry['sequence'],
                                                              entry['accuracy'])      
                         # Stop after first ID match
-                        print(to_return)
-                        break
                         entries.append(to_return)
+                        break
     return entries
                     
 
