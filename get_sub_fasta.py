@@ -69,7 +69,6 @@ def extract_ids(ids, files, fastq=False):
         with open(file_, 'rU') as in_handle:
             for entry in fastaq_iter(in_handle, fastq=fastq):
                 for compiled_id in compiled_ids:
-                    print(len(compiled_id.findall(entry['name'])))
                     if len(compiled_id.findall(entry['name'])) == 1:
                         to_return = ''
                         if not fastq:
@@ -81,6 +80,7 @@ def extract_ids(ids, files, fastq=False):
                                                              entry['sequence'],
                                                              entry['accuracy'])      
                         # Stop after first ID match
+                        print(to_return)
                         break
                         entries.append(to_return)
     return entries
