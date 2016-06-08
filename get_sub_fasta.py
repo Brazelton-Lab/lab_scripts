@@ -42,7 +42,7 @@ def compile_ids(ids):
 
     compiled_ids = []
     for id_ in ids:
-        compiled_ids.append(re.compile(unicode(id_, 'UTF-8'))
+        compiled_ids.append(re.compile(unicode(id_, 'UTF-8')))
     return compiled_ids
 
 
