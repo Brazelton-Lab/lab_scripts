@@ -120,6 +120,7 @@ if __name__ == '__main__':
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
     else:
         entries = extract_ids(args.ids, args.files, fastq=args.fastq)
+    print(entries)
 
     with open(args.output, 'w') as out_handle:
         for entry in entries:
