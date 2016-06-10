@@ -14,7 +14,7 @@ extension = '*' + sys.argv[2]
 # check that files are in proper order in command line
 if gff_file[-4:] == '.gff': pass
 else:
-	print 'Please enter files in this order: assembly.gff directory-of-contig-fasta-files'
+	print 'Please enter files in this order: assembly.gff extension-of-fasta-files-with-contigs'
 	sys.exit()
 
 
@@ -40,7 +40,7 @@ for filename in glob.glob(extension):
 # write each component of the gff file to the appropriate file			
 for filename in c:
 	newfilename = filename.replace(sys.argv[2],'gff')
-	with open(newfilename,'a') as newfile:
+	with open(newfilename,'w') as newfile:
 		newfile.write('##gff-version 3\n')
 		with open(gff_file) as gff:
 			scount = 0
@@ -51,12 +51,16 @@ for filename in c:
 					contig_name = cols[1]
 					contig_name = contig_name.replace('-','_')
 					contig_name = contig_name.replace(' ','_')
+					contig_name = contig_name.split('_')
+					contig_name = contig_name[0] + '_' + contig_name[1]
 					if contig_name in c[filename]: 
 						newfile.write(line)
 						scount = scount + 1
-				elif line[:6] == 'contig':
+				elif 'ID=PROKKA' in line:
 					contig_id = line.split('\t')
 					contig_id = contig_id[0].replace('-','_')
+					contig_id = contig_id.split('_')
+					contig_id = contig_id[0] + '_' + contig_id[1]
 					if contig_id in c[filename]: 
 						newfile.write(line)
 						gcount = gcount + 1
