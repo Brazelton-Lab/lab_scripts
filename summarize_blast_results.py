@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-__version__ = '0.0.0.3'
+__version__ = '0.0.0.4'
 __author__ = 'Alex Hyer'
 
 import argparse
@@ -17,7 +17,7 @@ import sys
 def create_id_conversion_dict(gff3_file):
     temp_dict = {}
     with open(gff3_file, 'rU') as gff3_handle:
-        for entry in gff3_iter(gff3_handle):
+        for entry in gff3_iter(gff3_handle, parse_attr=True):
             contig_id = entry.seqid
             prokka_id = entry.attributes['ID']
             if prokka_id not in temp_dict:
