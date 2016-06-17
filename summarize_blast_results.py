@@ -1,17 +1,17 @@
 #! /usr/bin/env python
 
-"""Adjust BLAST results on contigs by contig coverage"""
-
 from __future__ import print_function
 
-__version__ = '0.0.0.8'
-__author__ = 'Alex Hyer'
+"""Adjust BLAST results on contigs by contig coverage"""
 
 import argparse
 from bio_utils.iterators import gff3_iter
 from bio_utils.iterators import b6_iter
 from bio_utils.iterators import fasta_iter
 import sys
+
+__version__ = '0.0.0.9'
+__author__ = 'Alex Hyer'
 
 
 def create_id_conversion_dict(gff3_file):
@@ -60,8 +60,8 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                         contig_id = id_conversion_dict[prokka_id]
                         if contig_id in conversion_table:
                             if prokka_id not in already_hit:
-                                rpk = (float(conversion_table[contig_id])
-                                       / float(short_read_length)) * 1000
+                                rpk = (float(conversion_table[contig_id]) /
+                                       float(short_read_length)) * 1000
                                 reads = (rpk / 1000) * entry.align_len
                                 already_hit[prokka_id] = (rpk, reads)
     return already_hit
@@ -72,7 +72,7 @@ def obtain_annotations(fasta_file):
     with open(fasta_file, 'rU') as fasta_handle:
         for entry in fasta_iter(fasta_handle):
             if entry.id not in temp_dict:
-                temp_dict[entry.id] = ' '.join(entry.id.split()[1:])
+                temp_dict[entry.id] = entry.description
     return temp_dict
 
 
