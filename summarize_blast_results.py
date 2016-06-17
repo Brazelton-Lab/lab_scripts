@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-__version__ = '0.0.0.6'
+__version__ = '0.0.0.7'
 __author__ = 'Alex Hyer'
 
 import argparse
@@ -71,9 +71,8 @@ def obtain_annotations(fasta_file):
     temp_dict = {}
     with open(fasta_file, 'rU') as fasta_handle:
         for entry in fasta_iter(fasta_handle):
-            name = entry.id.split()[0]
-            if not name in temp_dict:
-                temp_dict[name] = ' '.join(entry.id.split()[1:])
+            if not entry.id in temp_dict:
+                temp_dict[entry.id] = ' '.join(entry.id.split()[1:])
     return temp_dict
 
 
