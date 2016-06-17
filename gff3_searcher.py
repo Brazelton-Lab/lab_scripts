@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.12 - a program to filter annotations
+"""gff3_searcher v. 1.4.13 - a program to filter annotations
 
 Usage:
 
@@ -53,11 +53,11 @@ Fields:
         PROKKA 1.12-beta (and likely other versions of PROKKA) have a very
     specific format for the last column of a GFF3 file (the attributes column).
     Below is an explanation of the fields that gff3_searcher can specifically
-    search (as opposed to searching the whole attributes column):
+    search (as opposed to searching the whole attributes column)*:
 
     id:           The unique PROKKA given ID to an annotation. This field is
                   only useful to search when one wants to specifically pull
-                  out the information on a PROKKA entry of known ID. 
+                  out the information on a PROKKA entry of known ID.
     gene:         The short gene name, i.e. rnfC, minD_1, etc.
     inference:    The protein in the database that PROKKA was run on that the
                   annotation was similar to, aka if PROKKA was run on the
@@ -72,6 +72,9 @@ Fields:
                   with is 'meth', all (or more safely stated, nearly all)
                   genes related to methane use will be extracted.
     ec_number:    The Enzyme Commision Number, if one is available.
+
+    *Note: gff3_searcher now takes arbitrary field names but these fields are
+    often the most useful.
 """
 
 from __future__ import print_function
@@ -85,7 +88,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.12'
+__version__ = '1.4.13'
 
 
 def compile_ids(ids):
@@ -97,25 +100,25 @@ def compile_ids(ids):
 
 def gff3_line_by_id_retriever(gff3_handle, ids, fields='all'):
     """ids is list of re.compiled ids"""
-    for entry in gff3_iter(gff3_handle, prokka=True):
-         if fields != 'all':
-             second_loop_break = False
-             for field in fields:
-                 for id in ids:
-                     try:
-                         if len(re.findall(id, entry[field])) != 0:
-                             yield entry
-                             second_loop_break = True
-                             break
-                     except KeyError:
-                         continue
-                     if second_loop_break:
-                         break
-         else:
-             for id in ids:
-                 if len(re.findall(id, entry['attributes'])) != 0:
-                     yield entry
-             
+    for entry in gff3_iter(gff3_handle, parse_attr=True):
+        if fields != 'all':
+            second_loop_break = False
+            for field in fields:
+                for id in ids:
+                    try:
+                        if len(re.findall(id, entry.attributes[field])) != 0:
+                            yield entry
+                            second_loop_break = True
+                            break
+                    except KeyError:
+                        continue
+                    if second_loop_break:
+                        break
+        else:
+            for id in ids:
+                if len(re.findall(id, entry.attributes)) != 0:
+                    yield entry
+
 
 def read_config():
     try:
@@ -124,15 +127,18 @@ def read_config():
             return default_directory
     except IOError:
         print('Could not find config file at /usr/local/etc/gff3_searcher')
-        user_input = raw_input('Enter a default directory for the config file: ')
+        user_input = raw_input(
+            'Enter a default directory for the config file: ')
         try:
             with open('/usr/local/etc/gff3_searcher', 'w') as config_handle:
                 config_handle.write(user_input + '\n')
             return user_input
         except IOError:
             print('Could not write to /usr/local/etc/gff3_searcher.')
-            print('You probably do not have write permissions to this directory')
-            print('Contact your system administrator about creating this file,')
+            print(
+                'You probably do not have write permissions to this directory')
+            print(
+                'Contact your system administrator about creating this file,')
             print('or use the --gff3_files option to manually specify files.')
 
 
@@ -145,8 +151,8 @@ def read_conversion_table(conversion_table_file, database):
         if database in databases:
             column_number = databases.index(database)
         else:
-            print('{0} not in {1}. Avaialble databases are:'.format(
-                  database, conversion_table_file))
+            print('{0} not in {1}. Available databases are:'.format(
+                database, conversion_table_file))
             print('\n'.join(databases[1:]))
         for line in table_handle:
             columns = line.strip().split('\t')
@@ -170,12 +176,12 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--fields',
                         nargs='*',
                         default='all',
-                        help='Which fields of the GFF3 files to search' \
+                        help='Which fields of the GFF3 files to search'
                              'for IDs [Default: all]')
     parser.add_argument('--gff3_files', metavar='GFF3 Files',
                         nargs='*',
                         default=None,
-                        help='GFF3 files to search for IDs ' \
+                        help='GFF3 files to search for IDs '
                              '[Default: config file]')
     parser.add_argument('--ids', metavar='IDs',
                         nargs='*',
@@ -190,13 +196,13 @@ if __name__ == '__main__':
                             'gff3'
                         ],
                         default='gff3',
-                        help='Output Format to write the Output File in ' \
+                        help='Output Format to write the Output File in '
                              '[Default: gff3]')
     parser.add_argument('--whole_contig', '-w',
                         action='store_true',
-                        help='retrieve entire contig rather than just the ' \
+                        help='retrieve entire contig rather than just the '
                              'annotated sequence')
-    args=parser.parse_args()
+    args = parser.parse_args()
 
     if not args.gff3_files:
         default_directory = read_config()
@@ -216,50 +222,51 @@ if __name__ == '__main__':
             coverages = read_conversion_table(args.coverage, database)
         with open(file, 'rU') as gff3_handle:
             hits = []
-            for line in gff3_line_by_id_retriever(gff3_handle, compiled_ids, \
+            for line in gff3_line_by_id_retriever(gff3_handle, compiled_ids,
                                                   fields=args.fields):
                 hits.append(line)
 
             if args.output_format == 'fasta':
-               output = file.replace('.gff', '.hits.fasta')
-               output_dir = os.getcwd() + os.sep + args.output_dir
-               if args.output_dir is not None:
-                   if not os.path.isdir(output_dir):
-                       os.mkdir(output_dir)
-                       output = output.split(os.sep)[-1]
-                       output = output_dir + os.sep + output
-                   else:
-                       output = output.split(os.sep)[-1]
-                       output = os.getcwd() + os.sep + output
-               with open(output, 'w') as out_handle:
-                   for entry in fasta_iter(gff3_handle):
-                       for hit in hits:
-                           if entry['name'] == hit['seqid']:
-                               start = int(hit['start']) - 1
-                               end = int(hit['end']) - 1
-                               hit_sequence = entry['sequence'][start:end]
-                               try:
-                                   hit_name = '{0} start_{1} end_{2} ' \
-                                              'strand_\"{3}\" ' \
-                                              'annotation_\"{4}\"'.format(
-                                                      entry['name'],
-                                                      hit['start'],
-                                                      hit['end'],
-                                                      hit['strand'],
-                                                      hit['product'])
-                               except KeyError:
-                                   continue
-                               if args.whole_contig:
-                                   hit_name += ' whole_contig'
-                                   hit_sequence = entry['sequence']
-                               if args.coverage is not None:
-                                   rpk = coverages[hit['seqid']]
-                                   hit_name = hit_name + ' coverage_' + rpk
-                               hit_entry = '>{0}\n{1}\n'.format(hit_name,
-                                                                hit_sequence)
-                               out_handle.write(hit_entry)
-                               if args.whole_contig:
-                                   break
+                output = file.replace('.gff', '.hits.fasta')
+                output_dir = os.getcwd() + os.sep + args.output_dir
+                if args.output_dir is not None:
+                    if not os.path.isdir(output_dir):
+                        os.mkdir(output_dir)
+                        output = output.split(os.sep)[-1]
+                        output = output_dir + os.sep + output
+                    else:
+                        output = output.split(os.sep)[-1]
+                        output = os.getcwd() + os.sep + output
+                with open(output, 'w') as out_handle:
+                    for entry in fasta_iter(gff3_handle):
+                        for hit in hits:
+                            if entry.id == hit.seqid:
+                                start = int(hit.start) - 1
+                                end = int(hit.end) - 1
+                                hit_sequence = entry.sequence[start:end]
+                                try:
+                                    hit_name = '{0} start_{1} end_{2} ' \
+                                               'strand_\"{3}\" ' \
+                                               'annotation_\"{4}\"'\
+                                               .format(entry.id,
+                                                       str(hit.start),
+                                                       str(hit.end),
+                                                       hit.strand,
+                                                       hit.attributes[
+                                                                    'product'])
+                                except KeyError:
+                                    continue
+                                if args.whole_contig:
+                                    hit_name += ' whole_contig'
+                                    hit_sequence = entry.sequence
+                                if args.coverage is not None:
+                                    rpk = coverages[hit.seqid]
+                                    hit_name = hit_name + ' coverage_' + rpk
+                                hit_entry = '>{0}\n{1}\n'.format(hit_name,
+                                                                 hit_sequence)
+                                out_handle.write(hit_entry)
+                                if args.whole_contig:
+                                    break
 
             if args.output_format == 'gff3':
                 output = file.replace('.gff', '.hits.gff')
@@ -275,15 +282,12 @@ if __name__ == '__main__':
                 with open(output, 'w') as out_handle:
                     out_handle.write('##gff-version 3\n')
                     for hit in hits:
-                        hit_entry = '{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n' \
-                                    .format(hit['seqid'], hit['source'],
-                                    hit['type'], hit['start'], hit['end'],
-                                    hit['score'], hit['strand'], hit['phase'],
-                                    hit['attributes'])
+                        hit_entry = hit.write()
                         if args.coverage is not None:
-                            rpk = coverages[hit['seqid']]
+                            rpk = coverages[hit.seqid]
                             hit_entry = hit_entry.replace('\n', \
-                                        ';coverage:{0}\n'.format(rpk))
+                                                          ';coverage:{0}\n'.format(
+                                                              rpk))
                         out_handle.write(hit_entry)
 
     sys.exit(0)
