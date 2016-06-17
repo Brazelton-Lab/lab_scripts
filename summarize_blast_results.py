@@ -4,21 +4,22 @@
 
 from __future__ import print_function
 
-__version__ = '0.0.0.1'
+__version__ = '0.0.0.2'
 __author__ = 'Alex Hyer'
 
 import argparse
-from bio_utils.iterators.gff3 import gff3_iter
-from bio_utils.iterators.m8 import m8_iter
+from bio_utils.iterators import gff3_iter
+from bio_utils.iterators import b6_iter
 from screed.fasta import fasta_iter
 import sys
+
 
 def create_id_conversion_dict(gff3_file):
     temp_dict = {}
     with open(gff3_file, 'rU') as gff3_handle:
         for entry in gff3_iter(gff3_handle):
-            contig_id = entry['seqid']
-            prokka_id = entry['attributes'].lstrip('ID=').split(';')[0]
+            contig_id = entry.seqid
+            prokka_id = entry.attributes.lstrip('ID=').split(';')[0]
             if prokka_id not in temp_dict:
                 temp_dict[prokka_id] = contig_id
     return temp_dict
@@ -33,7 +34,7 @@ def read_conversion_table(conversion_table_file, database):
             column_number = databases.index(database)
         else:
             print('{0} not in {1}. Avaialble databases are:'.format(
-                  database, conversion_table_file))
+                database, conversion_table_file))
             print('\n'.join(databases[1:]))
         for line in table_handle:
             columns = line.strip().split('\t')
@@ -42,34 +43,34 @@ def read_conversion_table(conversion_table_file, database):
             if coverage != 'None':
                 temp_dict[contig_id] = coverage
     return temp_dict
-        
+
 
 def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                        short_read_length, eValue, alignLen):
-    alreadyHit = {}
+    already_hit = {}
     with open(blast_table_file, 'rU') as blast_handle:
-        for entry in m8_iter(blast_handle):
-            if eValue == None or float(entry['eValue']) <= eValue:
-                if alignLen == None or int(entry['alignLen']) >= alignLen:
-                    prokka_id = entry['subjectID']
+        for entry in b6_iter(blast_handle):
+            if eValue is None or float(entry.evalue) <= eValue:
+                if alignLen is None or int(entry.align_len) >= alignLen:
+                    prokka_id = entry.subject
                     if prokka_id in id_conversion_dict:
                         contig_id = id_conversion_dict[prokka_id]
                         if contig_id in conversion_table:
-                            if prokka_id not in alreadyHit:
-                                rpk = (float(conversion_table[contig_id])\
-                                      / float(short_read_length)) * 1000
+                            if prokka_id not in already_hit:
+                                rpk = (float(conversion_table[contig_id])
+                                       / float(short_read_length)) * 1000
                                 reads = (rpk / 1000) * float(entry['alignLen'])
-                                alreadyHit[prokka_id] = (rpk, reads)
-    return alreadyHit
+                                already_hit[prokka_id] = (rpk, reads)
+    return already_hit
 
 
 def obtain_annotations(fasta_file):
     temp_dict = {}
     with open(fasta_file, 'rU') as fasta_handle:
         for entry in fasta_iter(fasta_handle):
-            name = entry['name'].split()[0]
+            name = entry.id.split()[0]
             if not name in temp_dict:
-                temp_dict[name] = ' '.join(entry['name'].split()[1:])
+                temp_dict[name] = ' '.join(entry.id.split()[1:])
     return temp_dict
 
 
@@ -78,7 +79,7 @@ if __name__ == '__main__':
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
     parser.add_argument('fasta_file',
-                        help = 'the FASTA file used as the BLAST database')
+                        help='the FASTA file used as the BLAST database')
     parser.add_argument('blast_table', metavar='BLAST table',
                         help='BLAST results table, output format 6')
     parser.add_argument('prokka_gff3_file',
@@ -86,7 +87,7 @@ if __name__ == '__main__':
                         help='Annotation file from PROKKA for ID conversion')
     parser.add_argument('contig_coverage_table',
                         metavar='Contig Coverage Table',
-                        help='A table containing coverage values for contigs' \
+                        help='A table containing coverage values for contigs'
                              ' in the BLAST database')
     parser.add_argument('database',
                         help='the sample name')
@@ -102,9 +103,11 @@ if __name__ == '__main__':
                         type=int,
                         default=None,
                         help='minimum alignment length to accept')
-    args = parser.parse_args() 
+    args = parser.parse_args()
 
-    print('Warning: Calculating reads and RPK assuming a short read length of {}'.format(args.short_read_length))
+    print(
+        'Warning: Calculating reads and RPK assuming a short read length of {}'
+            .format(args.short_read_length))
     id_conversion_dict = create_id_conversion_dict(args.prokka_gff3_file)
     conversion_table = read_conversion_table(args.contig_coverage_table,
                                              args.database)
@@ -117,7 +120,9 @@ if __name__ == '__main__':
         out_handle.write('Annotations\tRPK\tReads\n')
         for prokka_id in unique_rpks:
             out_handle.write('{0}\t{1}\t{2}\n'.format(annotations[prokka_id],
-                                               unique_rpks[prokka_id][0],
-                                               unique_rpks[prokka_id][1]))
+                                                      unique_rpks[prokka_id][
+                                                          0],
+                                                      unique_rpks[prokka_id][
+                                                          1]))
 
     sys.exit(0)
