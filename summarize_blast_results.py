@@ -4,7 +4,7 @@
 
 from __future__ import print_function
 
-__version__ = '0.0.0.5'
+__version__ = '0.0.0.6'
 __author__ = 'Alex Hyer'
 
 import argparse
@@ -62,7 +62,7 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                             if prokka_id not in already_hit:
                                 rpk = (float(conversion_table[contig_id])
                                        / float(short_read_length)) * 1000
-                                reads = (rpk / 1000) * float(entry['alignLen'])
+                                reads = (rpk / 1000) * entry.align_len
                                 already_hit[prokka_id] = (rpk, reads)
     return already_hit
 
