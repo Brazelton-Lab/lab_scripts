@@ -19,7 +19,7 @@ def argument_parser():
                         pick_otus.py script)")
     parser.add_argument('-c', '--count',
                          type=str,
-                         dest="count_file",
+                         dest="count_table",
                          help="Optional Mothur-formatted count file. This will \
                          produce a new count file containing only the \
                          sequences that are also found in the output list file \
@@ -86,7 +86,7 @@ def main():
     otu_mapper = parse_map_file(args.otu_map)
     if args.count_file:
         file_check(args.count_file, 'rU')
-        out_count = '.'.join(otu_file.split('.')[:-1]) + '.count_file'
+        out_count = '.'.join(otu_file.split('.')[:-1]) + '.count_table'
         file_check(out_count, 'w')
         count_header, seq_counts = parse_count_file(args.count_file)
         with open(out_count, 'w') as count_h:
