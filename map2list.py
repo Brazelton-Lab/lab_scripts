@@ -19,7 +19,7 @@ def argument_parser():
                         pick_otus.py script)")
     parser.add_argument('-c', '--count',
                          type=str,
-                         dest="count_table",
+                         dest="count_file",
                          help="Optional Mothur-formatted count file. This will \
                          produce a new count file containing only the \
                          sequences that are also found in the output list file \
