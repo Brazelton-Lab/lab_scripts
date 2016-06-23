@@ -10,8 +10,12 @@ extension = '*' + sys.argv[1]
 from Bio import SeqIO
 from Bio.SeqUtils import GC
 
+l = []
 import glob
 for filename in glob.glob(extension):	
+	l.append(filename)
+
+for filename in l.sorted():
 	seqs = 0
 	bp = 0		
 	for fasta in SeqIO.parse(filename,"fasta"):
