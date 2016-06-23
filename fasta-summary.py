@@ -15,7 +15,7 @@ import glob
 for filename in glob.glob(extension):	
 	l.append(filename)
 
-for filename in l.sorted():
+for filename in sorted(l):
 	seqs = 0
 	bp = 0		
 	for fasta in SeqIO.parse(filename,"fasta"):
