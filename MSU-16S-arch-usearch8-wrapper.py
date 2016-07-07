@@ -23,7 +23,7 @@ for file in glob.glob(dir + os.sep + '*'):
         secondLog = firstLog.replace('.log', '.filtered.log')
         subprocess.call(['usearch8', '-fastq_mergepairs', file,
                          '-reverse', rfile, '-fastqout', fastqOut,
-                         '-fastq_minovlen', '60', '--log', firstLog])
+                         '-fastq_minovlen', '30', '--log', firstLog])
         subprocess.call(['usearch8', '-fastq_filter', fastqOut,
                          '-fastaout', fastaOut, '-fastq_maxee', '1',
                          '--log', secondLog])
