@@ -55,7 +55,7 @@ def main():
     out_name = count_file.name + '.shared'
 
     count_table = read_count_file(count_file.name)
-    with open(out_name.name, 'w') as out_handle:
+    with open(out_name, 'w') as out_handle:
         new_first_line = 'label\tGroup\tnumOtus\t' + '\t'.join(
             [sequence for sequence in count_table['Representative_Sequence']])
         out_handle.write(new_first_line + '\n')
