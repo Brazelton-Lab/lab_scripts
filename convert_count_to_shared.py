@@ -27,7 +27,6 @@ __version__ = '1.0.0'
 __author__ = 'Alex Hyer, William Brazelton'
 
 import argparse
-from bio_utils.file_tools.file_check import FileChecker
 import sys
 
 
