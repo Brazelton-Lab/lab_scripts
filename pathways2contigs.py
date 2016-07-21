@@ -43,16 +43,12 @@ with open(gff_file) as gff:
 	for line in gff:
 		if '##FASTA'in line: break
 		if line[0] == '#': pass
-		elif 'database=kegg' in line and 'gene_id=' or 'gene_feature=' in line:
+		elif 'database=kegg' in line and 'gene_feature=' in line:
 			contig_id = line.split('\t')
 			contig_id = contig_id[0].replace('-','_')
-			gene_id = line.split('gene_id=')
+			gene_id = line.split('gene_feature=')
 			gene_id = gene_id[1].split(';')
-			if gene_id[:2] == 'K0': kegg_id = gene_id[0]
-			else: 
-				gene_id = line.split('gene_feature=')
-				gene_id = gene_id[1].split(';')
-				gene_id = gene_id[0]
+			kegg_id = gene_id[0]
 			if kegg_id in p: p[kegg_id].append(contig_id)	# add this contig_id to an existing list of contig_ids as the value
 			else: p[kegg_id] = list(tuple([contig_id]))		# create a new key with this kegg_id and its host contig as the value
 
