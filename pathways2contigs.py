@@ -43,7 +43,7 @@ with open(gff_file) as gff:
 	for line in gff:
 		if '##FASTA'in line: break
 		if line[0] == '#': pass
-		elif 'database=kegg' in line and 'gene_id=' in line:
+		elif 'database=kegg' in line and 'gene_id=' or 'gene_feature=' in line:
 			contig_id = line.split('\t')
 			contig_id = contig_id[0].replace('-','_')
 			gene_id = line.split('gene_id=')
