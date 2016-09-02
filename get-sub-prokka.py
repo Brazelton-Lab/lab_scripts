@@ -18,7 +18,7 @@ else:
 	print 'Please enter files in this order: ESOM_bin.fasta assembly.gff assembly.faa assembly.ffn'
 	sys.exit()
 
-root = contigfile.split('.')[:-1]
+root = ''.join(contigfile.split('.')[:-1])
 root = root[0].split('/')
 root = root[-1]
 newfaafile = root + '.faa'
