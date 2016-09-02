@@ -19,7 +19,7 @@ else:
 	sys.exit()
 
 root = ''.join(contigfile.split('.')[:-1])
-root = root[0].split('/')
+root = root.split('/')
 root = root[-1]
 newfaafile = root + '.faa'
 newffnfile = root + '.ffn'
