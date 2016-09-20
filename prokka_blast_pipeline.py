@@ -23,7 +23,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a3'
+__version__ = '0.0.1a4'
 
 
 def main(args):
@@ -58,7 +58,9 @@ def main(args):
             for hsp in alignment.hsps:
                 prokka_id = entry.description.split(' ')[1]
                 ann = entry.description.split(' ')[2]
-                cov = float(hsp.align_length / len(entry[0].sequence)) * 100.0
+                length = len(entry[0].sequence) if args.program == 'blastn' \
+                    else len(entry[0].sequence) / 3.0
+                cov = float(hsp.align_length / length) * 100.0
                 output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'.format(
                     entry.id, prokka_id, ann, entry[1], hsp.sbjct, str(cov),
                     str(hsp.expect), str(hsp.identities), os.linesep)
