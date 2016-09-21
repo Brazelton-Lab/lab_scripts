@@ -24,7 +24,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a10'
+__version__ = '0.0.1a12'
 
 
 def main(args):
@@ -73,7 +73,7 @@ def main(args):
         if entry.id in prokka_to_contig or ids[0] == '*':
             blast_entries.append(entry)
 
-    tqdm.write('>>> Obtained {0} amino acid sequences from {1}'
+    tqdm.write('>>> Obtained {0} amino acid sequence(s) from {1}'
                .format(str(len(blast_entries)), args.faa.name))
 
     # Output header line
@@ -94,13 +94,16 @@ def main(args):
             for alignment in result.alignments:
                 count += 1
                 for hsp in alignment.hsps:
-                    cov = float(hsp.align_length / len(entry.sequence)) / 100.0
+                    cov = float(hsp.align_length / len(entry.sequence)) * 100.0
+                    perc = float(hsp.identities / len(entry.sequence)) * 100.0
                     output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
                              .format(prokka_to_contig[entry.id], entry.id,
                                      entry.description,
-                                     prokka_to_gene[entry.id], hsp.sbjct, 
-                                     str(cov), str(hsp.expect),
-                                     str(hsp.identities), os.linesep)
+                                     prokka_to_gene[entry.id],
+                                     alignment.hit_def,
+                                     str(cov), str(hsp.expect), str(perc),
+                                     os.linesep)
+                    tqdm.write(str(alignment.hit_id))
                     args.output.write(output)
 
     tqdm.write('>>> Wrote {0} total hit(s) to {1}'.format(str(count),
