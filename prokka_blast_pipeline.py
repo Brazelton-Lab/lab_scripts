@@ -7,7 +7,8 @@ from __future__ import division
 Takes a PROKKA FAA file and a file with an one or more IDs (each ID must be
 on its own line). If a PROKKA annotation description contains an ID in
 the IDs file, its sequence is BLASTed against NCBI BLAST and the results are
-written to a custom TSV.
+written to a custom TSV. This program is tailored to streamline part
+of Katrina Twing's data analysis and the TSV is tailored to match.
 """
 
 import argparse
@@ -23,8 +24,8 @@ __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
-__status__ = 'Alpha'
-__version__ = '0.0.1a14'
+__status__ = 'Production'
+__version__ = '1.0.0'
 
 
 def main(args):
@@ -36,7 +37,7 @@ def main(args):
 
     tqdm.write('>>> Starting prokka_blast_pipeline')
 
-    # Get IDs from ID file
+    # Get Gene IDs from ID file
     ids = [gene_id.strip() for gene_id in args.id]
 
     tqdm.write('>>> Found {0} ID(s) in {1}'
@@ -54,7 +55,7 @@ def main(args):
     tqdm.write('>>> Found {0} contig(s) containing gene features matching '
                'given ID(s) in {1}'.format(str(len(contigs)), args.gff3.name))
 
-    # Connect PROKKA IDs to contigs and annotated Gene ID
+    # Obtain PROKKA IDs and annotations of genes on contigs obtained earlier
     prokka_to_contig = defaultdict(str)
     prokka_to_gene = defaultdict(str)
     args.gff3.seek(0)
@@ -67,7 +68,7 @@ def main(args):
     tqdm.write('>>> Found {0} gene feature(s) on contigs matching given ID(s)'
                .format(str(len(prokka_to_contig))))
 
-    # Get sequences from FAA file if they match a PROKKA ID
+    # Get sequences from FAA file if they match a PROKKA ID obtained above
     blast_entries = []
     for entry in fasta_iter(args.faa):
         if entry.id in prokka_to_contig or ids[0] == '*':
@@ -78,12 +79,12 @@ def main(args):
 
     # Output header line
     args.output.write('Contig\tPROKKA_ID\tAnnotation\tGene ID\tSubject\t'
-                      'Query Coverage\tE-Value\tIdentity{0}'.format(
+                      'Query Coverage(%)\tE-Value\tIdentity(%){0}'.format(
                                                                    os.linesep))
     tqdm.write('>>> BLASTing {0} amino acid sequence(s) against the NCBI {1} '
                'database'.format(str(len(blast_entries)), args.database))
 
-    # BLAST sequences
+    # BLAST sequences and calculate various summary values
     count = 0
     for entry in tqdm(blast_entries):
         result_handle = qblast(args.program, args.database, entry.sequence,
@@ -98,6 +99,8 @@ def main(args):
                     perc = float(hsp.identities / len(entry.sequence)) * 100.0
                     taxonomy = alignment.hit_def.split('[')[1]
                     taxonomy = taxonomy.split(']')[0]
+
+                    # Format and write output to custom TSV
                     output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
                              .format(prokka_to_contig[entry.id], entry.id,
                                      entry.description,
