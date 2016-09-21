@@ -23,7 +23,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a4'
+__version__ = '0.0.1a5'
 
 
 def main(args):
@@ -39,9 +39,12 @@ def main(args):
     # Get PROKKA Ids a feature ID matches a given Gene ID
     prokka_ids = []
     for entry in gff3_iter(args.gff3):
-        if entry.attributes['gene_feature'] in ids and \
-                entry.attributes['ID'] not in prokka_ids:
-            prokka_ids.append(entry.attributes['ID'])
+        try:
+            if entry.attributes['gene_feature'] in ids and \
+                    entry.attributes['ID'] not in prokka_ids:
+                prokka_ids.append(entry.attributes['ID'])
+        except KeyError:
+            continue
 
     # Get sequences from FAA file if they match a PROKKA ID
     entries = []
@@ -76,7 +79,7 @@ if __name__ == '__main__':
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
     parser.add_argument('-d', '--database',
-                        default='nt',
+                        default='nr',
                         choices=[
                             'nr',
                             'refseq_protein',
@@ -93,7 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('-f', '--faa',
                         required=True,
                         type=argparse.FileType('r'),
-                        help='FAA file from PROKKA containing nucleotide '
+                        help='FAA file from PROKKA containing amino acid '
                              'sequences of annotated proteins')
     parser.add_argument('-g', '--gff3',
                         required=True,
@@ -109,7 +112,7 @@ if __name__ == '__main__':
                         type=argparse.FileType('w'),
                         help='file name for output tsv')
     parser.add_argument('-p', '--program',
-                        default='blastn',
+                        default='blastp',
                         type=str,
                         choices=[
                             'blastp',
