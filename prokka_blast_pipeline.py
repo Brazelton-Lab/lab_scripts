@@ -24,7 +24,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a9'
+__version__ = '0.0.1a10'
 
 
 def main(args):
@@ -80,7 +80,7 @@ def main(args):
     args.output.write('Contig\tPROKKA_ID\tAnnotation\tGene ID\tSubject\t'
                       'Query Coverage\tE-Value\tIdentity{0}'.format(
                                                                    os.linesep))
-    tqdm.write('>>> BLASTing {0} amino acid sequence(s) against the {1} NCBI '
+    tqdm.write('>>> BLASTing {0} amino acid sequence(s) against the NCBI {1} '
                'database'.format(str(len(blast_entries)), args.database))
 
     # BLAST sequences
@@ -89,16 +89,19 @@ def main(args):
         result_handle = qblast(args.program, args.database, entry.sequence,
                                alignments=args.top, descriptions=args.top,
                                hitlist_size=args.top, expect=args.e_value)
-        for alignment in NCBIXML.parse(result_handle).alignments:
-            count += 1
-            for hsp in alignment.hsps:
-                cov = float(hsp.align_length / len(entry.sequence)) / 100.0
-                output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
-                         .format(prokka_to_contig[entry.id], entry.id,
-                                 entry.description, prokka_to_gene[entry.id],
-                                 hsp.sbjct, str(cov), str(hsp.expect),
-                                 str(hsp.identities), os.linesep)
-                args.output.write(output)
+        result_generator = NCBIXML.parse(result_handle)
+        for result in result_generator:
+            for alignment in result.alignments:
+                count += 1
+                for hsp in alignment.hsps:
+                    cov = float(hsp.align_length / len(entry.sequence)) / 100.0
+                    output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
+                             .format(prokka_to_contig[entry.id], entry.id,
+                                     entry.description,
+                                     prokka_to_gene[entry.id], hsp.sbjct, 
+                                     str(cov), str(hsp.expect),
+                                     str(hsp.identities), os.linesep)
+                    args.output.write(output)
 
     tqdm.write('>>> Wrote {0} total hit(s) to {1}'.format(str(count),
                                                           args.output.name))
