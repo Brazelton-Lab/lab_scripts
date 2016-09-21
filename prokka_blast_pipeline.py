@@ -12,7 +12,7 @@ written to a custom TSV.
 """
 
 import argparse
-from bio_utils.iterators import fasta_iter
+from bio_utils.iterators import fasta_iter, gff3_iter
 from Bio.Blast.NCBIWWW import qblast
 from Bio.Blast import NCBIXML
 import os
@@ -36,13 +36,19 @@ def main(args):
     # Get IDs from ID file
     ids = [gene_id for gene_id in args.id]
 
-    # Get sequences from FNA file if they match an ID
+    # Get PROKKA Ids a feature ID matches a given Gene ID
+    prokka_ids = []
+    for entry in gff3_iter(args.gff3):
+        if entry.attributes['gene_feature'] in ids and \
+                entry.attributes['ID'] not in prokka_ids:
+            prokka_ids.append(entry.attributes['ID'])
+
+    # Get sequences from FAA file if they match a PROKKA ID
     entries = []
-    for entry in fasta_iter(args.fna):
-        for gene_id in ids:
-            if gene_id in entry.description or gene_id == '*':
-                if entry.id not in [seq.id for seq in entries]:
-                    entries.append((entry, gene_id))
+    for entry in fasta_iter(args.faa):
+        if entry.id in prokka_ids or gene_id == '*':
+            if entry.id not in [seq[0].id for seq in entries]:
+                entries.append((entry, gene_id))
 
     # Output header line
     args.output.write('Contig\tPROKKA_ID\tAnnotation\tGene ID\tSubject\t'
@@ -58,9 +64,7 @@ def main(args):
             for hsp in alignment.hsps:
                 prokka_id = entry.description.split(' ')[1]
                 ann = entry.description.split(' ')[2]
-                length = len(entry[0].sequence) if args.program == 'blastn' \
-                    else len(entry[0].sequence) / 3.0
-                cov = float(hsp.align_length / length) * 100.0
+                cov = float(hsp.align_length / len(entry[0].sequence)) / 100.0
                 output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'.format(
                     entry.id, prokka_id, ann, entry[1], hsp.sbjct, str(cov),
                     str(hsp.expect), str(hsp.identities), os.linesep)
@@ -74,21 +78,6 @@ if __name__ == '__main__':
     parser.add_argument('-d', '--database',
                         default='nt',
                         choices=[
-                            'nt',
-                            'refseq_rna',
-                            'refseq_genomic',
-                            'refseq_representative_genomes',
-                            'chromosome',
-                            'Human G+T',
-                            'Mouse G+T',
-                            'est',
-                            'HGTS',
-                            'wgs',
-                            'pat',
-                            'pdb',
-                            'alu_repeats',
-                            'TSA',
-                            '16S microbial',
                             'nr',
                             'refseq_protein',
                             'swissprot',
@@ -101,11 +90,15 @@ if __name__ == '__main__':
                         default=10.0,
                         type=float,
                         help='Maximum E-Value of alignment permitted')
-    parser.add_argument('-f', '--fna',
+    parser.add_argument('-f', '--faa',
                         required=True,
                         type=argparse.FileType('r'),
-                        help='FNA file from PROKKA containing nucleotide '
+                        help='FAA file from PROKKA containing nucleotide '
                              'sequences of annotated proteins')
+    parser.add_argument('-g', '--gff3',
+                        required=True,
+                        type=argparse.FileType('r'),
+                        help='GFF3 file from PROKKA accompanying the FAA file')
     parser.add_argument('-i', '--id',
                         required=True,
                         type=argparse.FileType('r'),
@@ -119,9 +112,8 @@ if __name__ == '__main__':
                         default='blastn',
                         type=str,
                         choices=[
-                            'blastn',
-                            'blastx',
-                            'tblastx'
+                            'blastp',
+                            'tblastn'
                         ],
                         help='BLAST+ program to search with')
     parser.add_argument('-t', '--top',
