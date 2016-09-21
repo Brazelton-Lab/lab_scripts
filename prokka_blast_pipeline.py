@@ -15,15 +15,17 @@ import argparse
 from bio_utils.iterators import fasta_iter, gff3_iter
 from Bio.Blast.NCBIWWW import qblast
 from Bio.Blast import NCBIXML
+from collections import defaultdict
 import os
 import sys
+from tqdm import tqdm
 
 __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a5'
+__version__ = '0.0.1a6'
 
 
 def main(args):
@@ -33,37 +35,55 @@ def main(args):
         args (NameSpace): ArgParse arguments dictation program use
     """
 
+    print('>>> Starting prokka_blast_pipeline')
+
     # Get IDs from ID file
     ids = [gene_id for gene_id in args.id]
 
-    # Get PROKKA Ids a feature ID matches a given Gene ID
-    prokka_ids = []
+    print('>>> Found {0} IDs in {1}'.format(str(len(ids))), args.id.name)
+
+    # Get contig and PROKKA Ids if a feature ID matches a given Gene ID
+    contigs = defaultdict(list)
     for entry in gff3_iter(args.gff3):
-        try:
-            if entry.attributes['gene_feature'] in ids and \
-                    entry.attributes['ID'] not in prokka_ids:
-                prokka_ids.append(entry.attributes['ID'])
+        try:  # Ignore features wiout a gene_feature field
+            if entry.attributes['gene_feature'] in ids:
+                contigs[entry.seqid].append(entry.attributes['ID'])
         except KeyError:
             continue
 
+    print('>>> Found {0} contigs containing gene features matching given IDs '
+          'in {1}'.format(str(len(contigs))), args.gff3.name)
+
+    # Get FAA in memory for later use
+    faa_entries = defaultdict(str)
+    for entry in fasta_iter(args.faa):
+        faa_entries[entry.id] = entry
+
     # Get sequences from FAA file if they match a PROKKA ID
     entries = []
-    for entry in fasta_iter(args.faa):
-        if entry.id in prokka_ids or gene_id == '*':
-            if entry.id not in [seq[0].id for seq in entries]:
-                entries.append((entry, gene_id))
+    for key, value in contigs.items():
+        for prokka_id in value:
+            if prokka_id in faa_entries or ids[0] == '*':
+                entries.append((key, faa_entries[prokka_id].sequence))
+
+    print('>>> Found {0} gene features on contigs matching given IDs'
+          .format(str(len(entries))))
 
     # Output header line
     args.output.write('Contig\tPROKKA_ID\tAnnotation\tGene ID\tSubject\t'
                       'Query Coverage\tE-Value\tIdentity{0}'.format(
                                                                    os.linesep))
+    print('>>> BLASTing {0} amino acid sequences against the {1} database'
+          .format(str(len(entries))), args.database)
 
     # BLAST sequences
-    for entry in entries:
+    count = 0
+    for entry in tqdm(entries):
         result_handle = qblast(args.program, args.database, entry[0].sequence,
                                alignments=args.top, descriptions=args.top,
                                hitlist_size=args.top, expect=args.e_value)
         for alignment in NCBIXML.parse(result_handle).alignments:
+            count += 1
             for hsp in alignment.hsps:
                 prokka_id = entry.description.split(' ')[1]
                 ann = entry.description.split(' ')[2]
@@ -72,6 +92,11 @@ def main(args):
                     entry.id, prokka_id, ann, entry[1], hsp.sbjct, str(cov),
                     str(hsp.expect), str(hsp.identities), os.linesep)
                 args.output.write(output)
+
+    print('>>> Wrote {0} total hits to {1}'.format(str(count)),
+          args.output.name)
+
+    print('>>> Exiting prokka_blast_pipeline')
 
 
 if __name__ == '__main__':
