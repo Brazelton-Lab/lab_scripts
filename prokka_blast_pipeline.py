@@ -1,11 +1,10 @@
 #! /usr/bin/env python
 
 from __future__ import division
-from __future__ import print_function
 
 """BLAST sequences from PROKKA annotations
 
-Takes a PROKKA FNA file and a file with an one or more IDs (each ID must be
+Takes a PROKKA FAA file and a file with an one or more IDs (each ID must be
 on its own line). If a PROKKA annotation description contains an ID in
 the IDs file, its sequence is BLASTed against NCBI BLAST and the results are
 written to a custom TSV.
@@ -25,7 +24,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a7'
+__version__ = '0.0.1a9'
 
 
 def main(args):
@@ -35,68 +34,76 @@ def main(args):
         args (NameSpace): ArgParse arguments dictation program use
     """
 
-    print('>>> Starting prokka_blast_pipeline')
+    tqdm.write('>>> Starting prokka_blast_pipeline')
 
     # Get IDs from ID file
-    ids = [gene_id for gene_id in args.id]
+    ids = [gene_id.strip() for gene_id in args.id]
 
-    print('>>> Found {0} IDs in {1}'.format(str(len(ids)), args.id.name))
+    tqdm.write('>>> Found {0} ID(s) in {1}'
+               .format(str(len(ids)), args.id.name))
 
-    # Get contig and PROKKA Ids if a feature ID matches a given Gene ID
-    contigs = defaultdict(list)
+    # Get contigs that contain a feature ID matching a given Gene ID
+    contigs = []
     for entry in gff3_iter(args.gff3):
-        try:  # Ignore features wiout a gene_feature field
+        try:  # Ignore features without a gene_feature field
             if entry.attributes['gene_feature'] in ids:
-                contigs[entry.seqid].append(entry.attributes['ID'])
+                contigs.append(entry.seqid)
         except KeyError:
             continue
 
-    print('>>> Found {0} contigs containing gene features matching given IDs '
-          'in {1}'.format(str(len(contigs)), args.gff3.name))
+    tqdm.write('>>> Found {0} contig(s) containing gene features matching '
+               'given ID(s) in {1}'.format(str(len(contigs)), args.gff3.name))
 
-    # Get FAA in memory for later use
-    faa_entries = defaultdict(str)
-    for entry in fasta_iter(args.faa):
-        faa_entries[entry.id] = entry
+    # Connect PROKKA IDs to contigs and annotated Gene ID
+    prokka_to_contig = defaultdict(str)
+    prokka_to_gene = defaultdict(str)
+    args.gff3.seek(0)
+    for entry in gff3_iter(args.gff3):
+        if entry.seqid in contigs and 'gene_feature' in entry.attributes:
+            prokka_to_contig[entry.attributes['ID']] = entry.seqid
+            prokka_to_gene[entry.attributes['ID']] = entry.attributes[
+                'gene_feature']
+
+    tqdm.write('>>> Found {0} gene feature(s) on contigs matching given ID(s)'
+               .format(str(len(prokka_to_contig))))
 
     # Get sequences from FAA file if they match a PROKKA ID
-    entries = []
-    for key, value in contigs.items():
-        for prokka_id in value:
-            if prokka_id in faa_entries or ids[0] == '*':
-                entries.append((key, faa_entries[prokka_id].sequence))
+    blast_entries = []
+    for entry in fasta_iter(args.faa):
+        if entry.id in prokka_to_contig or ids[0] == '*':
+            blast_entries.append(entry)
 
-    print('>>> Found {0} gene features on contigs matching given IDs'
-          .format(str(len(entries))))
+    tqdm.write('>>> Obtained {0} amino acid sequences from {1}'
+               .format(str(len(blast_entries)), args.faa.name))
 
     # Output header line
     args.output.write('Contig\tPROKKA_ID\tAnnotation\tGene ID\tSubject\t'
                       'Query Coverage\tE-Value\tIdentity{0}'.format(
                                                                    os.linesep))
-    print('>>> BLASTing {0} amino acid sequences against the {1} database'
-          .format(str(len(entries)), args.database))
+    tqdm.write('>>> BLASTing {0} amino acid sequence(s) against the {1} NCBI '
+               'database'.format(str(len(blast_entries)), args.database))
 
     # BLAST sequences
     count = 0
-    for entry in tqdm(entries):
-        result_handle = qblast(args.program, args.database, entry[0].sequence,
+    for entry in tqdm(blast_entries):
+        result_handle = qblast(args.program, args.database, entry.sequence,
                                alignments=args.top, descriptions=args.top,
                                hitlist_size=args.top, expect=args.e_value)
         for alignment in NCBIXML.parse(result_handle).alignments:
             count += 1
             for hsp in alignment.hsps:
-                prokka_id = entry.description.split(' ')[1]
-                ann = entry.description.split(' ')[2]
-                cov = float(hsp.align_length / len(entry[0].sequence)) / 100.0
-                output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'.format(
-                    entry.id, prokka_id, ann, entry[1], hsp.sbjct, str(cov),
-                    str(hsp.expect), str(hsp.identities), os.linesep)
+                cov = float(hsp.align_length / len(entry.sequence)) / 100.0
+                output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
+                         .format(prokka_to_contig[entry.id], entry.id,
+                                 entry.description, prokka_to_gene[entry.id],
+                                 hsp.sbjct, str(cov), str(hsp.expect),
+                                 str(hsp.identities), os.linesep)
                 args.output.write(output)
 
-    print('>>> Wrote {0} total hits to {1}'.format(str(count),
-          args.output.name))
+    tqdm.write('>>> Wrote {0} total hit(s) to {1}'.format(str(count),
+                                                          args.output.name))
 
-    print('>>> Exiting prokka_blast_pipeline')
+    tqdm.write('>>> Exiting prokka_blast_pipeline')
 
 
 if __name__ == '__main__':
