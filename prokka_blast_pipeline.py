@@ -24,7 +24,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a13'
+__version__ = '0.0.1a14'
 
 
 def main(args):
@@ -104,7 +104,6 @@ def main(args):
                                      prokka_to_gene[entry.id], taxonomy,
                                      str(cov), str(hsp.expect), str(perc),
                                      os.linesep)
-                    tqdm.write(str(alignment.hit_id))
                     args.output.write(output)
 
     tqdm.write('>>> Wrote {0} total hit(s) to {1}'.format(str(count),
