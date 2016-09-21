@@ -25,7 +25,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a6'
+__version__ = '0.0.1a7'
 
 
 def main(args):
@@ -40,7 +40,7 @@ def main(args):
     # Get IDs from ID file
     ids = [gene_id for gene_id in args.id]
 
-    print('>>> Found {0} IDs in {1}'.format(str(len(ids))), args.id.name)
+    print('>>> Found {0} IDs in {1}'.format(str(len(ids)), args.id.name))
 
     # Get contig and PROKKA Ids if a feature ID matches a given Gene ID
     contigs = defaultdict(list)
@@ -52,7 +52,7 @@ def main(args):
             continue
 
     print('>>> Found {0} contigs containing gene features matching given IDs '
-          'in {1}'.format(str(len(contigs))), args.gff3.name)
+          'in {1}'.format(str(len(contigs)), args.gff3.name))
 
     # Get FAA in memory for later use
     faa_entries = defaultdict(str)
@@ -74,7 +74,7 @@ def main(args):
                       'Query Coverage\tE-Value\tIdentity{0}'.format(
                                                                    os.linesep))
     print('>>> BLASTing {0} amino acid sequences against the {1} database'
-          .format(str(len(entries))), args.database)
+          .format(str(len(entries)), args.database))
 
     # BLAST sequences
     count = 0
@@ -93,8 +93,8 @@ def main(args):
                     str(hsp.expect), str(hsp.identities), os.linesep)
                 args.output.write(output)
 
-    print('>>> Wrote {0} total hits to {1}'.format(str(count)),
-          args.output.name)
+    print('>>> Wrote {0} total hits to {1}'.format(str(count),
+          args.output.name))
 
     print('>>> Exiting prokka_blast_pipeline')
 
