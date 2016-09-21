@@ -24,7 +24,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a12'
+__version__ = '0.0.1a13'
 
 
 def main(args):
@@ -96,11 +96,12 @@ def main(args):
                 for hsp in alignment.hsps:
                     cov = float(hsp.align_length / len(entry.sequence)) * 100.0
                     perc = float(hsp.identities / len(entry.sequence)) * 100.0
+                    taxonomy = alignment.hit_def.split('[')[1]
+                    taxonomy = taxonomy.split(']')[0]
                     output = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'\
                              .format(prokka_to_contig[entry.id], entry.id,
                                      entry.description,
-                                     prokka_to_gene[entry.id],
-                                     alignment.hit_def,
+                                     prokka_to_gene[entry.id], taxonomy,
                                      str(cov), str(hsp.expect), str(perc),
                                      os.linesep)
                     tqdm.write(str(alignment.hit_id))
