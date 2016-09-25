@@ -32,7 +32,7 @@ def main(args):
     """Run program
 
     Args:
-        args (NameSpace): ArgParse arguments dictation program use
+        args (NameSpace): ArgParse arguments dictating program use
     """
 
     tqdm.write('>>> Starting prokka_blast_pipeline')
