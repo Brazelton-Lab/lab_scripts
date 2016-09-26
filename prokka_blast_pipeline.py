@@ -25,7 +25,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 
 def main(args):
@@ -87,9 +87,19 @@ def main(args):
     # BLAST sequences and calculate various summary values
     count = 0
     for entry in tqdm(blast_entries):
-        result_handle = qblast(args.program, args.database, entry.sequence,
-                               alignments=args.top, descriptions=args.top,
-                               hitlist_size=args.top, expect=args.e_value)
+        # Continue attempting same blast until it succeeds w/o NCBI errors
+        while True:
+            try:
+                result_handle = qblast(args.program, args.database,
+                                       entry.sequence, alignments=args.top,
+                                       descriptions=args.top,
+                                       hitlist_size=args.top,
+                                       expect=args.e_value)
+                break
+            except ValueError:
+                continue
+
+        # Process BLAST results
         result_generator = NCBIXML.parse(result_handle)
         for result in result_generator:
             for alignment in result.alignments:
