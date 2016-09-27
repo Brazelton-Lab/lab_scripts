@@ -16,7 +16,9 @@ from bio_utils.iterators import fasta_iter, gff3_iter
 from Bio.Blast.NCBIWWW import qblast
 from Bio.Blast import NCBIXML
 from collections import defaultdict
+import errno
 import os
+from socket import error as socket_error
 import sys
 from tqdm import tqdm
 
@@ -25,7 +27,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.0'
+__version__ = '1.1.1'
 
 
 def main(args):
@@ -96,7 +98,7 @@ def main(args):
                                        hitlist_size=args.top,
                                        expect=args.e_value)
                 break
-            except ValueError:
+            except (ValueError, socket_error):  # Ignore NCBI
                 continue
 
         # Process BLAST results
