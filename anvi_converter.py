@@ -17,8 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a'
-
+__version__ = '0.0.1a10'
 
 def main(args):
     """Run program
@@ -88,6 +87,7 @@ if __name__ == '__main__':
     prokka.add_argument('prefix',
                         type=str,
                         help='prefix for output files')
+    args = parser.parse_args()
 
     main(args)
 
