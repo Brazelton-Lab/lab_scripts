@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import argparse
 from bio_utils.iterators import fasta_iter, gff3_iter
+import os
 import sys
 
 __author__ = 'Alex Hyer'
@@ -16,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a2'
+__version__ = '0.0.1a3'
 
 
 def main(args):
@@ -26,7 +27,35 @@ def main(args):
          args (NameSpace): ArgParse arguments controlling program flow
     """
 
-    pass
+    if args.tool == 'prokka':
+        with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
+                open(args.prefix + '.genes.tsv', 'w') as gh:
+
+            caller_id = 0
+            for entry in gff3_iter(args.gff3):
+                if entry.type == 'CDS' and \
+                        'gene_id' in entry.attributes.keys():
+
+                    # Reformat data for gene locations file
+                    direction = 'f' if entry.strand == '+' else 'r'
+                    program, version = entry.source.split(':')
+                    lh.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}{8}'
+                             .format(str(caller_id),
+                                     entry.seqid,
+                                     str(entry.start),
+                                     str(entry.end),
+                                     direction,
+                                     '0', program, version, os.linesep))
+
+                    # Reformat data for genes file
+                    gh.write('{0}\t{1}\t{2}\t{3}\t{4}{5}'
+                             .format(str(caller_id),
+                                     entry.source,
+                                     entry.attributes['gene_id'],
+                                     entry.attributes['product'],
+                                     '0', os.linesep))
+
+                    caller_id += 1
 
 
 if __name__ == '__main__':
