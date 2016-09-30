@@ -17,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a6'
+__version__ = '0.0.1a7'
 
 
 def main(args):
@@ -86,7 +86,7 @@ if __name__ == '__main__':
                         type=argparse.FileType('r'),
                         help='GFF3 file to convert')
     prokka.add_argument('prefix',
-                        type='str',
+                        type=str,
                         help='prefix for output files')
 
     sys.exit(0)
