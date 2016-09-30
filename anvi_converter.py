@@ -27,12 +27,12 @@ def main(args):
          args (NameSpace): ArgParse arguments controlling program flow
     """
 
-    if args.tool == 'prokka':
+    if args.tool == 'PROKKA':
         with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
                 open(args.prefix + '.genes.tsv', 'w') as gh:
 
             caller_id = 0
-            for entry in gff3_iter(args.gff3):
+            for entry in gff3_iter(args.GFF3):
                 if entry.type == 'CDS' and \
                         'gene_id' in entry.attributes.keys():
 
@@ -83,7 +83,6 @@ if __name__ == '__main__':
                                         'called gene locations and their '
                                         'annotations')
     prokka.add_argument('GFF3',
-                        dest='gff3',
                         type=argparse.FileType('r'),
                         help='GFF3 file to convert')
     prokka.add_argument('prefix',
