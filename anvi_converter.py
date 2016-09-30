@@ -17,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a7'
+__version__ = '0.0.1a'
 
 
 def main(args):
@@ -88,5 +88,7 @@ if __name__ == '__main__':
     prokka.add_argument('prefix',
                         type=str,
                         help='prefix for output files')
+
+    main(args)
 
     sys.exit(0)
