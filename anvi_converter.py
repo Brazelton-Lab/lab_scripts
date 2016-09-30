@@ -17,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a5'
+__version__ = '0.0.1a6'
 
 
 def main(args):
@@ -76,7 +76,7 @@ if __name__ == '__main__':
                       type=argparse.FileType('w'),
                       help='output file')
 
-    prokka = subparsers.add_parser('PROKKA'
+    prokka = subparsers.add_parser('PROKKA',
                                    help='convert GFF3 file from Christopher '
                                         'Thornton\'s modified version of '
                                         'PROKKA into two TSVs containing '
