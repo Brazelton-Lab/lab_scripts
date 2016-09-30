@@ -17,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a3'
+__version__ = '0.0.1a4'
 
 
 def main(args):
@@ -68,8 +68,7 @@ if __name__ == '__main__':
     bins = subparsers.add_parser('bins',
                                  help='read several FASTA files and produce '
                                       'TSV relating entries to file name')
-    bins.add_argument('FASTA files',
-                      dest='fasta_files',
+    bins.add_argument('FASTA',
                       type=list,
                       help='list of space-separated FASTA files where each '
                            'file is a bin')
