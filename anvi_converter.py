@@ -2,7 +2,10 @@
 
 """Convert various file types to TSVs for use with anvi'o
 
-
+This program has essentially two functions: splitting PROKKA GFF3 files
+into a gene_location and genes file to tell anvi'o both where your gene calls
+are and what they consist of, and to take FASTA files and produce a tsv for
+anvi'o describing which contig is in which bin.
 """
 
 import argparse
@@ -14,8 +17,8 @@ __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
-__status__ = 'Alpha'
-__version__ = '0.0.1a15'
+__status__ = 'Production'
+__version__ = '1.0.0'
 
 
 def main(args):
