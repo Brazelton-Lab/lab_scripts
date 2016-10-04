@@ -1,7 +1,5 @@
 #! /usr/bin/env python
 
-from __future__ import print_function
-
 """Convert various file types to TSVs for use with anvi'o
 
 
@@ -17,7 +15,8 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a10'
+__version__ = '0.0.1a12'
+
 
 def main(args):
     """Run program
@@ -26,7 +25,16 @@ def main(args):
          args (NameSpace): ArgParse arguments controlling program flow
     """
 
-    if args.tool == 'PROKKA':
+    if args.tool == 'bins':
+        with open(args.output, 'w') as out_handle:
+            for fasta in args.FASTA:
+                with open(fasta, 'r') as file_handle:
+                    for entry in fasta_iter(file_handle):
+                        out_handle.write('{0}\t{1}{2}'.format(entry.id,
+                                                              file_handle.name,
+                                                              os.linesep))
+
+    if args.tool == 'prokka':
         with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
                 open(args.prefix + '.genes.tsv', 'w') as gh:
 
@@ -75,7 +83,7 @@ if __name__ == '__main__':
                       type=argparse.FileType('w'),
                       help='output file')
 
-    prokka = subparsers.add_parser('PROKKA',
+    prokka = subparsers.add_parser('prokka',
                                    help='convert GFF3 file from Christopher '
                                         'Thornton\'s modified version of '
                                         'PROKKA into two TSVs containing '
