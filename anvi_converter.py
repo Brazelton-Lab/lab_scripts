@@ -15,7 +15,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a13'
+__version__ = '0.0.1a14'
 
 
 def main(args):
@@ -26,13 +26,12 @@ def main(args):
     """
 
     if args.tool == 'bins':
-        with open(args.output, 'w') as out_handle:
-            for fasta in args.FASTA:
-                with open(fasta, 'r') as file_handle:
-                    for entry in fasta_iter(file_handle):
-                        out_handle.write('{0}\t{1}{2}'.format(entry.id,
-                                                              file_handle.name,
-                                                              os.linesep))
+        for fasta in args.FASTA:
+            with open(fasta, 'r') as file_handle:
+                for entry in fasta_iter(file_handle):
+                    args.output.write('{0}\t{1}{2}'.format(entry.id,
+                                                           file_handle.name,
+                                                           os.linesep))
 
     if args.tool == 'prokka':
         with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
