@@ -90,7 +90,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.5.0a2'
+__version__ = '1.5.0'
 
 def compile_ids(ids):
     compiled_ids = []
