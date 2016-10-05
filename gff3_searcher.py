@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
-"""gff3_searcher v. 1.4.14 - a program to filter annotations
+"""gff3_searcher v. 1.5.0a1 - a program to filter annotations
 
 Usage:
 
     gff3_searcher.py [--coverage] [--exact] [--fields] [--gff3_files]
-                     [--ids] [--output_dir] [--output_format] [--whole-contig]
+                     [--line_search] [--ids] [--output_dir]
+                     [--output_format] [--whole-contig]
 
 Synopsis:
 
@@ -37,6 +38,7 @@ Optional Arguments:
                     IDs containing the whole term "ATP synthase". If this
                     argument is left out, gff3_searcher will read IDs from
                     stdin line by line.
+    --line_search   Search entire line of GFF3 fie instead of attributes
     --ouput_dir     Directory to write output files to. Default is the
                     current working directory. Output file names are as
                     follows: [gff3_file].hits.[fasta/gff]
@@ -88,7 +90,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.4.14'
+__version__ = '1.5.0a1'
 
 
 def compile_ids(ids):
@@ -98,10 +100,13 @@ def compile_ids(ids):
     return compiled_ids
 
 
-def gff3_line_by_id_retriever(gff3_handle, ids, fields='all'):
+def gff3_line_by_id_retriever(gff3_handle, ids, fields='all', line=False):
     """ids is list of re.compiled ids"""
     for entry in gff3_iter(gff3_handle, parse_attr=True):
-        if fields != 'all':
+        if line is True:
+            if len(re.findall(id, entry.write())) != 0:
+                yield entry
+        elif fields != 'all':
             second_loop_break = False
             for field in fields:
                 for id in ids:
@@ -188,6 +193,9 @@ if __name__ == '__main__':
                         nargs='*',
                         default=sys.stdin,
                         help='IDs to search GFF3 files for')
+    parser.add_argument('-l', '--line_search',
+                        action='store_true',
+                        help='search entire line instead of just attributes')
     parser.add_argument('--output_dir', metavar='Output Directory',
                         default='',
                         help='Directory to write output to')
@@ -224,7 +232,8 @@ if __name__ == '__main__':
         with open(file, 'rU') as gff3_handle:
             hits = []
             for line in gff3_line_by_id_retriever(gff3_handle, compiled_ids,
-                                                  fields=args.fields):
+                                                  fields=args.fields,
+                                                  line=args.line_search):
                 hits.append(line)
 
             if args.output_format == 'fasta':
