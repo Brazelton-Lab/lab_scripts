@@ -90,8 +90,7 @@ import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.5.0a1'
-
+__version__ = '1.5.0a2'
 
 def compile_ids(ids):
     compiled_ids = []
@@ -104,8 +103,10 @@ def gff3_line_by_id_retriever(gff3_handle, ids, fields='all', line=False):
     """ids is list of re.compiled ids"""
     for entry in gff3_iter(gff3_handle, parse_attr=True):
         if line is True:
-            if len(re.findall(id, entry.write())) != 0:
-                yield entry
+            for id in ids:
+                if len(re.findall(id, entry.write())) != 0:
+                    yield entry
+                    break
         elif fields != 'all':
             second_loop_break = False
             for field in fields:
