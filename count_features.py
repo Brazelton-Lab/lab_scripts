@@ -207,7 +207,12 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                 if not feature_category:
                     feature_category = feature
                 abund = counts[feature] if scale_method == 'none' else scale_abundance(counts[feature], int(feature_length))
-                abundances[feature_category] = abundances.get(feature_category, 0) + abund
+                if ',' in feature_category:
+                    cats = feature_category.split(',')
+                    for category in cats:
+                        abundances[category] = abundances.get(category, 0) + abund
+                else:
+                    abundances[feature_category] = abundances.get(feature_category, 0) + abund
 
         if num_features > 0 and len(abundances) == 0:
             sys.stderr.write("Warning: No higher order features found. Please "
