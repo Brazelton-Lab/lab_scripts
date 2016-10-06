@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.0.0'
+__version__ = '1.1.0'
 
 
 def main(args):
@@ -44,7 +44,7 @@ def main(args):
             caller_id = 0
             for entry in gff3_iter(args.GFF3):
                 if entry.type == 'CDS' and \
-                        'gene_id' in entry.attributes.keys():
+                        'gene' in entry.attributes.keys():
 
                     # Reformat data for gene locations file
                     direction = 'f' if entry.strand == '+' else 'r'
@@ -61,7 +61,7 @@ def main(args):
                     gh.write('{0}\t{1}\t{2}\t{3}\t{4}{5}'
                              .format(str(caller_id),
                                      entry.source,
-                                     entry.attributes['gene_id'],
+                                     entry.attributes['gene'],
                                      entry.attributes['product'],
                                      '0', os.linesep))
 
