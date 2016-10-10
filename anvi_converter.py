@@ -59,7 +59,7 @@ def main(args):
                              .format(str(caller_id),
                                      entry.seqid,
                                      str(entry.start - 1),
-                                     str(entry.end - 2),
+                                     str(entry.end - 3),
                                      direction,
                                      '0', program, version, os.linesep))
 
