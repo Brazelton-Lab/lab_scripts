@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.5'
+__version__ = '1.1.6'
 
 
 def main(args):
@@ -58,8 +58,8 @@ def main(args):
                     lh.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\tv{7}{8}'
                              .format(str(caller_id),
                                      entry.seqid,
-                                     str(entry.start + 1),
-                                     str(entry.end - 1),
+                                     str(entry.start - 1),
+                                     str(entry.end - 2),
                                      direction,
                                      '0', program, version, os.linesep))
 
