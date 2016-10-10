@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.3'
+__version__ = '1.1.4'
 
 
 def main(args):
@@ -42,13 +42,14 @@ def main(args):
                 open(args.prefix + '.genes.tsv', 'w') as gh:
 
             caller_id = 1
+            lh.write('gene_callers_id\tcontig\tstart\tstop\t'
+                     'direction\tpartial\tsource\tversion{0}'
+                     .format(os.linesep))
+            gh.write('gene_callers_id\tsource\taccession\t'
+                     'function\te_value{0}'.format(os.linesep))
             for entry in gff3_iter(args.GFF3):
                 if entry.type == 'CDS' and \
                         'gene' in entry.attributes.keys():
-
-                    lh.write('gene_callers_id\tcontig\tstart\tstop\t'
-                             'direction\tpartial\tsource\tversion{0}'
-                             .format(os.linesep))
 
                     # Reformat data for gene locations file
                     direction = 'f' if entry.strand == '+' else 'r'
@@ -60,9 +61,6 @@ def main(args):
                                      str(entry.end - 1),
                                      direction,
                                      '0', program, version, os.linesep))
-
-                    gh.write('gene_callers_id\tsource\taccession\t'
-                             'function\te_value{0}'.format(os.linesep))
 
                     # Reformat data for genes file
                     gh.write('{0}\t{1}\t{2}\t{3}\t{4}{5}'
