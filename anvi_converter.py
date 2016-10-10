@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.4'
+__version__ = '1.1.5'
 
 
 def main(args):
@@ -33,6 +33,7 @@ def main(args):
             with open(fasta, 'r') as file_handle:
                 for entry in fasta_iter(file_handle):
                     file_name = os.path.basename(file_handle.name)
+                    file_name = '.'.join(file_name.split('.')[:-1])
                     args.output.write('{0}\t{1}{2}'.format(entry.id,
                                                            file_name,
                                                            os.linesep))
