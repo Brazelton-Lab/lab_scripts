@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.4b1'
+__version__ = '1.1.4'
 
 
 def main(args):
@@ -50,8 +50,6 @@ def main(args):
             for entry in gff3_iter(args.GFF3):
                 if entry.type == 'CDS' and \
                         'gene' in entry.attributes.keys():
-
-                    print(entry)
 
                     # Reformat data for gene locations file
                     direction = 'f' if entry.strand == '+' else 'r'
