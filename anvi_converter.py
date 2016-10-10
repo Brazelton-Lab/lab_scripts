@@ -18,7 +18,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.4'
+__version__ = '1.1.4a1'
 
 
 def main(args):
@@ -54,7 +54,7 @@ def main(args):
                     # Reformat data for gene locations file
                     direction = 'f' if entry.strand == '+' else 'r'
                     program, version = entry.source.split(':')
-                    lh.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\tv{7}{8}'
+                    print('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\tv{7}{8}'
                              .format(str(caller_id),
                                      entry.seqid,
                                      str(entry.start + 1),
@@ -63,7 +63,7 @@ def main(args):
                                      '0', program, version, os.linesep))
 
                     # Reformat data for genes file
-                    gh.write('{0}\t{1}\t{2}\t{3}\t{4}{5}'
+                    print('{0}\t{1}\t{2}\t{3}\t{4}{5}'
                              .format(str(caller_id),
                                      entry.source,
                                      entry.attributes['gene'],
