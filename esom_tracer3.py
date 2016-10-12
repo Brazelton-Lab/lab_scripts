@@ -196,7 +196,7 @@ def main(args):
     if not pathways_output.endswith('.taxa'):
         pathways_output += '.taxa'
     args.output.write('% {0}\n'.format(len(class_file_dict)))
-    args.output.write('{0}\n'.format('\n'.join(header_colors))) 
+    args.output.write('{0}\n'.format('\n'.join(header_colors)))
     for key in sorted(class_file_dict.keys()):
         value = class_file_dict[key]
         args.output.write('{0}\t{1}\n'.format(key, value))
@@ -211,7 +211,6 @@ def main(args):
     print('> {0} unique taxa written to {1}'.format(
             str(unique_pathways_number - 1),
             pathways_output))
-            
 
 
 if __name__ == '__main__':
