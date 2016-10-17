@@ -43,7 +43,7 @@ def main(args):
             for entry in fasta_iter(fasta_handle):
                 out_file = os.sep.join(fasta_handle.name.split('.')[:-1])
                 out_name = os.path.abspath(args.output_dir + out_file)
-                with open(out_name) as out_handle:
+                with open(out_name, 'w') as out_handle:
                     out_handle.write('#Sequence_ID\tHit_Coordinates\t'
                                      'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
                                      'Cumulative_Probability_Mass\t'
