@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a4'
+__version__ = '0.0.1a5'
 
 
 def main(args):
@@ -39,20 +39,21 @@ def main(args):
         location = args.taxonomy.tell()
 
     for fasta in args.fasta:
-        for entry in fasta_iter(open(fasta, 'r')):
-            out_file = os.sep.join(fasta.name.split('.')[:-1])
-            out_name = os.path.abspath(args.output_dir + out_file)
-            with open(out_name) as out_handle:
-                out_handle.write('#Sequence_ID\tHit_Coordinates\t'
-                                 'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
-                                 'Cumulative_Probability_Mass\tMarkers_Hit{0}'
-                                 .format(os.linesep))
-                for read in args.bam.fetch(entry.name):
-                    try:
-                        args.taxonomy.seek(file_index[read.query_name])
-                    except KeyError:
-                        continue
-                    out_handle.write(args.taxonomy.readline())
+        with open(fasta, 'r') as fasta_handle
+        for entry in fasta_iter(fasta_handle):
+                out_file = os.sep.join(fasta.name.split('.')[:-1])
+                out_name = os.path.abspath(args.output_dir + out_file)
+                with open(out_name) as out_handle:
+                    out_handle.write('#Sequence_ID\tHit_Coordinates\t'
+                                     'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
+                                     'Cumulative_Probability_Mass\t'
+                                     'Markers_Hit{0}'.format(os.linesep))
+                    for read in args.bam.fetch(entry.name):
+                        try:
+                            args.taxonomy.seek(file_index[read.query_name])
+                        except KeyError:
+                            continue
+                        out_handle.write(args.taxonomy.readline())
 
 
 if __name__ == '__main__':
