@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a9'
+__version__ = '0.0.1a10'
 
 
 def main(args):
@@ -42,7 +42,8 @@ def main(args):
         fasta_path = os.path.abspath(fasta)
         with open(fasta_path, 'r') as fasta_handle:
             for entry in fasta_iter(fasta_handle):
-                out_file = fasta_handle.name + '.taxa_summary.txt'
+                out_file = os.path.basename(fasta_handle.name) + \
+                              '.taxa_summary.txt'
                 out_name = os.path.join(args.output_dir + out_file)
                 with open(out_name, 'w') as out_handle:
                     out_handle.write('#Sequence_ID\tHit_Coordinates\t'
