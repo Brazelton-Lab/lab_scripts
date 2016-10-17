@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a10'
+__version__ = '0.0.1a11'
 
 
 def main(args):
@@ -44,7 +44,8 @@ def main(args):
             for entry in fasta_iter(fasta_handle):
                 out_file = os.path.basename(fasta_handle.name) + \
                               '.taxa_summary.txt'
-                out_name = os.path.join(args.output_dir + out_file)
+                out_name = os.path.join(args.output_dir + os.sep + out_file)
+                out_name = os.path.normpath(out_name)
                 with open(out_name, 'w') as out_handle:
                     out_handle.write('#Sequence_ID\tHit_Coordinates\t'
                                      'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
