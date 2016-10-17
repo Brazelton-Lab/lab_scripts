@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a11'
+__version__ = '0.0.1a12'
 
 
 def main(args):
@@ -51,7 +51,7 @@ def main(args):
                                      'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
                                      'Cumulative_Probability_Mass\t'
                                      'Markers_Hit{0}'.format(os.linesep))
-                    for read in args.bam.fetch(entry.name):
+                    for read in args.bam.fetch(entry.id):
                         try:
                             args.taxonomy.seek(file_index[read.query_name])
                         except KeyError:
