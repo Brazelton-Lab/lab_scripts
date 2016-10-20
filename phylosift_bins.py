@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a13'
+__version__ = '0.0.1a14'
 
 
 def main(args):
@@ -30,13 +30,15 @@ def main(args):
     """
 
     # Read and index taxonomy file for random access
-    file_index = defaultdict(int)
+    file_index = defaultdict(list)
     args.taxonomy.readline()
     location = args.taxonomy.tell()
-    for line in args.taxonomy:
+    line = args.taxonomy.readline()
+    while line:
         read_name = line.strip().split('\t')[0]
-        file_index[read_name] = location
+        file_index[read_name].append(location)
         location = args.taxonomy.tell()
+        line = args.taxonomy.readline()
 
     for fasta in args.fasta:
         fasta_path = os.path.abspath(fasta)
@@ -48,14 +50,16 @@ def main(args):
                              'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
                              'Cumulative_Probability_Mass\t'
                              'Markers_Hit{0}'.format(os.linesep))
-        with open(fasta_path, 'r') as fasta_handle:
-            for entry in fasta_iter(fasta_handle):
-                for read in args.bam.fetch(entry.id):
-                    try:
-                        args.taxonomy.seek(file_index[read.query_name])
-                    except KeyError:
-                        continue
-                    out_handle.write(args.taxonomy.readline())
+            with open(fasta_path, 'r') as fasta_handle:
+                for entry in fasta_iter(fasta_handle):
+                    for read in args.bam.fetch(entry.id):
+                        try:
+                            locations = file_index[read.query_name]
+                            for location in locations:
+                                args.taxonomy.seek(location)
+                                out_handle.write(args.taxonomy.readline())
+                        except KeyError:
+                            continue
 
 
 if __name__ == '__main__':
