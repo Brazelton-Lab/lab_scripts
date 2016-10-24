@@ -39,15 +39,24 @@ def main(args):
         for key, value in summary[rank].items():
             summary[rank][key] = value / rank_total
     for rank in summary.keys():
-        for key, value in summary[rank].items():
-            args.output.write('{0}\t{1}\t{2}{3}'.format(rank, key,
-                                                        str(value),
+        if args.greatest is False:
+            for key, value in summary[rank].items():
+                args.output.write('{0}\t{1}\t{2}{3}'.format(rank, key,
+                                                            str(value),
+                                                            os.linesep))
+        else:
+            greatest = max(summary[rank].items(), key=lambda x: x[1])
+            args.output.write('{0}\t{1}\t{2}{3}'.format(rank, greatest[0],
+                                                        str(greatest[1]),
                                                         os.linesep))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
+    parser.add_argument('-g', '--greatest',
+                        action='store_true',
+                        help='only report greatest value')
     parser.add_argument('-t', '--taxa_summary',
                         default=sys.stdin,
                         type=argparse.FileType('r'),
