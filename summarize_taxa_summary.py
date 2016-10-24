@@ -13,7 +13,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a1'
+__version__ = '0.0.1a5'
 
 
 def main(args):
@@ -37,7 +37,7 @@ def main(args):
         for key, value in summary[rank].items():
             rank_total += value
         for key, value in summary[rank].items():
-            summary[rank][key] = value / rank_total
+            summary[rank][key] = value / rank_total * 100.0
     for rank in summary.keys():
         if args.greatest is False:
             for key, value in summary[rank].items():
