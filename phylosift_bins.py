@@ -2,10 +2,8 @@
 
 from __future__ import print_function
 
-"""
+"""Extract Phylosift output of taxa_summary.py by bin"""
 
-
-"""
 
 import argparse
 from bio_utils.iterators import fasta_iter

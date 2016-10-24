@@ -2,10 +2,7 @@
 
 from __future__ import print_function
 
-"""
-
-
-"""
+"""Make table summary of Phylosift taxa_summary.txt"""
 
 import argparse
 import os
@@ -35,6 +32,12 @@ def main(args):
         if cols[4] not in summary[cols[3]]:
             summary[cols[3]][cols[4]] = 0
         summary[cols[3]][cols[4]] += float(cols[5])
+    for rank in summary.keys():
+        rank_total = 0.0
+        for key, value in summary[rank].items():
+            rank_total += value
+        for key, value in summary[rank].items():
+            summary[rank][key] = value / rank_total
     for rank in summary.keys():
         for key, value in summary[rank].items():
             args.output.write('{0}\t{1}\t{2}{3}'.format(rank, key,
