@@ -19,7 +19,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a14'
+__version__ = '0.0.1'
 
 
 def main(args):
@@ -36,6 +36,7 @@ def main(args):
     line = args.taxonomy.readline()
     while line:
         read_name = line.strip().split('\t')[0]
+        read_name = read_name.split(' ')[0]
         file_index[read_name].append(location)
         location = args.taxonomy.tell()
         line = args.taxonomy.readline()
