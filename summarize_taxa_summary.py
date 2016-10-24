@@ -12,8 +12,8 @@ __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
-__status__ = 'Alpha'
-__version__ = '0.0.1a5'
+__status__ = 'Production'
+__version__ = '1.0.0'
 
 
 def main(args):
