@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 # counts number of "mapped read pairs" = "mapped fragments"
 # this is NOT the same thing as number of "mapped paired reads" = "mapped reads"
 # uses the bowtie2 log file where "mapped read pairs" = "were paired" - "pairs aligned 0 times concordantly or discordantly"
