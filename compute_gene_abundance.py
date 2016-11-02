@@ -4,8 +4,26 @@ Finds abundance of genes for metagenome on metagenome
 
 Usage:
 
-    compute_gene_abundance [--log_file] [--verbose] [--version] [--verify] 
+    compute_gene_abundance [--log_file] [--verbose] [--version] [--verify]
                    [--fastr] [--fasta] [--normalize] <gff> <output>
+
+Copyright:
+
+    compute_gene_abundance.py Compute gene abundances from FAST or FASTR
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import division
@@ -51,10 +69,10 @@ def fasta():
                         length = fabs(float(hit[4]) - float(hit[3]))
                         readDepth = normalize(readDepth, length)
                     toWrite[gffDbId] = toWrite.get(gffDbId, 0) + readDepth
-                    
+
         for key in toWrite:
             out_handle.write(key + '\t' + str(toWrite[key]) + '\n')
-                
+
 
 def fastr():
     output('Reading ' + args.gff[0], args.verbosity, 1,\

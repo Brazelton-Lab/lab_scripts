@@ -1,6 +1,24 @@
 #! /usr/bin/env python
 
 """Adds taxonomy information from TSV files to count tables
+
+Copyright:
+
+    count_cat_tax.py Combine taxonomy file and count table
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 import argparse
@@ -12,12 +30,12 @@ def main():
     header = ['taxonomy']
     with open(args.tsv, 'rU') as tsv_handle:
         for line in tsv_handle:
-            columns = line.strip().split('\t')         
+            columns = line.strip().split('\t')
             otus[columns[0]] = [';'.join(columns[1:])]
     with open(args.count_table, 'rU') as count_handle:
         header = count_handle.readline().strip().split('\t') + header
         for line in count_handle:
-            columns = line.strip().split('\t')         
+            columns = line.strip().split('\t')
             otus[columns[0]] = columns[1:] + otus[columns[0]]
     with open(args.output, 'w') as out_handle:
         out_handle.write('Representative Sequences\t'.join(header) + '\n')

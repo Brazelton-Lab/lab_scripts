@@ -3,6 +3,26 @@
 # if subject has match over E value cutoff
 # some subjects will be written multiple times, depending on how many hits they have
 
+"""
+Copyright:
+
+    blast_e5_wite_subjs_nt.py Output FASTA seqs from BLAST alignment
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import sys
 fastafilename = sys.argv[1]
 blastfilename = sys.argv[2]
@@ -28,7 +48,7 @@ for line in blast_file:
 		if Evalue == '0':
 			query_list.append(query)
 			subject_list.append(subject)
-			
+
 print count,
 print ' total hits above E value cutoff'
 query_set = set(query_list)
@@ -54,8 +74,8 @@ for line in blast_file:
 	elif 'e-' in Evalue:
 		Evalue = Evalue.split('e-')
 		Evalue = Evalue[1]
-	else: Evalue = 1	
-	if int(Evalue) > 4:	
+	else: Evalue = 1
+	if int(Evalue) > 4:
 		count = count + 1
 		print count,
 		sys.stdout.flush()
@@ -63,11 +83,11 @@ for line in blast_file:
 			d[subject] = ''
 			proceed = 'yes'
 		else:
-			if int(len(d[subject])) < int(length):  
+			if int(len(d[subject])) < int(length):
 				d[subject] = ''
 				proceed = 'yes'
 			else: proceed = 'no'
-	
+
 		if proceed == 'yes':
 			fasta_file = open(fastafilename)
 			status = 'stop'
@@ -75,7 +95,7 @@ for line in blast_file:
 			for line in fasta_file:
 				if line[0] == '>':
 					status = 'stop'
-					if seq == '': pass	
+					if seq == '': pass
 					else:								# only proceed if a matching sequence was found in previous line
 						seq = seq.replace('\n','')
 						first = start - 1
@@ -93,18 +113,18 @@ for line in blast_file:
 								d[subject] = d[subject] + base
 						elif first < last:
 							d[subject] = seq[first:last]					# write matching sequence from previous line before checking next FASTA sequence
-						else: print 'error'						
-						break		
-					
+						else: print 'error'
+						break
+
 					seq = ''
 					header = line.split(' ')
 					header = header[0].replace('>','')
 					header = header.replace('\n','')
 					if subject == header: status = 'go'
-						
+
 				elif status == 'go':		# only store sequence if matching header was found previously
-					seq = seq + line	
-					
+					seq = seq + line
+
 blast_file.close()
 fasta_file.close()
 outfilename = blastfilename + '.besthits.fasta'
@@ -117,5 +137,5 @@ for i in d:
 	outfile.write('\n')
 	outfile.write(d[i])
 	outfile.write('\n')
-print 'finished'			
-outfile.close()					
+print 'finished'
+outfile.close()

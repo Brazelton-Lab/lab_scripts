@@ -1,6 +1,24 @@
 #! /usr/bin/env python
 """
 Convert the results of a database search from one file format to another
+
+Copyright:
+
+    convert_query_format.py Convert query format between databases
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
@@ -39,10 +57,10 @@ def parse_kwargs(format_arguments):
     return keywords
 
 def main():
-    extensions = {'blast-tab': ['tsv', 'csv', 'blast', 'm8', 'blastm8'], 
-        'blast-text': ['txt', 'bls', 'blast'], 'blast-xml': ['xml'], 
-        'blat-psl': ['psl'], 'hmmer3-tab': ['tsv', 'csv'], 
-        'hmmer3-text': ['txt'], 'hmmer2-text': ['txt'], 
+    extensions = {'blast-tab': ['tsv', 'csv', 'blast', 'm8', 'blastm8'],
+        'blast-text': ['txt', 'bls', 'blast'], 'blast-xml': ['xml'],
+        'blat-psl': ['psl'], 'hmmer3-tab': ['tsv', 'csv'],
+        'hmmer3-text': ['txt'], 'hmmer2-text': ['txt'],
         'exonerate-text': ['txt']}
     kwargs = args.keywords
     infile = args.infile
@@ -74,8 +92,8 @@ if __name__ == "__main__":
     parser.add_argument('--input-format', metavar='TYPE',
                         dest='in_type',
                         default='blast-text',
-                        choices=['blast-text', 'blast-tab', 'blast-xml', 
-                                 'hmmer3-text', 'hmmer3-tab', 'hmmer2-text', 
+                        choices=['blast-text', 'blast-tab', 'blast-xml',
+                                 'hmmer3-text', 'hmmer3-tab', 'hmmer2-text',
                                  'exonerate-text', 'blat-psl'],
                         help="input file format. Available options are "
                         "blast-text, blast-tab, blast-xml, blat-psl, "
@@ -84,7 +102,7 @@ if __name__ == "__main__":
     parser.add_argument('--output-format', metavar='TYPE',
                         dest='out_type',
                         default='blast-xml',
-                        choices=['blast-tab', 'blast-xml', 'blat-psl', 
+                        choices=['blast-tab', 'blast-xml', 'blat-psl',
                                  'hmmer3-tab'],
                         help="output file format. Available options are "
                         "blast-tab, blast-xml, blat-psl, and hmmer3-tab "

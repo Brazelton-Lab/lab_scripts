@@ -5,6 +5,24 @@ feature file in GFF format and calculates for each feature
 the number of reads mapping to it.
 
 This is a modified version of htseq-count
+
+Copyright:
+
+    count_features.py Counts coverage of GFF file from SAM/BAM file
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import print_function
 from __future__ import division
@@ -33,7 +51,7 @@ def scale_abundance(count, feature_len):
     count = (count / (feature_len / 1000))
     return count
 
-def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_mode, 
+def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_mode,
     feature_type, id_attribute, quiet, minaqual, mapping_file, scale_method):
 
     features = HTSeq.GenomicArrayOfSets("auto", False)
@@ -46,7 +64,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
     # Try to open mapping file to fail early in case it is not there
     if mapping_file:
         open(mapping_file).close()
-      
+
     gff = HTSeq.GFF_Reader(gff_filename)
     i = 0
     try:
@@ -109,7 +127,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
         notaligned = 0
         lowqual = 0
         nonunique = 0
-        i = 0   
+        i = 0
         for r in read_seq:
             if i > 0 and i % 100000 == 0 and not quiet:
                 sys.stderr.write("{!s} SAM alignment record{} processed.\n"
@@ -135,13 +153,13 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                     iv_seq = (invert_strand(co.ref_iv) for co in r[0].cigar if co.type == "M" and co.size > 0)
                 else:
                     iv_seq = tuple()
-                if r[1] is not None and r[1].aligned:            
-                    iv_seq = itertools.chain( iv_seq, 
+                if r[1] is not None and r[1].aligned:
+                    iv_seq = itertools.chain( iv_seq,
                         (co.ref_iv for co in r[1].cigar if co.type == "M" and co.size > 0))
                 else:
                     if (r[0] is None) or not (r[0].aligned):
                         notaligned += 1
-                        continue         
+                        continue
                 try:
                     if (r[0] is not None and r[0].optional_field("NH") > 1 ) or \
                             (r[1] is not None and r[1].optional_field("NH") > 1):
@@ -151,8 +169,8 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
                     pass
                 if (r[0] and r[0].aQual < minaqual) or (r[1] and r[1].aQual < minaqual):
                     lowqual += 1
-                    continue         
-         
+                    continue
+
             try:
                 if overlap_mode == "union":
                     fs = set()
@@ -225,7 +243,7 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
     else:
         abundances = counts
 
-    # "UNMAPPED" can be interpreted as a single unknown gene of length 1 
+    # "UNMAPPED" can be interpreted as a single unknown gene of length 1
     # kilobase recruiting all reads that failed to map to known sequences
     abundances['UNMAPPED'] = (abundances.get('UNMAPPED', 0) + empty + ambiguous + lowqual + notaligned + nonunique)
 
@@ -236,9 +254,9 @@ def count_reads_in_features(sam_filename, gff_filename, samtype, order, overlap_
     sys.stderr.write("__too_low_aQual\t{!s}\n".format(lowqual))
     sys.stderr.write("__not_aligned\t{!s}\n".format(notaligned))
     sys.stderr.write("__alignment_not_unique\t{!s}\n".format(nonunique))
-      
+
 def main():
-    parser = argparse.ArgumentParser(description=__doc__, 
+    parser = argparse.ArgumentParser(description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
 
     parser.add_argument('alignment_file', type=str,
@@ -260,17 +278,17 @@ def main():
            "for single-end data. Choices are 'position' or 'name'" )
 
     parser.add_argument('-t', '--type', metavar='FEATURETYPE', dest='ftype',
-        default= 'CDS', 
+        default= 'CDS',
         help="feature type (3rd column in GFF file) to be used [default: CDS]."
             " All features of other type are ignored")
-         
+
     parser.add_argument('-a', '--attr', metavar='ATTRIBUTE',
-        default="gene", 
+        default="gene",
         help="GFF attribute to be used as feature ID [default: gene]")
 
     parser.add_argument('-m', '--mode', metavar='MODE',
-        choices=["union", "intersection-strict", "intersection-nonempty"], 
-        default="union", 
+        choices=["union", "intersection-strict", "intersection-nonempty"],
+        default="union",
         help="mode to handle reads overlapping more than one feature "
             "[default: union]")
 
@@ -306,14 +324,14 @@ def main():
 
     warnings.showwarning = my_showwarning
     try:
-        count_reads_in_features(args.alignment_file, args.feature_file, 
-            args.aformat, args.order, args.mode, args.ftype, args.attr, 
+        count_reads_in_features(args.alignment_file, args.feature_file,
+            args.aformat, args.order, args.mode, args.ftype, args.attr,
             args.quiet, args.minqual, args.mapping, args.norm)
     except:
         sys.stderr.write("  {}\n".format(sys.exc_info()[1]))
         sys.stderr.write("  [Exception type: {}, raised in {}:{}]\n"
-            .format(sys.exc_info()[1].__class__.__name__, 
-            os.path.basename(traceback.extract_tb(sys.exc_info()[2])[-1][0]), 
+            .format(sys.exc_info()[1].__class__.__name__,
+            os.path.basename(traceback.extract_tb(sys.exc_info()[2])[-1][0]),
             traceback.extract_tb( sys.exc_info()[2] )[-1][1]))
         sys.exit(1)
 

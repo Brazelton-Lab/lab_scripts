@@ -26,8 +26,26 @@ Optional Arguments:
                    [GFF file for second input file] ...
                    WARNING: This is a very specific usage case made for
                    a very specific request. It will NOT give you entry
-                   coverage in general. For more info, see Alex Hyer.  
+                   coverage in general. For more info, see Alex Hyer.
     --fastq:       Specifies input files as FASTQ files [Default: FASTA]
+
+Copyright:
+
+    create_sub_gff3.py Create subset GFF file from IDs
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
@@ -83,8 +101,8 @@ def compile_ids(ids):
 
 
 def fastaq_iter(file_handle, fastq=False):
-    """Yields entries from a FASTA or FASTQ file, recreates original header"""    
- 
+    """Yields entries from a FASTA or FASTQ file, recreates original header"""
+
     fastaq_iterator = fasta_iter if not fastq else fastq_iter
     for entry in fastaq_iterator(file_handle):
         if not fastq:
@@ -114,12 +132,12 @@ def extract_ids(ids, files, fastq=False):
                             to_return = '@{0}\n{1}\n+\n{2}\n'.format(
                                                              entry['name'],
                                                              entry['sequence'],
-                                                             entry['accuracy'])      
+                                                             entry['accuracy'])
                         # Stop after first ID match
                         break
                         entries.append(to_return)
     return entries
-                    
+
 
 def read_conversion_table(conversion_table_file, database):
     temp_dict = {}
@@ -139,7 +157,7 @@ def read_conversion_table(conversion_table_file, database):
             if coverage != 'None':
                 temp_dict[contig_id] = coverage
     return temp_dict
-        
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
@@ -184,6 +202,6 @@ if __name__ == '__main__':
     with open(args.output, 'w') as out_handle:
         for entry in entries:
             out_handle.write(entry)
-    
+
     sys.exit(0)
 

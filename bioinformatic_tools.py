@@ -3,6 +3,24 @@
 Contains a variety of tools that perform functions often used in
 bioinformatics. Each tool aims to accomplish a single common task
 such as returning a list of desired files.
+
+Copyright:
+
+    bioinformatic_tools.py Misc. functions for use in bioinformatics
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
 import os
@@ -170,7 +188,7 @@ def cigar_from_blast(query, match, sbjct, cigarAge = 'old'):
             cigarLine += str(repeats) + positionList[position]
         position += 1
     return cigarLine
-        
+
 
 def blast_to_sam_and_bam(blastXMLFile, outputFile, cigarAge = 'old'):
     '''Converts BLAST XML and tabular output into sam and bam files.
@@ -182,7 +200,7 @@ def blast_to_sam_and_bam(blastXMLFile, outputFile, cigarAge = 'old'):
 
     WARNING: The SAM and BAM files output by this function are only
     viable with BLASTN searches.
-    
+
     Takes new BLAST engine XML output (option -m 7 for BLASTN output)
     and converts them to a sam file, bam file, sorted bam file, and
     indexed bam file. Uses the cigar_from_blast function.
@@ -269,5 +287,5 @@ def fastaOrFastq(in_file, cat = False):
                 whereToCheck = -2
             if split_name[whereToCheck] == fileType:
                 return fileTypeSet[0]
-                
-                
+
+

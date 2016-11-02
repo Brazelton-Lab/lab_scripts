@@ -7,8 +7,28 @@
 # python count-mapped-fragments.py
 # will print to screen the name of every file ending in ".log" and the number calculated from the equation described above
 
+"""
+Copyright:
+
+    count-mapped-fragments.py Add up mapped fragments from Bowtie2 output
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import glob
-for filename in glob.glob('*.log'): 
+for filename in glob.glob('*.log'):
 	with open(filename) as f:
 		pairs = None
 		not_mapped = None
@@ -22,8 +42,8 @@ for filename in glob.glob('*.log'):
 				line = line.split()
 				not_mapped = int(line[0])
 			else: pass
-		try: 
+		try:
 			mapped_pairs = pairs - not_mapped
-			print mapped_pairs,	
+			print mapped_pairs,
 			print filename
 		except: pass

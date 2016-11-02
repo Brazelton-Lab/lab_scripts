@@ -5,9 +5,29 @@
 
 # usage: python combine_matrix_pqvalues.py matrix_filename qvalue_filename
 
+"""
+Copyright:
+
+    combine_matrix_pqvalues.py Extract pairwise distances and combine w/ rcor
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+
 import math
-import sys 
-file1name = sys.argv[1] 
+import sys
+file1name = sys.argv[1]
 file2name = sys.argv[2]
 
 file1 = open(file1name)
@@ -30,7 +50,7 @@ for line in rows[1:-1]:
 	row_list.append(row)			# creates tuple of lists of entries
 
 # iterate through p-values and q-values and write the appropriate value from the stored tuple of rows
-row_count = 0	
+row_count = 0
 value_count = 1
 num_rows = len(name_list)
 for pair in file2.xreadlines():
@@ -39,10 +59,10 @@ for pair in file2.xreadlines():
 	else:
 		pqvalues = pair.split(' ')
 		outfile.write(name_list[row_count])
-		outfile.write('\t')	
+		outfile.write('\t')
 		outfile.write(name_list[value_count])
-		outfile.write('\t')		
-		
+		outfile.write('\t')
+
 		current_row = row_list[row_count]
 		current_entry = current_row[value_count]
 		if float(current_entry) > 0: sign = 'pos'
@@ -51,20 +71,20 @@ for pair in file2.xreadlines():
 		current_entry = abs(float(current_entry))
 		outfile.write(str(current_entry))
 		outfile.write('\t')
-		
+
 		try: outfile.write(sign)
-		except: outfile.write('error')		
+		except: outfile.write('error')
 		outfile.write('\t')
-		
+
 		outfile.write(str(pqvalues[0]))
 		outfile.write('\t')
 		outfile.write(str(pqvalues[1]))
 		value_count = value_count + 1
-		if value_count == num_rows: 
-			row_count = row_count + 1	
-			value_count = row_count + 1	
-		if row_count + 1 == len(name_list): break	
-	
+		if value_count == num_rows:
+			row_count = row_count + 1
+			value_count = row_count + 1
+		if row_count + 1 == len(name_list): break
+
 file1.close()
 file2.close()
-outfile.close()		
+outfile.close()
