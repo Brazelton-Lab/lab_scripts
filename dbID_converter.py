@@ -2,11 +2,29 @@
 
 from __future__ import print_function
 
-'''convert between database ids
+"""convert between database ids
 
 THIS PROGRAM IS UNDER CONSTRUCTION AND CURRENTLY DOESN't DO WHAT IT CLAIMS
 To DO.
-'''
+
+Copyright:
+
+    dbID_converter.py Convert IDs for same sequence across databases
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 __authors__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
@@ -138,13 +156,13 @@ def create_table(conversion_files, table_file, annotation_file):
     header.append(db)
     headerStr = '\t'.join(header) + '\n'
     with open(table_file, 'w') as table_handle:
-        table_handle.write(headerStr) 
+        table_handle.write(headerStr)
         with open(annotation_file, 'w') as ann_handle:
             ann_handle.write('md5\tannotation\n')
             with open(conversion_files[0], 'rU') as in_handle:
                 for line in conversion_file_iter(in_handle):
                     tableOut = '{}\t{}\n'.format(line['md5'], line['dbID'])
-                    annOut = '{}\t{}\n'.format(line['md5'], line['annotation']) 
+                    annOut = '{}\t{}\n'.format(line['md5'], line['annotation'])
                     table_handle.write(tableOut)
                     ann_handle.write(annOut)
     conversionFiles = conversion_files[1:]
@@ -233,7 +251,7 @@ def convert_column_ids(in_file, out_file, column_number, table_file,\
                 Log file to write errors to. If None, prints errors
                 to stdin
     '''
-    
+
     firstLine, table = index_table(table_file, original_db)
     with open(table_file, 'rU') as table_handle:
         header = table_handle.readline().strip().split('\t')
@@ -295,7 +313,7 @@ def conversion_file_iter(handle):
 
 def format_table_tools_args(args):
     '''Formats args to fit generalized conversion table related functions'''
-    
+
     if args.create:
         create_table(args.create, args.conversionTable, args.annotationTable)
     elif args.append:
@@ -314,7 +332,7 @@ def format_convert_id_file_args(args):
                        args.tableFile, args.originalDB, args.targetDB,\
                        delimiter = args.delimiter,\
                        log_file = args.log_file)
-    
+
 def index_table(table_file, key_db, header = True):
     '''reads in the table file as a nested dictionary and returns the dictionary
 
@@ -324,7 +342,7 @@ def index_table(table_file, key_db, header = True):
                 The table file to be indexed as a dictionary
 
         key_db:
-                Which database values to use as the key 
+                Which database values to use as the key
 
         header:
                 Whether or not file has a header, default = True
@@ -333,7 +351,7 @@ def index_table(table_file, key_db, header = True):
             A tuple containing the table header and a dictionary.
             The dictionary contains the database IDs for each ID
             in key_db as keys and the values are the location
-            of that ID in the table file. 
+            of that ID in the table file.
     '''
 
     table = {}
@@ -381,7 +399,7 @@ def read_indexed_table(table_handle, header, index):
 
         table_handle:
                 File handle of the indexed table file
-    
+
         header:
                 The header of the table file
 
@@ -406,7 +424,7 @@ def read_indexed_table(table_handle, header, index):
     lineDict = {}
     for key, value in zip(header, lineSplit):
        lineDict[key] = value
-    return lineDict 
+    return lineDict
 
 def unique_ids(tables):
     '''yields unique IDs across tables

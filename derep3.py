@@ -1,8 +1,26 @@
 #! /usr/bin/env python
 """
-For dereplicating sequencing reads. Can check for exact duplicates and 
-duplicate reads that are prefix of another. Has support for bz2 and gzip 
+For dereplicating sequencing reads. Can check for exact duplicates and
+duplicate reads that are prefix of another. Has support for bz2 and gzip
 compression.
+
+Copyright:
+
+    derep3.py Dereplicate exact duplicates and prefix reads
+    Copyright (C) 2016  William Brazelton, Christopher Thornton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 from __future__ import print_function
 from __future__ import division
@@ -151,7 +169,7 @@ def open_file(filename):
         sequencefile = bufferedfile
 
     return sequencefile
-    
+
 def get_iterator(fin, rin, rout):
     f_iter = fastq_iter(open_file(fin))
     if rin:
@@ -165,8 +183,8 @@ def get_iterator(fin, rin, rout):
 
 def replicate_status(query, queried, prefix=False):
     """
-    Return the replicate status of a search. A status of zero means not 
-    a replicate, one means that the query is a replicate, and two means that 
+    Return the replicate status of a search. A status of zero means not
+    a replicate, one means that the query is a replicate, and two means that
     the queried is a replicate
     """
     prefix_status = 0

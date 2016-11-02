@@ -11,7 +11,25 @@ Synopsis:
     Takes alignment data from short reads mapped to an assembly in BAM format
     and the phylogeny of those short reads from the Phylosift
     sequence_taxa_summary.txt file to identify and color the phylogeny of each
-    contig in the assembly. 
+    contig in the assembly.
+
+Copyright:
+
+    esom_tracer2.py Color ESOM best matches by phylogenies
+    Copyright (C) 2016  William Brazelton, Alex Hyer
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function
@@ -80,7 +98,7 @@ class Contig:
         """
 
         try:
-            taxa = max(self.taxa_dict.iteritems(), key=lambda x: x[1])[0]      
+            taxa = max(self.taxa_dict.iteritems(), key=lambda x: x[1])[0]
         except ValueError:
             taxa = None
         return taxa
@@ -207,7 +225,7 @@ def main(args):
     print('> Processed {0} short reads from {1}'.format(str(len(taxa)),
                                                         args.taxonomy.name))
     unique_taxa = {'N/A': 1}
-    unique_taxa_number = 2 
+    unique_taxa_number = 2
     print('> Processing {0}'.format(args.bam.filename))
     references_match_contigs = 0
     reads_mapping_contigs = 0
@@ -277,7 +295,7 @@ def main(args):
     if not taxa_output.endswith('.taxa'):
         taxa_output += '.taxa'
     args.output.write('% {0}\n'.format(len(class_file_dict)))
-    args.output.write('{0}\n'.format('\n'.join(header_colors))) 
+    args.output.write('{0}\n'.format('\n'.join(header_colors)))
     for key in sorted(class_file_dict.keys()):
         value = class_file_dict[key]
         args.output.write('{0}\t{1}\n'.format(key, value))
