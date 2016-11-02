@@ -24,11 +24,11 @@ with open(gff_file) as gff:
 		if line[0] == '#': pass
 		else: 
 			lines = lines + 1
-			if 'database' in line:
+			if 'inference' in line:
 				fields = line.split(';')
 				for field in fields:
-					if field[:8] == 'database': 
-						if 'kegg' in field: kegg = kegg + 1
+					if field[:9] == 'inference': 
+						if 'prokaryotes' in field: kegg = kegg + 1
 						elif 'UniProtKB' in field: uniprot = uniprot + 1
 						elif 'HAMAP' in field: hamap = hamap + 1
 						elif 'CLUSTERS' in field: clusters = clusters + 1
