@@ -23,6 +23,8 @@ Copyright:
 
 import argparse
 from time import time
+import os
+import yaml
 import sys
 
 __author__ = 'Alex Hyer'
@@ -45,21 +47,56 @@ def main(args):
     print('>>> I am using the {0} database as per your command'
           .format(args.database))
 
-    # Index genes file
-    print('>>> I am indexing {0}'.format(args.genes_file.name))
-    print('>>> I\'ll try to be super fast')
+    # Attempt to skip indexing
     rxn_index = {}
-    index = 0
-    start_time = time()
-    while True:
-        line = args.genes_file.readline()
-        rxn = line.strip().split('\t')[0]
-        rxn_index[rxn] = index
-        index = args.genes_file.tell()
-    end_time = time()
-    print('>>> I indexed {0} reactions in {1} seconds'
-          .format(str(len(rxn_index.keys())), str(end_time - start_time)))
-    print('>>> See how quickly I did that?')
+    skip_index = False
+    index_path = os.path.abspath(args.genes_file.name) + 'idx'
+    if os.path.isfile(index_path) is True:
+        if os.path.getmtime(index_path) > \
+                os.path.getmtime(args.genes_file.name):
+            skip_index = True
+            print('>>> I found an index file: {0}'.format(index_path))
+            print('>>> That\'ll save us LOADS of time!')
+            start_time = time()
+            rxn_index = yaml.safe_dump(open(index_path, 'r').read())
+            end_time = time()
+            print('>>> I read {0} reactions in {1} seconds'
+                  .format(str(len(rxn_index.keys())),
+                          str(end_time - start_time)))
+            print('>>> That\'s WAY faster than indexing myself')
+        else:
+            print('>>> Uh oh! {0} was modified after {1}'
+                  .format(args.genes_file.name, index_path))
+            print('>>> I\'m gonna index your file then')
+
+    # Index genes file if necessary
+    if skip_index is False:
+        print('>>> I am indexing {0}'.format(args.genes_file.name))
+        print('>>> I\'ll try to be super fast')
+        print('>>> Buckle up!')
+        index = 0
+        start_time = time()
+        while True:
+            print(index)
+            line = args.genes_file.readline()
+            rxn = line.strip().split('\t')[0]
+            rxn_index[rxn] = index
+            index = args.genes_file.tell()
+        end_time = time()
+        print('>>> I indexed {0} reactions in {1} seconds'
+              .format(str(len(rxn_index.keys())), str(end_time - start_time)))
+        print('>>> See how quickly I did that?')
+        print('>>> I\'ll attempt to save an index file to save computation '
+              'next time')
+        try:
+            index_path = os.path.abspath(args.genes_file.name) + 'idx'
+            with open(index_path, 'w') as index_handle:
+                index_handle.write(yaml.dump(rxn_index))
+        except IOError as err:
+            print('>>> Couldn\'t write index file: {0}'.format(index_path))
+            print('>>> Error:')
+            print(err)
+            print('>>> Sorry :(')
 
     # Find possible pathways
     pathway_index = {}
