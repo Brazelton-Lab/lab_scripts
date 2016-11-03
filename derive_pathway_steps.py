@@ -24,7 +24,7 @@ Copyright:
 import argparse
 from time import time
 import os
-import yaml
+import ruamel.yaml
 import sys
 
 __author__ = 'Alex Hyer'
@@ -32,7 +32,17 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a9'
+__version__ = '0.0.1a10'
+
+
+def metacyc_tree(raw_data):
+    """Analyzes MetaCyc structured trees and parses into a tree
+
+    Args:
+        raw_data (str): raw structured format of tree
+    """
+
+    pass
 
 
 def main(args):
@@ -56,9 +66,9 @@ def main(args):
                 os.path.getmtime(args.genes_file.name):
             skip_index = True
             print('>>> I found an index file: {0}'.format(index_path))
-            print('>>> That\'ll save us LOADS of time!')
+            print('>>> That\'ll save us LOADS of time (if the file is big)!')
             start_time = time()
-            rxn_index = yaml.safe_dump(open(index_path, 'r').read())
+            rxn_index = ruamel.yaml.safe_load(open(index_path, 'r').read())
             end_time = time()
             print('>>> I read {0} reactions in {1} seconds'
                   .format(str(len(rxn_index.keys())),
@@ -91,7 +101,7 @@ def main(args):
         try:
             index_path = os.path.abspath(args.genes_file.name) + '.idx'
             with open(index_path, 'w') as index_handle:
-                index_handle.write(yaml.dump(rxn_index))
+                ruamel.yaml.dump(rxn_index, index_handle)
         except IOError as err:
             print('>>> Couldn\'t write index file: {0}'.format(index_path))
             print('>>> Error:')
@@ -118,6 +128,7 @@ def main(args):
     print('>>> Select the pathway you want me to analyze')
     answer = -1
     index = None
+    pathway_name = None
     while True:
         print('>>> Possible Pathways (select a number)')
         for item in enumerate(pathway_index.items()):
@@ -125,11 +136,17 @@ def main(args):
         answer = input('>>> Tell me the what pathway to analyze: ')
         try:
             index = [i[1] for i in pathway_index.items()][answer]
+            pathway_name = [i[0] for i in pathway_index.items()][answer]
             break
         except IndexError:
             print('>>> I don\'t know what pathway {0} is. Please clarify.'
                   .format(str(answer)))
-    sys.exit(0)
+
+    # Analyze structure of pathway
+    print('>>> I will now analyze {0}'.format(pathway_name))
+    args.pathways_file.seek(index)
+    pathway_structure_raw = args.pathways_file.strip().split('\t')[1]
+    pathway_tree = metacyc_tree(pathway_structure_raw)
 
 
 if __name__ == '__main__':
