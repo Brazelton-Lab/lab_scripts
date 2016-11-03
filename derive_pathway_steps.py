@@ -32,7 +32,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a8'
+__version__ = '0.0.1a9'
 
 
 def main(args):
@@ -50,7 +50,7 @@ def main(args):
     # Attempt to skip indexing
     rxn_index = {}
     skip_index = False
-    index_path = os.path.abspath(args.genes_file.name) + 'idx'
+    index_path = os.path.abspath(args.genes_file.name) + '.idx'
     if os.path.isfile(index_path) is True:
         if os.path.getmtime(index_path) > \
                 os.path.getmtime(args.genes_file.name):
@@ -78,7 +78,6 @@ def main(args):
         start_time = time()
         line = args.genes_file.readline()
         while line:
-            print(index)
             rxn = line.strip().split('\t')[0]
             rxn_index[rxn] = index
             index = args.genes_file.tell()
@@ -90,7 +89,7 @@ def main(args):
         print('>>> I\'ll attempt to save an index file to save computation '
               'next time')
         try:
-            index_path = os.path.abspath(args.genes_file.name) + 'idx'
+            index_path = os.path.abspath(args.genes_file.name) + '.idx'
             with open(index_path, 'w') as index_handle:
                 index_handle.write(yaml.dump(rxn_index))
         except IOError as err:
@@ -99,7 +98,9 @@ def main(args):
             print(err)
             print('>>> Sorry :(')
 
-    # Find possible pathways
+    # Find possible pathways and index them
+    print('>>> Finding pathways with {0} in {1}'
+          .format(args.pathway, args.pathways_file.name))
     pathway_index = {}
     index = 0
     start_time = time()
@@ -126,7 +127,8 @@ def main(args):
             index = [i[1] for i in pathway_index.items()][answer]
             break
         except IndexError:
-            print('>>> I don\'t know what pathway {0} is. Please clarify.')
+            print('>>> I don\'t know what pathway {0} is. Please clarify.'
+                  .format(str(answer)))
     sys.exit(0)
 
 
