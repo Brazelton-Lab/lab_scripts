@@ -76,7 +76,7 @@ def main(args):
         print('>>> Buckle up!')
         index = 0
         start_time = time()
-        while True:
+        while line:
             print(index)
             line = args.genes_file.readline()
             rxn = line.strip().split('\t')[0]
@@ -102,7 +102,7 @@ def main(args):
     pathway_index = {}
     index = 0
     start_time = time()
-    while True:
+    while line:
         line = args.pathways_file.readline()
         pathway = line.strip().split('\t')[0]
         if args.pathway in pathway:
