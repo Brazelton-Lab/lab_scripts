@@ -32,7 +32,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a6'
+__version__ = '0.0.1a8'
 
 
 def main(args):
@@ -76,12 +76,13 @@ def main(args):
         print('>>> Buckle up!')
         index = 0
         start_time = time()
+        line = args.genes_file.readline()
         while line:
             print(index)
-            line = args.genes_file.readline()
             rxn = line.strip().split('\t')[0]
             rxn_index[rxn] = index
             index = args.genes_file.tell()
+            line = args.genes_file.readline()
         end_time = time()
         print('>>> I indexed {0} reactions in {1} seconds'
               .format(str(len(rxn_index.keys())), str(end_time - start_time)))
@@ -102,12 +103,13 @@ def main(args):
     pathway_index = {}
     index = 0
     start_time = time()
+    line = args.pathways_file.readline()
     while line:
-        line = args.pathways_file.readline()
         pathway = line.strip().split('\t')[0]
         if args.pathway in pathway:
             pathway_index[pathway] = index
         index = args.pathways_file.tell()
+        line = args.pathways_file.readline()
     end_time = time()
     print('>>> I indexed {0} possible pathways in {1} seconds'
           .format(str(len(pathway_index.keys())), str(end_time - start_time)))
