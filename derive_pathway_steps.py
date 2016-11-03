@@ -30,7 +30,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a3'
+__version__ = '0.0.1a4'
 
 
 def main(args):
@@ -95,33 +95,33 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
-    parser.add_argument('Output File',
-                        dest='output_file',
+    parser.add_argument('output_file',
+                        metavar='Output File',
                         type=argparse.FileType('w'),
                         help='output file for results')
 
     subparsers = parser.add_subparsers(title='Database',
                                        dest='database')
 
-    metacyc = subparsers.add_parser('MetaCyc',
-                                    dest='metacyc',
+    metacyc = subparsers.add_parser('metacyc',
+                                    metavar='MetaCyc',
                                     help='Analyze MetaCyc Database')
-    metacyc.add_argument('Pathways File',
-                         dest='pathways_file',
+    metacyc.add_argument('pathways_file',
+                         metavar='Pathways File',
                          type=argparse.FileType('r'),
                          help='metacyc2 file: connects enzymatic reactions to '
                               'pathways')
-    metacyc.add_argument('Genes File',
-                         dest='genes_file',
+    metacyc.add_argument('genes_file',
+                         metavar='Genes File',
                          type=argparse.FileType('r'),
                          help='metacyc1 file: connects genes to enzymatic '
                               'reactions')
-    metacyc.add_argument('Uniref ID File',
-                         dest='uniref_file',
+    metacyc.add_argument('uniref_file',
+                         metavar='UniRef ID File',
                          type=argparse.FileType('r'),
                          help='ID Mapping file mapping UniRefs to genes')
-    metacyc.add_argument('Pathway',
-                         dest='pathway',
+    metacyc.add_argument('pathway',
+                         metavar='Pathway',
                          type=str,
                          help='Name of pathway to analyze (can be partial)')
     args = parser.parse_args()
