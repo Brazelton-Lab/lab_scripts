@@ -30,7 +30,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a4'
+__version__ = '0.0.1a5'
 
 
 def main(args):
@@ -104,7 +104,6 @@ if __name__ == '__main__':
                                        dest='database')
 
     metacyc = subparsers.add_parser('metacyc',
-                                    metavar='MetaCyc',
                                     help='Analyze MetaCyc Database')
     metacyc.add_argument('pathways_file',
                          metavar='Pathways File',
