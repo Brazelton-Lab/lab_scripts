@@ -30,7 +30,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a5'
+__version__ = '0.0.1a6'
 
 
 def main(args):
@@ -53,7 +53,7 @@ def main(args):
     start_time = time()
     while True:
         line = args.genes_file.readline()
-        rxn = line.split('\t').strip()[0]
+        rxn = line.strip().split('\t')[0]
         rxn_index[rxn] = index
         index = args.genes_file.tell()
     end_time = time()
@@ -67,7 +67,7 @@ def main(args):
     start_time = time()
     while True:
         line = args.pathways_file.readline()
-        pathway = line.split('\t').strip()[0]
+        pathway = line.strip().split('\t')[0]
         if args.pathway in pathway:
             pathway_index[pathway] = index
         index = args.pathways_file.tell()
@@ -95,10 +95,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.
                                      RawDescriptionHelpFormatter)
-    parser.add_argument('output_file',
-                        metavar='Output File',
-                        type=argparse.FileType('w'),
-                        help='output file for results')
 
     subparsers = parser.add_subparsers(title='Database',
                                        dest='database')
@@ -119,6 +115,10 @@ if __name__ == '__main__':
                          metavar='UniRef ID File',
                          type=argparse.FileType('r'),
                          help='ID Mapping file mapping UniRefs to genes')
+    metacyc.add_argument('output_file',
+                         metavar='Output File',
+                         type=argparse.FileType('w'),
+                         help='output file for results')
     metacyc.add_argument('pathway',
                          metavar='Pathway',
                          type=str,
