@@ -32,7 +32,80 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a10'
+__version__ = '0.0.1a11'
+
+
+class Pathway(object):
+    """A class to store the structure of a MetaCyc tree
+
+    Attributes:
+        name (str): name of pathway
+
+        child_nodes (list): list of Reaction consisting of all nodes one level
+                            down from current node
+    """
+
+    def __init__(self, name):
+        """Initialize attributes to store pathway structure"""
+
+        self.name = name
+        self.child_nodes = []
+
+    def add_child_node(self, child_name):
+        """Add child node to child_nodes with self as parent
+
+        Args:
+            child_name (str): Reaction name of child node
+        """
+
+        self.child_nodes.append(Reaction(child_name, self))
+
+    def print_tree(self):
+        """Return all possible reaction paths in pathway
+
+        Returns:
+             list: list of lists of all possible branches
+        """
+
+        branches = []
+        for child in self.child_nodes:
+            branch = [self.name]
+            for piece in child.gather_children():
+                branches.append(branch + piece)
+
+        return branches
+
+
+class Reaction(Pathway):
+    """A class to act as a node on a MetaCyc pathway tree
+
+    Attributes:
+        name (str): Name of node
+
+        parent(Pathway|Reaction): Pathway or Reaction node above current node
+    """
+
+    def __init__(self, name, parent):
+        """Initialize node and call parent __init__"""
+
+        super(Reaction, self).__init__(name)
+        self.parent_node = parent
+
+    def gather_children(self):
+        """Generator of lists containing each path branching off current node
+
+        Yields:
+            list: list of all children along a given branch
+        """
+
+        # Only return own name and cease iteration if node is terminal leaf
+        if not self.child_nodes:
+            yield [self.name]
+        else:
+            for child in self.child_nodes:
+                branch = [self.name]
+                for piece in child.gather_children():  # Recurse
+                    yield branch + piece
 
 
 def metacyc_tree(raw_data):
