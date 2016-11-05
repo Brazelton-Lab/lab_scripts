@@ -24,6 +24,7 @@ Copyright:
 import argparse
 from time import time
 import os
+import re
 import ruamel.yaml
 import sys
 
@@ -41,15 +42,16 @@ class Pathway(object):
     Attributes:
         name (str): name of pathway
 
-        child_nodes (list): list of Reaction consisting of all nodes one level
-                            down from current node
+        child_nodes (dict): dictionary of Reaction consisting of all nodes one
+                            level down from current node, key is child node's
+                            name and value is pointer to node
     """
 
     def __init__(self, name):
         """Initialize attributes to store pathway structure"""
 
         self.name = name
-        self.child_nodes = []
+        self.child_nodes = {}
 
     def add_child_node(self, child_name):
         """Add child node to child_nodes with self as parent
@@ -58,20 +60,33 @@ class Pathway(object):
             child_name (str): Reaction name of child node
         """
 
-        self.child_nodes.append(Reaction(child_name, self))
+        self.child_nodes[child_name] = Reaction(child_name, self)
 
-    def print_tree(self):
-        """Return all possible reaction paths in pathway
+    def obtain_tree_structure(self):
+        """Return lists of all possible reaction paths in pathway as objects
 
         Returns:
-             list: list of lists of all possible branches
+             list: list of lists of all possible branches as objects
         """
 
         branches = []
-        for child in self.child_nodes:
-            branch = [self.name]
-            for piece in child.gather_children():
-                branches.append(branch + piece)
+        for child in self.child_nodes.values():
+            for branch in child.gather_children():
+                branches.append(branch)
+
+        return branches
+
+    def print_tree_structure(self):
+        """Return lists of all possible reaction paths in pathway as strings
+
+        Returns:
+             list: list of lists of all possible branches as strings
+        """
+
+        branches = []
+        for child in self.child_nodes.values():
+            for branch in child.gather_children_names():
+                branches.append(branch)
 
         return branches
 
@@ -89,33 +104,105 @@ class Reaction(Pathway):
         """Initialize node and call parent __init__"""
 
         super(Reaction, self).__init__(name)
+        self.parent_name = parent.name
         self.parent_node = parent
 
     def gather_children(self):
         """Generator of lists containing each path branching off current node
 
         Yields:
-            list: list of all children along a given branch
+            list: list of all children objects along a given branch
+        """
+
+        # Only return own name and cease iteration if node is terminal leaf
+        if not self.child_nodes:
+            yield [self]
+        else:
+            for child in self.child_nodes.values():
+                branch = [self]
+                for piece in child.gather_children():  # Recurse
+                    yield branch + piece
+
+    def gather_children_names(self):
+        """Generator of lists containing each path branching off current node
+
+        Yields:
+            list: list of all children names along a given branch
         """
 
         # Only return own name and cease iteration if node is terminal leaf
         if not self.child_nodes:
             yield [self.name]
         else:
-            for child in self.child_nodes:
+            for child in self.child_nodes.values():
                 branch = [self.name]
-                for piece in child.gather_children():  # Recurse
+                for piece in child.gather_children_names():  # Recurse
                     yield branch + piece
 
 
-def metacyc_tree(raw_data):
+def metacyc_tree(raw_data, name):
     """Analyzes MetaCyc structured trees and parses into a tree
 
     Args:
         raw_data (str): raw structured format of tree
+
+        name (str): name of pathway being analyzed
+
+    Returns:
+        Pathway: Pathway class modeling pathway
     """
 
-    pass
+    # TODO: Fix all this crap
+
+    def analyze_segments(segments):
+        global current_node
+        global current_segment
+        global to_close
+        global pathway
+        for segment in enumerate(segments):
+            print(segment)
+            if segment[0] < current_segment:
+                continue
+
+            current_segment += 1
+            print(current_segment)
+            if segment[1] == '(':
+                to_close += 1
+                analyze_segments(segments)
+            elif segment[1] == ')':
+                to_close -= 1
+                try:
+                    if to_close == 0:
+                        current_node = current_node.parent_node
+                except NameError:  # Pathway/Top level reached
+                    continue
+                break
+            elif segment[1] == ',':
+                try:
+                    current_node = current_node.parent_node
+                except NameError:  # Pathway/Top level reached
+                    continue
+            else:
+                if to_close != 0:
+                    start_branch = current_node
+                    for child in current_node.child_nodes.values():
+                        child.add_child_node(segment[1])
+                        current_node = current_node.child_nodes[segment[1]]
+                current_node.add_child_node(segment[1])
+                current_node = current_node.child_nodes[segment[1]]
+
+    global current_node
+    global current_segment
+    global pathway
+    global to_close
+    to_close = 0
+    pathway = Pathway(name)
+    current_node = pathway
+    current_segment = 0
+    segments = raw_data.split()
+    analyze_segments(segments)
+
+    return pathway
 
 
 def main(args):
@@ -219,7 +306,7 @@ def main(args):
     print('>>> I will now analyze {0}'.format(pathway_name))
     args.pathways_file.seek(index)
     pathway_structure_raw = args.pathways_file.strip().split('\t')[1]
-    pathway_tree = metacyc_tree(pathway_structure_raw)
+    pathway_tree = metacyc_tree(pathway_structure_raw, pathway_name)
 
 
 if __name__ == '__main__':
