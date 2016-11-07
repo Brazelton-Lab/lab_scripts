@@ -36,6 +36,78 @@ __status__ = 'Alpha'
 __version__ = '0.0.1a11'
 
 
+class LispParserError(Exception):
+    pass
+
+token_pattern = re.compile(r'\s*([()]|"[^"]*"|[^"\s()]*)(.*)', re.DOTALL)
+
+class LispParser():
+
+    def parse_string(self,expression):
+        """
+        Tokenize and parse a string as a LISP expression.
+        """
+        try:
+            return self.parse_token_generator(self.token_generator(expression))
+        except StopIteration:
+            # This should occur only if the expression is malformed
+            raise LispParserError('Malformed or unsupported LISP expression.')
+
+    def token_generator(self,expression):
+        """ etc """
+
+        while expression:
+            token, expression = token_pattern.match(expression).groups()
+            if token:
+                yield token
+            else:
+                # Handle pathological cases like expression='"', which
+                # gives token = '' and expression = '"' again
+                if expression:
+                    raise LispParserError('Failure to parse LISP string')
+                break
+
+    def parse_token_generator(self, token_generator):
+        """
+        Parse a generator of LISP token strings.
+        """
+        token = next(token_generator)
+
+        if token == '(':
+            elements = [token]
+            while elements[-1] != ')':
+                elements.append(self.parse_token_generator(token_generator))
+            return elements[1:-1]
+        elif token == ')':
+            return ')'
+        else:
+            return self.parse_single_token(token)
+
+    def parse_single_token(self, token):
+        """
+        Parse a single LISP token string to a number, boolean, None, or string.
+        """
+
+        if token.startswith('"'):
+            return token.strip('"')
+
+        if token == 'T':
+            return True
+        elif token == 'NIL':
+            return None
+
+        try:
+            return int(token)
+        except ValueError:
+            pass
+        try:
+            return float(token)
+        except ValueError:
+            pass
+
+        return token
+
+
 class Pathway(object):
     """A class to store the structure of a MetaCyc tree
 
@@ -62,7 +134,7 @@ class Pathway(object):
 
         self.child_nodes[child_name] = Reaction(child_name, self)
 
-    def obtain_tree_structure(self):
+    def get_tree_structure(self):
         """Return lists of all possible reaction paths in pathway as objects
 
         Returns:
@@ -152,57 +224,8 @@ def metacyc_tree(raw_data, name):
         Pathway: Pathway class modeling pathway
     """
 
-    # TODO: Fix all this crap
-
-    def analyze_segments(segments):
-        global current_node
-        global current_segment
-        global to_close
-        global pathway
-        for segment in enumerate(segments):
-            print(segment)
-            if segment[0] < current_segment:
-                continue
-
-            current_segment += 1
-            print(current_segment)
-            if segment[1] == '(':
-                to_close += 1
-                analyze_segments(segments)
-            elif segment[1] == ')':
-                to_close -= 1
-                try:
-                    if to_close == 0:
-                        current_node = current_node.parent_node
-                except NameError:  # Pathway/Top level reached
-                    continue
-                break
-            elif segment[1] == ',':
-                try:
-                    current_node = current_node.parent_node
-                except NameError:  # Pathway/Top level reached
-                    continue
-            else:
-                if to_close != 0:
-                    start_branch = current_node
-                    for child in current_node.child_nodes.values():
-                        child.add_child_node(segment[1])
-                        current_node = current_node.child_nodes[segment[1]]
-                current_node.add_child_node(segment[1])
-                current_node = current_node.child_nodes[segment[1]]
-
-    global current_node
-    global current_segment
-    global pathway
-    global to_close
-    to_close = 0
-    pathway = Pathway(name)
-    current_node = pathway
-    current_segment = 0
-    segments = raw_data.split()
-    analyze_segments(segments)
-
-    return pathway
+    # TODO: Download PathwayTools
+    pass
 
 
 def main(args):
@@ -217,56 +240,25 @@ def main(args):
     print('>>> I am using the {0} database as per your command'
           .format(args.database))
 
-    # Attempt to skip indexing
+    # Index genes database
     rxn_index = {}
-    skip_index = False
-    index_path = os.path.abspath(args.genes_file.name) + '.idx'
-    if os.path.isfile(index_path) is True:
-        if os.path.getmtime(index_path) > \
-                os.path.getmtime(args.genes_file.name):
-            skip_index = True
-            print('>>> I found an index file: {0}'.format(index_path))
-            print('>>> That\'ll save us LOADS of time (if the file is big)!')
-            start_time = time()
-            rxn_index = ruamel.yaml.safe_load(open(index_path, 'r').read())
-            end_time = time()
-            print('>>> I read {0} reactions in {1} seconds'
-                  .format(str(len(rxn_index.keys())),
-                          str(end_time - start_time)))
-            print('>>> That\'s WAY faster than indexing myself')
-        else:
-            print('>>> Uh oh! {0} was modified after {1}'
-                  .format(args.genes_file.name, index_path))
-            print('>>> I\'m gonna index your file then')
-
-    # Index genes file if necessary
-    if skip_index is False:
-        print('>>> I am indexing {0}'.format(args.genes_file.name))
-        print('>>> I\'ll try to be super fast')
-        print('>>> Buckle up!')
-        index = 0
-        start_time = time()
+    print('>>> I am indexing {0}'.format(args.genes_file.name))
+    print('>>> I\'ll try to be super fast')
+    print('>>> Buckle up!')
+    index = 0
+    start_time = time()
+    line = args.genes_file.readline()
+    while line:
+        rxn = line.strip().split('\t')[0]
+        rxn_index[rxn] = index
+        index = args.genes_file.tell()
         line = args.genes_file.readline()
-        while line:
-            rxn = line.strip().split('\t')[0]
-            rxn_index[rxn] = index
-            index = args.genes_file.tell()
-            line = args.genes_file.readline()
-        end_time = time()
-        print('>>> I indexed {0} reactions in {1} seconds'
-              .format(str(len(rxn_index.keys())), str(end_time - start_time)))
-        print('>>> See how quickly I did that?')
-        print('>>> I\'ll attempt to save an index file to save computation '
-              'next time')
-        try:
-            index_path = os.path.abspath(args.genes_file.name) + '.idx'
-            with open(index_path, 'w') as index_handle:
-                ruamel.yaml.dump(rxn_index, index_handle)
-        except IOError as err:
-            print('>>> Couldn\'t write index file: {0}'.format(index_path))
-            print('>>> Error:')
-            print(err)
-            print('>>> Sorry :(')
+    end_time = time()
+    print('>>> I indexed {0} reactions in {1} seconds'
+          .format(str(len(rxn_index.keys())), str(end_time - start_time)))
+    print('>>> See how quickly I did that?')
+    print('>>> I\'ll attempt to save an index file to save computation '
+          'next time')
 
     # Find possible pathways and index them
     print('>>> Finding pathways with {0} in {1}'
