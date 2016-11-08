@@ -22,11 +22,10 @@ Copyright:
 """
 
 import argparse
-from time import time
 import os
-import re
-import ruamel.yaml
+from subprocess import CalledProcessError, Popen
 import sys
+import time
 
 __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
@@ -34,78 +33,6 @@ __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
 __version__ = '0.0.1a11'
-
-
-class LispParserError(Exception):
-    pass
-
-token_pattern = re.compile(r'\s*([()]|"[^"]*"|[^"\s()]*)(.*)', re.DOTALL)
-
-class LispParser():
-
-    def parse_string(self,expression):
-        """
-        Tokenize and parse a string as a LISP expression.
-        """
-        try:
-            return self.parse_token_generator(self.token_generator(expression))
-        except StopIteration:
-            # This should occur only if the expression is malformed
-            raise LispParserError('Malformed or unsupported LISP expression.')
-
-    def token_generator(self,expression):
-        """ etc """
-
-        while expression:
-            token, expression = token_pattern.match(expression).groups()
-            if token:
-                yield token
-            else:
-                # Handle pathological cases like expression='"', which
-                # gives token = '' and expression = '"' again
-                if expression:
-                    raise LispParserError('Failure to parse LISP string')
-                break
-
-    def parse_token_generator(self, token_generator):
-        """
-        Parse a generator of LISP token strings.
-        """
-        token = next(token_generator)
-
-        if token == '(':
-            elements = [token]
-            while elements[-1] != ')':
-                elements.append(self.parse_token_generator(token_generator))
-            return elements[1:-1]
-        elif token == ')':
-            return ')'
-        else:
-            return self.parse_single_token(token)
-
-    def parse_single_token(self, token):
-        """
-        Parse a single LISP token string to a number, boolean, None, or string.
-        """
-
-        if token.startswith('"'):
-            return token.strip('"')
-
-        if token == 'T':
-            return True
-        elif token == 'NIL':
-            return None
-
-        try:
-            return int(token)
-        except ValueError:
-            pass
-        try:
-            return float(token)
-        except ValueError:
-            pass
-
-        return token
 
 
 class Pathway(object):
@@ -212,20 +139,69 @@ class Reaction(Pathway):
                     yield branch + piece
 
 
-def metacyc_tree(raw_data, name):
-    """Analyzes MetaCyc structured trees and parses into a tree
-
-    Args:
-        raw_data (str): raw structured format of tree
-
-        name (str): name of pathway being analyzed
-
-    Returns:
-        Pathway: Pathway class modeling pathway
+# This method is literally just the Python 3.5.1 which function from the
+# shutil library in order to permit this functionality in Python 2.
+# Minor changes to style were made to account for indentation.
+def which(cmd, mode=os.F_OK | os.X_OK, path=None):
+    """Given a command, mode, and a PATH string, return the path which
+    conforms to the given mode on the PATH, or None if there is no such
+    file.
+    `mode` defaults to os.F_OK | os.X_OK. `path` defaults to the result
+    of os.environ.get("PATH"), or can be overridden with a custom search
+    path.
     """
 
-    # TODO: Download PathwayTools
-    pass
+    # Check that a given file can be accessed with the correct mode.
+    # Additionally check that `file` is not a directory, as on Windows
+    # directories pass the os.access check.
+    def _access_check(fn, mode):
+        return (os.path.exists(fn) and os.access(fn, mode)
+                and not os.path.isdir(fn))
+
+    # If we're given a path with a directory part, look it up directly
+    # rather than referring to PATH directories. This includes checking
+    # relative to the current directory, e.g. ./script
+    if os.path.dirname(cmd):
+        if _access_check(cmd, mode):
+            return cmd
+        return None
+
+    if path is None:
+        path = os.environ.get("PATH", os.defpath)
+    if not path:
+        return None
+    path = path.split(os.pathsep)
+
+    if sys.platform == "win32":
+        # The current directory takes precedence on Windows.
+        if not os.curdir in path:
+            path.insert(0, os.curdir)
+        # PATHEXT is necessary to check on Windows.
+        pathext = os.environ.get("PATHEXT", "").split(os.pathsep)
+        # See if the given file matches any of the expected path
+        # extensions. This will allow us to short circuit when given
+        # "python.exe". If it does match, only test that one, otherwise
+        # we have to try others.
+        if any(cmd.lower().endswith(ext.lower()) for ext in
+               pathext):
+            files = [cmd]
+        else:
+            files = [cmd + ext for ext in pathext]
+    else:
+        # On other platforms you don't have things like PATHEXT to tell you
+        # what file suffixes are executable, so just pass on cmd as-is.
+        files = [cmd]
+
+    seen = set()
+    for dir in path:
+        normdir = os.path.normcase(dir)
+        if not normdir in seen:
+            seen.add(normdir)
+            for thefile in files:
+                name = os.path.join(dir, thefile)
+                if _access_check(name, mode):
+                    return name
+    return None
 
 
 def main(args):
@@ -235,70 +211,43 @@ def main(args):
              args (NameSpace): ArgParse arguments controlling program flow
     """
 
-    print('>>> Hi, I\'m DPS (Derive Pathway Steps)')
-    print('>>> I will be analyzing pathways for you today')
-    print('>>> I am using the {0} database as per your command'
+    print('>>> Hi, I am DPS (Derive Pathway Steps).')
+    print('>>> I will be analyzing pathways for you today.')
+    print('>>> I am using the {0} database as per your command.'
           .format(args.database))
 
-    # Index genes database
-    rxn_index = {}
-    print('>>> I am indexing {0}'.format(args.genes_file.name))
-    print('>>> I\'ll try to be super fast')
-    print('>>> Buckle up!')
-    index = 0
-    start_time = time()
-    line = args.genes_file.readline()
-    while line:
-        rxn = line.strip().split('\t')[0]
-        rxn_index[rxn] = index
-        index = args.genes_file.tell()
-        line = args.genes_file.readline()
-    end_time = time()
-    print('>>> I indexed {0} reactions in {1} seconds'
-          .format(str(len(rxn_index.keys())), str(end_time - start_time)))
-    print('>>> See how quickly I did that?')
-    print('>>> I\'ll attempt to save an index file to save computation '
-          'next time')
+    if args.database == 'metacyc':
 
-    # Find possible pathways and index them
-    print('>>> Finding pathways with {0} in {1}'
-          .format(args.pathway, args.pathways_file.name))
-    pathway_index = {}
-    index = 0
-    start_time = time()
-    line = args.pathways_file.readline()
-    while line:
-        pathway = line.strip().split('\t')[0]
-        if args.pathway in pathway:
-            pathway_index[pathway] = index
-        index = args.pathways_file.tell()
-        line = args.pathways_file.readline()
-    end_time = time()
-    print('>>> I indexed {0} possible pathways in {1} seconds'
-          .format(str(len(pathway_index.keys())), str(end_time - start_time)))
-    print('>>> I hope they\'re relevant to your bioinformatic desires')
-    print('>>> Select the pathway you want me to analyze')
-    answer = -1
-    index = None
-    pathway_name = None
-    while True:
-        print('>>> Possible Pathways (select a number)')
-        for item in enumerate(pathway_index.items()):
-            print('{0}: {1}'.format(str(item[0]), item[1][0]))
-        answer = input('>>> Tell me the what pathway to analyze: ')
-        try:
-            index = [i[1] for i in pathway_index.items()][answer]
-            pathway_name = [i[0] for i in pathway_index.items()][answer]
-            break
-        except IndexError:
-            print('>>> I don\'t know what pathway {0} is. Please clarify.'
-                  .format(str(answer)))
+        # Obtain executable
+        pathway_tools = which('pathway-tools')
+        if pathway_tools is None:
+            raise EnvironmentError('I cannot find pathway-tools: please '
+                                   'specify -e')
+        else:
+            print('>>> I found pathway-tools: {0}'.format(pathway_tools))
 
-    # Analyze structure of pathway
-    print('>>> I will now analyze {0}'.format(pathway_name))
-    args.pathways_file.seek(index)
-    pathway_structure_raw = args.pathways_file.strip().split('\t')[1]
-    pathway_tree = metacyc_tree(pathway_structure_raw, pathway_name)
+        # Start pathway-tools server
+        while True:
+            print('>>> Starting Pathway Tools LISP Daemon.')
+            pid = Popen([pathway_tools, '-lisp', '-api'],
+                        stderr=os.devnull, stdout=os.devnull)
+            print('>>> Let\'s give it five seconds.')
+            time.sleep(5)
+            if os.path.isfile('/tmp/ptools-socket'):
+                print('>>> The daemon is is up!')
+                break
+            else:
+                print('>>> The daemon took too long to boot. :(')
+                print('>>> This makes me sad so I will kill it.')
+                pid.kill()
+                print('>>> Let\'s wait five seconds for it to die!')
+                time.sleep(5)
+                pid.poll()
+                if pid.returncode is None:
+                    raise CalledProcessError('Pathway Tools won\'t die!')
+                else:
+                    print('>>> The daemon is dead!')
+                    print('>>> I miss it. :( I\'m going to try again. :)')
 
 
 if __name__ == '__main__':
@@ -311,28 +260,18 @@ if __name__ == '__main__':
 
     metacyc = subparsers.add_parser('metacyc',
                                     help='Analyze MetaCyc Database')
-    metacyc.add_argument('pathways_file',
-                         metavar='Pathways File',
+    metacyc.add_argument('abundance_file',
+                         metavar='Abundance File',
                          type=argparse.FileType('r'),
-                         help='metacyc2 file: connects enzymatic reactions to '
-                              'pathways')
-    metacyc.add_argument('genes_file',
-                         metavar='Genes File',
-                         type=argparse.FileType('r'),
-                         help='metacyc1 file: connects genes to enzymatic '
-                              'reactions')
+                         help='TSV containing gene ID and abundance columns')
     metacyc.add_argument('uniref_file',
                          metavar='UniRef ID File',
                          type=argparse.FileType('r'),
                          help='ID Mapping file mapping UniRefs to genes')
-    metacyc.add_argument('output_file',
-                         metavar='Output File',
-                         type=argparse.FileType('w'),
-                         help='output file for results')
-    metacyc.add_argument('pathway',
-                         metavar='Pathway',
+    metacyc.add_argument('-e', '--executable',
+                         default=None,
                          type=str,
-                         help='Name of pathway to analyze (can be partial)')
+                         help='pathways-tree executable if not in PATH')
     args = parser.parse_args()
 
     main(args)
