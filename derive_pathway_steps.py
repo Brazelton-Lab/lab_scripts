@@ -23,6 +23,7 @@ Copyright:
 
 import argparse
 import os
+import stat
 from subprocess import CalledProcessError, Popen
 import sys
 import time
@@ -230,10 +231,11 @@ def main(args):
         while True:
             print('>>> Starting Pathway Tools LISP Daemon.')
             pid = Popen([pathway_tools, '-lisp', '-api'],
-                        stderr=os.devnull, stdout=os.devnull)
+                        stderr=open(os.devnull), stdout=open(os.devnull))
             print('>>> Let\'s give it five seconds.')
             time.sleep(5)
-            if os.path.isfile('/tmp/ptools-socket'):
+            if os.path.exists('/tmp/ptools-socket') and \
+                    stat.S_ISSOCK(os.stat('/tmp/ptools-socket').st_mode):
                 print('>>> The daemon is is up!')
                 break
             else:
