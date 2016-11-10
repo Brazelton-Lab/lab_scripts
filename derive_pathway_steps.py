@@ -35,7 +35,16 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a12'
+__version__ = '0.0.1a13'
+
+
+def print_list(lst, level=0):
+    print('    ' * (level - 1) + '+---' * (level > 0) + lst[0])
+    for l in lst[1:]:
+        if type(l) is list:
+            print_list(l, level + 1)
+        else:
+            print('    ' * level + '+---' + l)
 
 
 # This method is literally just the Python 3.5.1 which function from the
@@ -121,13 +130,13 @@ def main(args):
         pathway_tools = which('pathway-tools')
         if pathway_tools is None:
             raise EnvironmentError('I cannot find pathway-tools: please '
-                                   'specify -e')
+                                   'specify -e.')
         else:
-            print('>>> I found pathway-tools: {0}'.format(pathway_tools))
+            print('>>> I found pathway-tools: {0}.'.format(pathway_tools))
 
         # Start pathway-tools daemon
         while True:
-            print('>>> Starting Pathway Tools LISP Daemon.')
+            print('>>> Summoning Pathway Tools LISP Daemon.')
             pid = Popen([pathway_tools, '-lisp', '-api'],
                         stderr=open(os.devnull, 'w'),
                         stdout=open(os.devnull, 'w'))
@@ -165,27 +174,14 @@ def main(args):
         print('>>> Indexing {0}.'.format(args.reactions_file.name))
         reactions_to_genes = {}
         start_time = time.time()
-        for line in args.genes_file:
+        for line in args.reactions_file:
             parts = line.strip().split()
-            reactions_to_genes[parts[0]] = (parts[1], [' '.join(parts[2:])])
+            reactions_to_genes[parts[0]] = (parts[1], parts[2:])
         end_time = time.time()
         print('>>> I indexed {0} reactions in {1} seconds.'
               .format(str(len(reactions_to_genes)),
                       str(end_time - start_time)))
         print('>>> I\'m so fast.')
-
-        # Index UniRef mapping file
-        print('>>> Indexing {0}.'.format(args.uniref_file.name))
-        unirefs = {}
-        start_time = time.time()
-        for line in args.uniref_file:
-            parts = line.strip().split()
-            unirefs[parts[0]] = (parts[1], parts[3])
-        end_time = time.time()
-        print('>>> I indexed {0} reactions in {1} seconds.'
-              .format(str(len(unirefs)),
-                      str(end_time - start_time)))
-        print('>>> I\'m quick!')
 
         # Index all pathways by name
         print('>>> Time to index all the pathways from Metacyc.')
@@ -204,29 +200,28 @@ def main(args):
         print('>>> Type "q" for input at any time to exit the program.')
 
         while True:  # Rest of program runs in a loop until user ends it
-            possiblities = {}
+            possibilities = {}
             user_input = raw_input('>>> Enter a pathway: ')
             if user_input.lower() == 'q':
-                print('>>> Shutdown sequence initiated.')
                 break
             for name, frame in pathways.items():
                 if user_input in name:
-                    possiblities[name] = frame
-            if len(possiblities) == 0:
+                    possibilities[name] = frame
+            if len(possibilities) == 0:
                 print('>>> I couldn\'t find any pathways matching your '
                       'request.')
                 print('>>> Try ')
             print('>>> I found {0} pathways matching your request.'
-                  .format(str(len(possiblities))))
+                  .format(str(len(possibilities))))
 
             shutdown = False
             pathway = None
             while True:
                 print('>>> Here are possible pathways:')
-                max_entry = len(possiblities) - 1
-                for possibility in enumerate(possiblities):
+                max_entry = len(possibilities) - 1
+                for possibility in enumerate(possibilities.items()):
                     print('{0}: {1}'.format(str(possibility[0]),
-                                            possibility[1].common_name))
+                                            possibility[1][1].common_name))
                 path_num = raw_input('>>> Select a pathway: ')
                 if path_num.lower() == 'q':
                     shutdown = True
@@ -240,47 +235,77 @@ def main(args):
                         print('>>> Please correct.')
                         continue
                     if path_num > max_entry or path_num < 0:
-                        print('>>> {0} is not a valid pathway.')
+                        print('>>> {0} is not a valid pathway.'
+                              .format(str(path_num)))
                         print('>>> Valid pathways are: {0}.'.format(' '.join(
-                                [str(i) for i in range(max_entry)])))
+                                [str(i) for i in range(max_entry + 1)])))
                         print('>>> Try again.')
                         continue
-                    pathway = possiblities[possiblities.keys[path_num]]
-                    print('>>> You selected: {0}.')
+                    pathway = possibilities[possibilities.keys()[path_num]]
+                    print('>>> You selected: {0}.'.format(pathway.common_name))
                     print('>>> Neat! I\'ll analyze it now.')
                     break
             if shutdown is True:
-                print('>>> Shutdown sequence initiated.')
                 break
 
             # Add genes and abundances to pathway reactions
             print('>>> Collecting reactions in pathway.')
             rxns = [str(rxn) for rxn in pathway.reaction_list]
-            print('>>> Analyzing pathway for key genes.')
-            key_rxns = [str(key) for key in pathway.key_reactions]
+            print('>>> Analyzing pathway for key reactions.')
+            if pathway.key_reactions is not None:
+                key_rxns = [str(key) for key in pathway.key_reactions]
+                for rxn in enumerate(rxns):
+                    if rxn[1] in key_rxns:
+                        rxns[rxn[0]] = rxn[1] + '*'
 
-            print('>>> Acquiring gene families for each reaction from {0}. '
+            print('>>> Acquiring gene families for each reaction from {0}.'
                   .format(args.reactions_file.name))
             reactions = {}
             for rxn in rxns:
-                if rxn in reactions_to_genes.keys():
-                    name, uniref_list = reactions_to_genes[rxn]
-                    if rxn in key_rxns:
-                        name += '*'
-                    name = name + ' (' + uniref_list[0] + ')'
-                    reactions[name] = {}
-                    for uniref in uniref_list[1].split():
-                        reactions[name][uniref] = {}
+                rxn_name = re.sub('\*$', '$', rxn)
+                if rxn_name in reactions_to_genes.keys():
+                    ec, uniref_list = reactions_to_genes[rxn_name]
+                    rxn_name = rxn_name + ' (' + ec + ')'
+                    reactions[rxn_name] = {}
+                    for uniref in uniref_list:
+                        reactions[rxn_name][uniref] = 0.0
 
             print('>>> Adding abundances from {0}.'
                   .format(args.abundance_file.name))
             for line in args.abundance_file:
-                gene, abundance = line.strip().split('\t')
-                if gene in unirefs:
-                    uniref, name = unirefs[gene]
+                uniref, abundance = line.strip().split('\t')
+                if float(abundance) > 0.0:
                     for rxn in reactions.keys():
                         if uniref in reactions[rxn].keys():
-                            reactions[rxn][uniref] = (abundance, name)
+                            reactions[rxn][uniref] = abundance
+
+            print('>>> Removing unused gene families.')
+            for rxn in reactions.keys():
+                for uniref in reactions[rxn].keys():
+                    if reactions[rxn][uniref] == 0.0:
+                        del reactions[rxn][uniref]
+            for rxn in reactions.keys():
+                if reactions[rxn] == {}:
+                    reactions[rxn] = 'None\tN/A'
+                    continue
+
+            rxn_list = [pathway.common_name]
+            for rxn in reactions.keys():
+                if reactions[rxn] == 'None\tN/A':
+                    temp = [rxn, ['None\tN/A']]
+                    rxn_list.append(temp)
+                elif type(reactions[rxn]) is dict:
+                    temp = [rxn]
+                    sub_temp = []
+                    for uniref in reactions[rxn].keys():
+                        sub_temp.append('{0}\t{1}'.format(uniref,
+                                        str(reactions[rxn][uniref])))
+                    temp.append(sub_temp)
+                    rxn_list.append(temp)
+
+            print_list(rxn_list)
+
+    print('>>> Shutdown sequence initiated.')
 
 
 if __name__ == '__main__':
@@ -301,10 +326,6 @@ if __name__ == '__main__':
                          metavar='Reactions File',
                          type=argparse.FileType('r'),
                          help='metacyc1 file mapping Unirefs to reactions')
-    metacyc.add_argument('uniref_file',
-                         metavar='UniRef ID File',
-                         type=argparse.FileType('r'),
-                         help='ID Mapping file mapping UniRefs to genes')
     metacyc.add_argument('-e', '--executable',
                          default=None,
                          type=str,
