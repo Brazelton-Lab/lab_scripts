@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python2
 
 """
 
@@ -23,6 +23,8 @@ Copyright:
 
 import argparse
 import os
+import pycyc
+import re
 import stat
 from subprocess import CalledProcessError, Popen
 import sys
@@ -33,111 +35,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a11'
-
-
-class Pathway(object):
-    """A class to store the structure of a MetaCyc tree
-
-    Attributes:
-        name (str): name of pathway
-
-        child_nodes (dict): dictionary of Reaction consisting of all nodes one
-                            level down from current node, key is child node's
-                            name and value is pointer to node
-    """
-
-    def __init__(self, name):
-        """Initialize attributes to store pathway structure"""
-
-        self.name = name
-        self.child_nodes = {}
-
-    def add_child_node(self, child_name):
-        """Add child node to child_nodes with self as parent
-
-        Args:
-            child_name (str): Reaction name of child node
-        """
-
-        self.child_nodes[child_name] = Reaction(child_name, self)
-
-    def get_tree_structure(self):
-        """Return lists of all possible reaction paths in pathway as objects
-
-        Returns:
-             list: list of lists of all possible branches as objects
-        """
-
-        branches = []
-        for child in self.child_nodes.values():
-            for branch in child.gather_children():
-                branches.append(branch)
-
-        return branches
-
-    def print_tree_structure(self):
-        """Return lists of all possible reaction paths in pathway as strings
-
-        Returns:
-             list: list of lists of all possible branches as strings
-        """
-
-        branches = []
-        for child in self.child_nodes.values():
-            for branch in child.gather_children_names():
-                branches.append(branch)
-
-        return branches
-
-
-class Reaction(Pathway):
-    """A class to act as a node on a MetaCyc pathway tree
-
-    Attributes:
-        name (str): Name of node
-
-        parent(Pathway|Reaction): Pathway or Reaction node above current node
-    """
-
-    def __init__(self, name, parent):
-        """Initialize node and call parent __init__"""
-
-        super(Reaction, self).__init__(name)
-        self.parent_name = parent.name
-        self.parent_node = parent
-
-    def gather_children(self):
-        """Generator of lists containing each path branching off current node
-
-        Yields:
-            list: list of all children objects along a given branch
-        """
-
-        # Only return own name and cease iteration if node is terminal leaf
-        if not self.child_nodes:
-            yield [self]
-        else:
-            for child in self.child_nodes.values():
-                branch = [self]
-                for piece in child.gather_children():  # Recurse
-                    yield branch + piece
-
-    def gather_children_names(self):
-        """Generator of lists containing each path branching off current node
-
-        Yields:
-            list: list of all children names along a given branch
-        """
-
-        # Only return own name and cease iteration if node is terminal leaf
-        if not self.child_nodes:
-            yield [self.name]
-        else:
-            for child in self.child_nodes.values():
-                branch = [self.name]
-                for piece in child.gather_children_names():  # Recurse
-                    yield branch + piece
+__version__ = '0.0.1a12'
 
 
 # This method is literally just the Python 3.5.1 which function from the
@@ -227,12 +125,13 @@ def main(args):
         else:
             print('>>> I found pathway-tools: {0}'.format(pathway_tools))
 
-        # Start pathway-tools server
+        # Start pathway-tools daemon
         while True:
             print('>>> Starting Pathway Tools LISP Daemon.')
             pid = Popen([pathway_tools, '-lisp', '-api'],
-                        stderr=open(os.devnull), stdout=open(os.devnull))
-            print('>>> Let\'s give it five seconds.')
+                        stderr=open(os.devnull, 'w'),
+                        stdout=open(os.devnull, 'w'))
+            print('>>> Let\'s give it five seconds to spawn.')
             time.sleep(5)
             if os.path.exists('/tmp/ptools-socket') and \
                     stat.S_ISSOCK(os.stat('/tmp/ptools-socket').st_mode):
@@ -240,7 +139,7 @@ def main(args):
                 break
             else:
                 print('>>> The daemon took too long to boot. :(')
-                print('>>> This makes me sad so I will kill it.')
+                print('>>> This makes me sad, so I will kill it.')
                 pid.kill()
                 print('>>> Let\'s wait five seconds for it to die!')
                 time.sleep(5)
@@ -250,6 +149,138 @@ def main(args):
                 else:
                     print('>>> The daemon is dead!')
                     print('>>> I miss it. :( I\'m going to try again. :)')
+
+        # Connect to daemon
+        try:
+            metacyc = pycyc.open('meta')
+        except IOError:
+            print('>>> I cannot connect to Pathway Tools Daemon.')
+            print('>>> Here is the original error message:')
+            raise
+        else:
+            print('>>> I have connected to the Pathway Tools Daemon.')
+            print('>>> Phenomenal cosmic powers! Itty bitty memory footprint!')
+
+        # Index genes file
+        print('>>> Indexing {0}.'.format(args.reactions_file.name))
+        reactions_to_genes = {}
+        start_time = time.time()
+        for line in args.genes_file:
+            parts = line.strip().split()
+            reactions_to_genes[parts[0]] = (parts[1], [' '.join(parts[2:])])
+        end_time = time.time()
+        print('>>> I indexed {0} reactions in {1} seconds.'
+              .format(str(len(reactions_to_genes)),
+                      str(end_time - start_time)))
+        print('>>> I\'m so fast.')
+
+        # Index UniRef mapping file
+        print('>>> Indexing {0}.'.format(args.uniref_file.name))
+        unirefs = {}
+        start_time = time.time()
+        for line in args.uniref_file:
+            parts = line.strip().split()
+            unirefs[parts[0]] = (parts[1], parts[3])
+        end_time = time.time()
+        print('>>> I indexed {0} reactions in {1} seconds.'
+              .format(str(len(unirefs)),
+                      str(end_time - start_time)))
+        print('>>> I\'m quick!')
+
+        # Index all pathways by name
+        print('>>> Time to index all the pathways from Metacyc.')
+        pathways = {}
+        start_time = time.time()
+        for frame in metacyc.all_pathways():
+            pathways[frame.common_name] = frame
+        end_time = time.time()
+        print('>>> I indexed {0} pathways in {1} seconds.'
+              .format(str(len(pathways)), str(end_time - start_time)))
+        print('>>> Aren\'t you proud of me?')
+
+        # Obtain pathway of interest
+        print('>>> Time to do some science!')
+        print('>>> Note: you can input all or part of a pathway name.')
+        print('>>> Type "q" for input at any time to exit the program.')
+
+        while True:  # Rest of program runs in a loop until user ends it
+            possiblities = {}
+            user_input = raw_input('>>> Enter a pathway: ')
+            if user_input.lower() == 'q':
+                print('>>> Shutdown sequence initiated.')
+                break
+            for name, frame in pathways.items():
+                if user_input in name:
+                    possiblities[name] = frame
+            if len(possiblities) == 0:
+                print('>>> I couldn\'t find any pathways matching your '
+                      'request.')
+                print('>>> Try ')
+            print('>>> I found {0} pathways matching your request.'
+                  .format(str(len(possiblities))))
+
+            shutdown = False
+            pathway = None
+            while True:
+                print('>>> Here are possible pathways:')
+                max_entry = len(possiblities) - 1
+                for possibility in enumerate(possiblities):
+                    print('{0}: {1}'.format(str(possibility[0]),
+                                            possibility[1].common_name))
+                path_num = raw_input('>>> Select a pathway: ')
+                if path_num.lower() == 'q':
+                    shutdown = True
+                    break
+                else:
+                    try:
+                        path_num = int(path_num)
+                    except ValueError:
+                        print('>>> Your answer is not an integer.')
+                        print('>>> I only understand integers.')
+                        print('>>> Please correct.')
+                        continue
+                    if path_num > max_entry or path_num < 0:
+                        print('>>> {0} is not a valid pathway.')
+                        print('>>> Valid pathways are: {0}.'.format(' '.join(
+                                [str(i) for i in range(max_entry)])))
+                        print('>>> Try again.')
+                        continue
+                    pathway = possiblities[possiblities.keys[path_num]]
+                    print('>>> You selected: {0}.')
+                    print('>>> Neat! I\'ll analyze it now.')
+                    break
+            if shutdown is True:
+                print('>>> Shutdown sequence initiated.')
+                break
+
+            # Add genes and abundances to pathway reactions
+            print('>>> Collecting reactions in pathway.')
+            rxns = [str(rxn) for rxn in pathway.reaction_list]
+            print('>>> Analyzing pathway for key genes.')
+            key_rxns = [str(key) for key in pathway.key_reactions]
+
+            print('>>> Acquiring gene families for each reaction from {0}. '
+                  .format(args.reactions_file.name))
+            reactions = {}
+            for rxn in rxns:
+                if rxn in reactions_to_genes.keys():
+                    name, uniref_list = reactions_to_genes[rxn]
+                    if rxn in key_rxns:
+                        name += '*'
+                    name = name + ' (' + uniref_list[0] + ')'
+                    reactions[name] = {}
+                    for uniref in uniref_list[1].split():
+                        reactions[name][uniref] = {}
+
+            print('>>> Adding abundances from {0}.'
+                  .format(args.abundance_file.name))
+            for line in args.abundance_file:
+                gene, abundance = line.strip().split('\t')
+                if gene in unirefs:
+                    uniref, name = unirefs[gene]
+                    for rxn in reactions.keys():
+                        if uniref in reactions[rxn].keys():
+                            reactions[rxn][uniref] = (abundance, name)
 
 
 if __name__ == '__main__':
@@ -266,6 +297,10 @@ if __name__ == '__main__':
                          metavar='Abundance File',
                          type=argparse.FileType('r'),
                          help='TSV containing gene ID and abundance columns')
+    metacyc.add_argument('reactions_file',
+                         metavar='Reactions File',
+                         type=argparse.FileType('r'),
+                         help='metacyc1 file mapping Unirefs to reactions')
     metacyc.add_argument('uniref_file',
                          metavar='UniRef ID File',
                          type=argparse.FileType('r'),
@@ -279,4 +314,3 @@ if __name__ == '__main__':
     main(args)
 
     sys.exit(0)
-
