@@ -21,6 +21,7 @@ Copyright:
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import atexit
 import argparse
 import os
 import pycyc
@@ -35,14 +36,14 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a14'
+__version__ = '0.0.1a16'
 
 
-def print_list(lst, level=0):
+def print_nested_list(lst, level=0):
     yield('    ' * (level - 1) + '+---' * (level > 0) + str(lst[0]))
     for l in lst[1:]:
         if type(l) is list:
-            for i in print_list(l, level + 1):
+            for i in print_nested_list(l, level + 1):
                 yield i
         else:
             yield('    ' * level + '+---' + str(l))
@@ -120,6 +121,14 @@ def main(args):
              args (NameSpace): ArgParse arguments controlling program flow
     """
 
+    def shutdown(pid):
+        print('>>> Shutdown sequence initiated.')
+        print('>>> Terminating Pathway Tools LISP Daemon')
+        pid.terminate()
+        pid.wait()
+        print('>>> Daemon destroyed.')
+        print('>>> Until next time. :)')
+
     print('>>> Hi, I am DPS (Derive Pathway Steps).')
     print('>>> I will be analyzing pathways for you today.')
     print('>>> I am using the {0} database as per your command.'
@@ -128,7 +137,7 @@ def main(args):
     if args.database == 'metacyc':
 
         # Obtain executable
-        pathway_tools = which('pathway-tools')
+        pathway_tools = which('pathway-tools', path=args.executable)
         if pathway_tools is None:
             raise EnvironmentError('I cannot find pathway-tools: please '
                                    'specify -e.')
@@ -159,6 +168,8 @@ def main(args):
                 else:
                     print('>>> The daemon is dead!')
                     print('>>> I miss it. :( I\'m going to try again. :)')
+
+        atexit.register(shutdown, pid)
 
         # Connect to daemon
         try:
@@ -195,6 +206,18 @@ def main(args):
               .format(str(len(pathways)), str(end_time - start_time)))
         print('>>> Aren\'t you proud of me?')
 
+        # Index gene abundance
+        print('>>> Recording gene abundances from {0}.'
+              .format(args.abundance_file.name))
+        abundances = {}
+        start_time = time.time()
+        for line in args.abundance_file:
+            gene, abundance = line.strip().split('\t')
+            abundances[gene] = abundance
+        end_time = time.time()
+        print('>>> I indexed {0} gene abundances in {1} seconds.'
+              .format(str(len(abundances)), str(end_time - start_time)))
+
         # Obtain pathway of interest
         print('>>> Time to do some science!')
         print('>>> Note: you can input all or part of a pathway name.')
@@ -211,11 +234,13 @@ def main(args):
             if len(possibilities) == 0:
                 print('>>> I couldn\'t find any pathways matching your '
                       'request.')
-                print('>>> Try ')
+                print('>>> Try an alternative name for the pathway.')
+                continue
             print('>>> I found {0} pathways matching your request.'
                   .format(str(len(possibilities))))
 
             shutdown = False
+            restart = False
             pathway = None
             while True:
                 print('>>> Here are possible pathways:')
@@ -223,9 +248,12 @@ def main(args):
                 for possibility in enumerate(possibilities.items()):
                     print('{0}: {1}'.format(str(possibility[0]),
                                             possibility[1][1].common_name))
-                path_num = raw_input('>>> Select a pathway: ')
+                path_num = raw_input('>>> Select a pathway ("r" to restart): ')
                 if path_num.lower() == 'q':
                     shutdown = True
+                    break
+                elif path_num.lower() == 'r':
+                    restart = True
                     break
                 else:
                     try:
@@ -246,14 +274,26 @@ def main(args):
                     print('>>> You selected: {0}.'.format(pathway.common_name))
                     print('>>> Neat! I\'ll analyze it now.')
                     break
+            if restart is True:
+                continue
             if shutdown is True:
                 break
 
             # Add genes and abundances to pathway reactions
             print('>>> Collecting reactions in pathway.')
-            rxns = [str(rxn) for rxn in pathway.reaction_list]
+            try:
+                if type(pathway.reaction_list) is list:
+                    rxns = [str(rxn) for rxn in pathway.reaction_list]
+                else:
+                    rxns = [str(pathway.reaction_list)]
+            except KeyError:
+                print('>>> I cannot access the reactions for this pathway. :(')
+                print('>>> I\'m sorry I\'ve failed you. :(')
+                print('>>> Please have me analyze something else.')
+                continue
             print('>>> Analyzing pathway for key reactions.')
-            if pathway.key_reactions is not None:
+            if hasattr(pathway, 'key_reactions') is True and\
+                    pathway.key_reactions is not None:
                 key_rxns = [str(key) for key in pathway.key_reactions]
                 for rxn in enumerate(rxns):
                     if rxn[1] in key_rxns:
@@ -263,22 +303,20 @@ def main(args):
                   .format(args.reactions_file.name))
             reactions = {}
             for rxn in rxns:
-                rxn_name = re.sub('\*$', '$', rxn)
+                rxn_name = re.sub('\*$', '', rxn)
                 if rxn_name in reactions_to_genes.keys():
                     ec, uniref_list = reactions_to_genes[rxn_name]
-                    rxn_name = rxn_name + ' (' + ec + ')'
+                    rxn_name = rxn + ' (' + ec + ')'
                     reactions[rxn_name] = {}
                     for uniref in uniref_list:
                         reactions[rxn_name][uniref] = 0.0
 
             print('>>> Adding abundances from {0}.'
                   .format(args.abundance_file.name))
-            for line in args.abundance_file:
-                uniref, abundance = line.strip().split('\t')
-                if float(abundance) > 0.0:
-                    for rxn in reactions.keys():
-                        if uniref in reactions[rxn].keys():
-                            reactions[rxn][uniref] = abundance
+            for rxn in reactions.keys():
+                for gene in reactions[rxn]:
+                    if gene in abundances.keys():
+                        reactions[rxn][gene] = abundances[gene]
 
             print('>>> Removing unused gene families.')
             for rxn in reactions.keys():
@@ -290,6 +328,7 @@ def main(args):
                     reactions[rxn] = 'None\tN/A'
                     continue
 
+            # Format reactions for printing
             rxn_list = [pathway.common_name]
             for rxn in reactions.keys():
                 if reactions[rxn] == 'None\tN/A':
@@ -297,17 +336,15 @@ def main(args):
                     rxn_list.append(temp)
                 elif type(reactions[rxn]) is dict:
                     temp = [rxn]
-                    sub_temp = []
                     for uniref in reactions[rxn].keys():
-                        sub_temp.append('{0}\t{1}'.format(uniref,
-                                        str(reactions[rxn][uniref])))
-                    temp.append(sub_temp)
+                        temp.append('{0}\t{1}'.format(uniref,
+                                    str(reactions[rxn][uniref])))
                     rxn_list.append(temp)
 
             # Print output
             print('>>> I\'ve finished analyzing everything!')
             print('>>> Here it is (asterisks represent key reactions):')
-            rxn_print = [rxn for rxn in print_list(rxn_list)]
+            rxn_print = [rxn for rxn in print_nested_list(rxn_list)]
             for rxn in rxn_print:
                 print(rxn)
 
@@ -316,7 +353,7 @@ def main(args):
             print('>>> Type "n" if you don\'t want to save this output.')
             while True:
                 out_file = raw_input('>>> File: ')
-                if out_file.lower() != 'n':
+                if out_file.lower() != 'n' and out_file.lower() != 'q':
                     try:
                         with open(out_file, 'w') as out_handle:
                             for rxn in rxn_print:
@@ -328,12 +365,16 @@ def main(args):
                         print('>>> Original error:')
                         print(error)
                         print('>>> Let\'s try again (enter "n" to skip).')
-                else:
-                    print(dir(pathway))
+                elif out_file.lower() == 'q':
+                    shutdown = True
                     break
+                else:
+                    break
+            if shutdown is True:
+                break
 
-    # Shutdown
-    print('>>> Shutdown sequence initiated.')
+            print('>>> All done!')
+            print('>>> Let\'s do more science (enter "q" to exit program)!')
 
 
 if __name__ == '__main__':
