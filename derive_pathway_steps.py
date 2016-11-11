@@ -35,16 +35,17 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Alpha'
-__version__ = '0.0.1a13'
+__version__ = '0.0.1a14'
 
 
 def print_list(lst, level=0):
-    print('    ' * (level - 1) + '+---' * (level > 0) + lst[0])
+    yield('    ' * (level - 1) + '+---' * (level > 0) + str(lst[0]))
     for l in lst[1:]:
         if type(l) is list:
-            print_list(l, level + 1)
+            for i in print_list(l, level + 1):
+                yield i
         else:
-            print('    ' * level + '+---' + l)
+            yield('    ' * level + '+---' + str(l))
 
 
 # This method is literally just the Python 3.5.1 which function from the
@@ -303,8 +304,35 @@ def main(args):
                     temp.append(sub_temp)
                     rxn_list.append(temp)
 
-            print_list(rxn_list)
+            # Print output
+            print('>>> I\'ve finished analyzing everything!')
+            print('>>> Here it is (asterisks represent key reactions):')
+            rxn_print = [rxn for rxn in print_list(rxn_list)]
+            for rxn in rxn_print:
+                print(rxn)
 
+            # Save output
+            print('>>> What file would you like me to save this to?')
+            print('>>> Type "n" if you don\'t want to save this output.')
+            while True:
+                out_file = raw_input('>>> File: ')
+                if out_file.lower() != 'n':
+                    try:
+                        with open(out_file, 'w') as out_handle:
+                            for rxn in rxn_print:
+                                out_handle.write(rxn + os.linesep)
+                        print('>>> Output written to {0}.'.format(out_file))
+                        break
+                    except IOError as error:
+                        print('>>> I could not write to {0}.'.format(out_file))
+                        print('>>> Original error:')
+                        print(error)
+                        print('>>> Let\'s try again (enter "n" to skip).')
+                else:
+                    print(dir(pathway))
+                    break
+
+    # Shutdown
     print('>>> Shutdown sequence initiated.')
 
 
