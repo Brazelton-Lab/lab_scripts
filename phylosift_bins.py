@@ -17,7 +17,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.0.0'
+__version__ = '1.`.0'
 
 
 def main(args):
@@ -44,6 +44,7 @@ def main(args):
         out_file = os.path.basename(fasta_path) + '.taxa_summary.txt'
         out_name = os.path.join(args.output_dir + os.sep + out_file)
         out_name = os.path.normpath(out_name)
+        unique = []
         with open(out_name, 'w') as out_handle:
             out_handle.write('#Sequence_ID\tHit_Coordinates\t'
                              'NCBI_Taxon_ID\tTaxon_Rank\tTaxon_Name\t'
@@ -51,6 +52,10 @@ def main(args):
                              'Markers_Hit{0}'.format(os.linesep))
             with open(fasta_path, 'r') as fasta_handle:
                 for entry in fasta_iter(fasta_handle):
+                    if entry.id in unique:
+                        continue
+                    else:
+                        unique.append(entry.id)
                     for read in args.bam.fetch(entry.id):
                         try:
                             locations = file_index[read.query_name]
@@ -75,7 +80,7 @@ if __name__ == '__main__':
                         nargs='+',
                         type=str,
                         help='list of space-separated FASTA files where each '
-                              'file is a bin')
+                             'file is a bin')
     parser.add_argument('-t', '--taxonomy',
                         type=argparse.FileType('r'),
                         help='sequence_taxa_summary file from phylosift for'
