@@ -33,11 +33,12 @@ with open(bedtools_filename) as bedtools:
 		if contig_name in D: D[contig_name] = D[contig_name] + total_coverage
 		else: D[contig_name] = total_coverage
 
+status = 'none'
 if table_filename[-3:] == '.fa': status = 'fasta'
-elif table_filename[-3:] == '.fna': status = 'fasta'
+elif table_filename[-4:] == '.fna': status = 'fasta'
 elif table_filename[-6:] == '.fasta': status = 'fasta'
 else: status = 'table'
-if status == fasta:
+if status == 'fasta':
 	l = []
 	from Bio import SeqIO
 	for fasta in SeqIO.parse(table_filename,"fasta"):
@@ -52,7 +53,7 @@ if status == fasta:
 				outfile.write(contig + '\t' + '\n')
 				print 'missing', contig
 
-else:		
+elif status == 'table':		
 	with open(outfilename,'w') as outfile:
 		with open(table_filename) as table_file:
 			first_line = table_file.readline()
