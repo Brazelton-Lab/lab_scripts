@@ -33,7 +33,7 @@ with open(bedtools_filename) as bedtools:
 		if contig_name in D: D[contig_name] = D[contig_name] + total_coverage
 		else: D[contig_name] = total_coverage
 
-
+if table_filename[-3:] == '.fa': table_filename = table_filename + 'sta'
 if table_filename[-6:] == '.fasta':
 	l = []
 	from Bio import SeqIO
