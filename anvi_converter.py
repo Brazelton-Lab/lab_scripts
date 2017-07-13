@@ -36,7 +36,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.6'
+__version__ = '1.1.7'
 
 
 def main(args):
