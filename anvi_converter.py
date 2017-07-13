@@ -59,7 +59,7 @@ def main(args):
     if args.tool == 'prokka':
 
         naughty_gene_calls = {}
-        for entry in fasta_iter(args.faa):
+        for entry in fasta_iter(args.FAA):
             if '*' in entry.sequence:
                 naughty_gene_calls[entry.id] = ''
 
