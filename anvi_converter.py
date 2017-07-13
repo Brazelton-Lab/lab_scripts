@@ -75,7 +75,7 @@ def main(args):
 
             for entry in gff3_iter(args.GFF3):
 
-                if entry.seqid in naughty_gene_calls:
+                if entry.attributes['ID'] in naughty_gene_calls:
                     continue
 
                 if entry.type == 'CDS' and \
