@@ -36,7 +36,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.7'
+__version__ = '1.1.9'
 
 
 def main(args):
@@ -74,6 +74,9 @@ def main(args):
                      'function\te_value{0}'.format(os.linesep))
 
             for entry in gff3_iter(args.GFF3):
+
+                if 'ID' not in entry.attributes.keys():
+                    continue
 
                 if entry.attributes['ID'] in naughty_gene_calls:
                     continue
