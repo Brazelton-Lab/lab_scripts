@@ -57,6 +57,12 @@ def main(args):
                                                            os.linesep))
 
     if args.tool == 'prokka':
+
+        naughty_gene_calls = {}
+        for entry in fasta_iter(args.faa):
+            if '*' in entry.sequence:
+                naughty_gene_calls[entry.id] = ''
+
         with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
                 open(args.prefix + '.genes.tsv', 'w') as gh:
 
@@ -66,7 +72,12 @@ def main(args):
                      .format(os.linesep))
             gh.write('gene_callers_id\tsource\taccession\t'
                      'function\te_value{0}'.format(os.linesep))
+
             for entry in gff3_iter(args.GFF3):
+
+                if entry.seqid in naughty_gene_calls:
+                    continue
+
                 if entry.type == 'CDS' and \
                         'gene' in entry.attributes.keys():
 
@@ -120,6 +131,9 @@ if __name__ == '__main__':
     prokka.add_argument('GFF3',
                         type=argparse.FileType('r'),
                         help='GFF3 file to convert')
+    prokka.add_argument('FAA',
+                        type=argparse.FileType('r'),
+                        help='FAA file corresponding to GFF3 file')
     prokka.add_argument('prefix',
                         type=str,
                         help='prefix for output files')
