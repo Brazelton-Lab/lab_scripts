@@ -29,7 +29,7 @@ Copyright:
 from __future__ import unicode_literals
 
 import argparse
-from bio_utils.iterators import fasta_iter, sam_iter
+from bio_utils.iterators import fasta_iter
 import os
 import sys
 
@@ -54,28 +54,25 @@ def main(args):
 
     with open('temp.sam', 'r') as sam_in, open('temp.new.sam', 'w') as sam_out:
 
-        while True:
+        for line in sam_in:
 
-            line = next(sam_in).strip()
+            line = line.strip()
 
             if line.startswith('@HD') is True:
-                sam_out.write(line)
+                sam_out.write(line + os.linesep)
 
             elif line.startswith('@SQ') is True:
                 parts = line.split('\t')
                 contig = parts[1].split(':')[1]
                 if contig in contigs:
-                    sam_out.write(line)
+                    sam_out.write(line + os.linesep)
 
             elif line.startswith('@') is True:
-                sam_out.write(line)
+                sam_out.write(line + os.linesep)
 
             else:
-                for entry in sam_iter(sam_in):
-                    if entry.rname in contigs:
-                        sam_out.write(entry.write())
-
-                break
+                if line.split('\t')[2] in contigs:
+                    sam_out.write(line + os.linesep)
 
     os.system('samtools view -h -b -o {0} temp.new.sam'.format(args.output))
     os.remove('temp.sam')
