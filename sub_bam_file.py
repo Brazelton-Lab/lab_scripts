@@ -23,9 +23,10 @@ Copyright:
 from __future__ import unicode_literals
 
 import argparse
-from bio_utils.iterators import fasta_iter, sam_iter
+from bio_utils.iterators import fasta_iter
 import os
-import pysam
+import random
+import string
 import sys
 
 __author__ = 'Alex Hyer'
@@ -45,9 +46,14 @@ def main(args):
 
     contigs = [entry.id for entry in fasta_iter(args.fasta)]
 
+    temp_sam = ''.join(random.choice(string.ascii_uppercase + string.digits)
+                       for _ in range(16))
+    t_sam = temp_sam + '.sam'
+    t_n_sam = temp_sam + '.new.sam'
+
     os.system('samtools view -h -o temp.sam {0}'.format(args.bam))
 
-    with open('temp.sam', 'r') as sam_in, open('temp.new.sam', 'w') as sam_out:
+    with open(t_sam, 'r') as sam_in, open(t_n_sam, 'w') as sam_out:
 
         for line in sam_in:
 
@@ -69,9 +75,9 @@ def main(args):
                 if line.split('\t')[2] in contigs:
                     sam_out.write(line + os.linesep)
 
-    os.system('samtools view -h -b -o {0} temp.new.sam'.format(args.output))
-    os.remove('temp.sam')
-    os.remove('temp.new.sam')
+    os.system('samtools view -h -b -o {0} '.format(args.output)) + t_n_sam
+    os.remove(t_sam)
+    os.remove(t_n_sam)
 
 
 if __name__ == '__main__':
