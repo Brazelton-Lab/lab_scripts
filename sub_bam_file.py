@@ -51,7 +51,7 @@ def main(args):
     t_sam = temp_sam + '.sam'
     t_n_sam = temp_sam + '.new.sam'
 
-    os.system('samtools view -h -o temp.sam {0}'.format(args.bam))
+    os.system('samtools view -h -o {0} {1}'.format(t_sam, args.bam))
 
     with open(t_sam, 'r') as sam_in, open(t_n_sam, 'w') as sam_out:
 
@@ -75,7 +75,7 @@ def main(args):
                 if line.split('\t')[2] in contigs:
                     sam_out.write(line + os.linesep)
 
-    os.system('samtools view -h -b -o {0} '.format(args.output)) + t_n_sam
+    os.system('samtools view -h -b -o {0} {1}'.format(args.output, t_n_sam))
     os.remove(t_sam)
     os.remove(t_n_sam)
 
