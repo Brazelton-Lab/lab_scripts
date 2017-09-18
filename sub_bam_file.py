@@ -2,12 +2,6 @@
 
 """Creates a subset BAM file from a FASTA file
 
-This program creates two temporary SAM file that isn't deleted if the
-program crashes because I was irritated writing this script and didn't
-want to spend the extra time. Make sure you have enough storage to store
-a potentially large amount of data and, if this program crashes, don't forget
-to delete the temporary files.
-
 Copyright:
     sub_bam_file.py  create a subset BAM file from a FASTA file
     Copyright (C) 2017  William Brazelton, Alex Hyer
@@ -29,8 +23,9 @@ Copyright:
 from __future__ import unicode_literals
 
 import argparse
-from bio_utils.iterators import fasta_iter
+from bio_utils.iterators import fasta_iter, sam_iter
 import os
+import pysam
 import sys
 
 __author__ = 'Alex Hyer'
@@ -98,3 +93,4 @@ if __name__ == '__main__':
     main(args)
 
     sys.exit(0)
+
