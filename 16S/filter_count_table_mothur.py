@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # remove rows from count table with fewer than X total seqs
 # assumes tab-delimited format
 # assumes there IS a "total" column, as is standard with mothur count tables
