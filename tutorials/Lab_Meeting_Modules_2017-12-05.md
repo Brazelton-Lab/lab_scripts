@@ -267,6 +267,6 @@ Let's delete all the files and folders we made in this tutorial.
 
 ```bash
 cd ../
-rm -rf tutorial
+rm -rf tutorial .mkproject .test
 rm ~/privatemodules/basic ~/privatemodules/def ~/privatemodules/config
 ```
