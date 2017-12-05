@@ -23,10 +23,11 @@ Copyright:
 from __future__ import unicode_literals
 
 import argparse
-from bio_utils.iterators import fasta_iter
+from bio_utils.iterators import fasta_iter, sam_iter
 import os
 import random
 import string
+from subprocess import PIPE, Popen
 import sys
 
 __author__ = 'Alex Hyer'
@@ -46,38 +47,60 @@ def main(args):
 
     contigs = [entry.id for entry in fasta_iter(args.fasta)]
 
-    temp_sam = ''.join(random.choice(string.ascii_uppercase + string.digits)
-                       for _ in range(16))
-    t_sam = temp_sam + '.sam'
-    t_n_sam = temp_sam + '.new.sam'
+    # temp_sam = ''.join(random.choice(string.ascii_uppercase + string.digits)
+    #                   for _ in range(16))
+    # t_sam = temp_sam + '.sam'
+    # t_n_sam = temp_sam + '.new.sam'
 
-    os.system('samtools view -h -o {0} {1}'.format(t_sam, args.bam))
+    # os.system('samtools view -h -o {0} {1}'.format(t_sam, args.bam))
 
-    with open(t_sam, 'r') as sam_in, open(t_n_sam, 'w') as sam_out:
+    with Popen(['samtools', 'view', '-h', args.bam], stdout=PIPE,
+               universal_newlines=True) as sam_in, \
+            Popen(['samtools', 'view', '-h', '-b', '-o', args.output],
+                  stdin=PIPE, universal_newlines=True) as bam_out:
 
-        for line in sam_in:
+        for line in sam_iter(iter(sam_in.stdout), headers=True):
 
-            line = line.strip()
+            if type(line) is str:
 
-            if line.startswith('@HD') is True:
-                sam_out.write(line + os.linesep)
+                if line.startswith('@SQ') is True:
+                    if line.split('\t')[1].split(':')[1] in contigs:
+                        bam_out.stdin.write(line)
 
-            elif line.startswith('@SQ') is True:
-                parts = line.split('\t')
-                contig = parts[1].split(':')[1]
-                if contig in contigs:
-                    sam_out.write(line + os.linesep)
-
-            elif line.startswith('@') is True:
-                sam_out.write(line + os.linesep)
+                elif line.startswith('@') is True:
+                    bam_out.stdin.write(line)
 
             else:
-                if line.split('\t')[2] in contigs:
-                    sam_out.write(line + os.linesep)
+                if line.rname in contigs is True:
+                    bam_out.stdin.write(line.write())
 
-    os.system('samtools view -h -b -o {0} {1}'.format(args.output, t_n_sam))
-    os.remove(t_sam)
-    os.remove(t_n_sam)
+                    # with open(t_sam, 'r') as sam_in, open(t_n_sam, 'w') as
+                    #  sam_out:
+                    #
+                    #     for line in sam_in:
+                    #
+                    #         line = line.strip()
+                    #
+                    #         if line.startswith('@HD') is True:
+                    #             sam_out.write(line + os.linesep)
+                    #
+                    #         elif line.startswith('@SQ') is True:
+                    #             parts = line.split('\t')
+                    #             contig = parts[1].split(':')[1]
+                    #             if contig in contigs:
+                    #                 sam_out.write(line + os.linesep)
+                    #
+                    #         elif line.startswith('@') is True:
+                    #             sam_out.write(line + os.linesep)
+                    #
+                    #         else:
+                    #             if line.split('\t')[2] in contigs:
+                    #                 sam_out.write(line + os.linesep)
+                    #
+                    # os.system('samtools view -h -b -o {0} {1}'.format(
+                    # args.output, t_n_sam))
+                    # os.remove(t_sam)
+                    # os.remove(t_n_sam)
 
 
 if __name__ == '__main__':
@@ -99,4 +122,3 @@ if __name__ == '__main__':
     main(args)
 
     sys.exit(0)
-
