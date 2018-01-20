@@ -2,6 +2,12 @@
 
 """Creates a subset BAM file from a FASTA file
 
+Notes:
+    1. This program will spawn three processes and works most quickly when
+       it has access to at least three CPUs/threads.
+    2. This program requires you have samtools installed and globally
+       accessible.
+
 Copyright:
     sub_bam_file.py  create a subset BAM file from a FASTA file
     Copyright (C) 2017  William Brazelton, Alex Hyer
@@ -25,8 +31,6 @@ from __future__ import unicode_literals
 import argparse
 from bio_utils.iterators import fasta_iter, sam_iter
 import os
-import random
-import string
 from subprocess import PIPE, Popen
 import sys
 
@@ -34,8 +38,8 @@ __author__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
-__status__ = 'Planning'
-__version__ = '0.1.0a1'
+__status__ = 'Production/Stable'
+__version__ = '1.0.0'
 
 
 def main(args):
@@ -45,63 +49,39 @@ def main(args):
          args (NameSpace): ArgParse arguments controlling program flow
     """
 
-    contigs = [entry.id for entry in fasta_iter(args.fasta)]
+    # Collect contig IDs
+    contigs = {entry.id: '' for entry in fasta_iter(args.fasta)}
 
-    # temp_sam = ''.join(random.choice(string.ascii_uppercase + string.digits)
-    #                   for _ in range(16))
-    # t_sam = temp_sam + '.sam'
-    # t_n_sam = temp_sam + '.new.sam'
-
-    # os.system('samtools view -h -o {0} {1}'.format(t_sam, args.bam))
-
+    # Start two samtools processes for reading and writing BAM files
     with Popen(['samtools', 'view', '-h', args.bam], stdout=PIPE,
                universal_newlines=True) as sam_in, \
-            Popen(['samtools', 'view', '-h', '-b', '-o', args.output],
-                  stdin=PIPE, universal_newlines=True) as bam_out:
+         Popen(['samtools', 'view', '-h', '-b', '-o', args.output],
+               stdin=PIPE, universal_newlines=True) as bam_out:
 
-        for line in sam_iter(iter(sam_in.stdout), headers=True):
-
+        for line in sam_iter(sam_in.stdout, headers=True):
+            
             if type(line) is str:
+                line = line.strip()
 
+                # Only write out headers corresponding to FASTA entries
                 if line.startswith('@SQ') is True:
-                    if line.split('\t')[1].split(':')[1] in contigs:
-                        bam_out.stdin.write(line)
+                    try:
+                        assert contigs[line.split('\t')[1].split(':')[1]] == ''
+                        bam_out.stdin.write(line + os.linesep)
+                    except KeyError:
+                        pass
 
+                # Write all other headers
                 elif line.startswith('@') is True:
-                    bam_out.stdin.write(line)
+                    bam_out.stdin.write(line + os.linesep)
 
+            # Write out BAM entries corresponding to FASTA entries
             else:
-                if line.rname in contigs is True:
+                try:
+                    assert contigs[line.rname] == ''
                     bam_out.stdin.write(line.write())
-
-                    # with open(t_sam, 'r') as sam_in, open(t_n_sam, 'w') as
-                    #  sam_out:
-                    #
-                    #     for line in sam_in:
-                    #
-                    #         line = line.strip()
-                    #
-                    #         if line.startswith('@HD') is True:
-                    #             sam_out.write(line + os.linesep)
-                    #
-                    #         elif line.startswith('@SQ') is True:
-                    #             parts = line.split('\t')
-                    #             contig = parts[1].split(':')[1]
-                    #             if contig in contigs:
-                    #                 sam_out.write(line + os.linesep)
-                    #
-                    #         elif line.startswith('@') is True:
-                    #             sam_out.write(line + os.linesep)
-                    #
-                    #         else:
-                    #             if line.split('\t')[2] in contigs:
-                    #                 sam_out.write(line + os.linesep)
-                    #
-                    # os.system('samtools view -h -b -o {0} {1}'.format(
-                    # args.output, t_n_sam))
-                    # os.remove(t_sam)
-                    # os.remove(t_n_sam)
-
+                except KeyError:
+                    pass
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__,
