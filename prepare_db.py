@@ -583,7 +583,7 @@ def main():
     uniprot_parser = subparsers.add_parser('uniprot',
         parents=[parent_parser],
         help="generate internal files for the UniProt protein databases")
-    uniport_parser.add_argument('-u', '--uniprot-in',
+    uniprot_parser.add_argument('-u', '--uniprot-in',
         metavar='INFILE',
         dest='uniprot_in',
         action=Open,
