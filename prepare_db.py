@@ -502,7 +502,7 @@ def main():
     card_parser = subparsers.add_parser('card',
         parents=[parent_parser],
         help="generate internal files for the CARD reference database. CARD is not as established a database as KEGG or UniProt. Future updates may break compatibility, requiring modifications to the program")
-    card_parser.add_argument('-c', '--card-json',
+    card_parser.add_argument('-c', '--card-in',
         metavar='INFILE',
         dest='card_in',
         action=Open,
