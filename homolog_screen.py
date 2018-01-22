@@ -454,7 +454,6 @@ def screen_alignment_quality(hit, e=10, ident=0, cov=0, score=0):
     condition = (hit.evalue <= e and hit.perc_identical >= ident and \
                  hit.align_len >= cov and hit.bit_score >= float(score))
 
-    print("threshold: {} score: {}".format(hit.bit_score, score), file=sys.stderr)
     if condition:
         return True
     else:
