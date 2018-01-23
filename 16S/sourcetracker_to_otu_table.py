@@ -1,15 +1,39 @@
 #! /usr/bin/env python
-# add a column to an OTU table that contains information from the SourceTracker2 per-feature assignment files
-# usage:
-# srun sourcetracker_to_otu_table.py count_table.txt
-# requires OTU table of same format as that used for SourceTracker; i.e. header row begins with #OTU
-# will look for SourceTracker per-feature assignment files in same directory named *.feature_table.txt
-# sums the probabilities across all feature_table.txt files and reports the category with highest summed probability
 
-# will store data as a dictionary. each source category is a key in the dictionary, and its value is a dictionary assigning a list of probabilities to each OTU
-# so it looks like this:
-# 'category1'['ACTGCAACGTGCAGTG'] = [3,400,2,5]
-# the list of probabilities is assembled across all feature_table files
+"""
+add a column to an OTU table that contains information from the SourceTracker2 per-feature assignment files
+
+usage:
+srun sourcetracker_to_otu_table.py count_table.txt
+
+requires OTU table of same format as that used for SourceTracker; i.e. header row begins with #OTU
+will look for SourceTracker per-feature assignment files in same directory named *.feature_table.txt
+sums the probabilities across all feature_table.txt files and reports the category with highest summed probability
+
+will store data as a dictionary. each source category is a key in the dictionary, and its value is a dictionary assigning a list of probabilities to each OTU
+so it looks like this:
+'category1'['ACTGCAACGTGCAGTG'] = [3,400,2,5]
+the list of probabilities is assembled across all feature_table files
+
+Copyright:
+
+    sourcetracker_to_otu_table  add a column to an OTU table
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 lf = []	# list of filenames
 dd = {}	# dictionary of dictionaries, one for each source category in feature_tables

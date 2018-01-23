@@ -1,13 +1,38 @@
 #! /usr/bin/env python
-# transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
-# to make shared.transposed file:
-# open .shared file in excel
-# copy and paste>transpose all data 
-# save as tab-delimited text
-# open in TextWrangler and chance line breaks to Unix (LF)
-# then run script:
-# usage:
-# python merge-taxonomy-shared.py myfile.taxonomy myfile.shared.transposed
+
+"""
+transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
+
+to make shared.transposed file:
+1)open .shared file in excel
+2)copy and paste>transpose all data 
+3)save as tab-delimited text
+4)open in TextWrangler and change line breaks to Unix (LF)
+5)then run script
+
+usage:
+python merge-taxonomy-shared.py myfile.taxonomy myfile.shared.transposed
+
+
+Copyright:
+
+    merge-taxonomy-shared-EMP  transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 import sys
 taxfilename = sys.argv[1]

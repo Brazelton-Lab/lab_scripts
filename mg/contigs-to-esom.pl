@@ -1,8 +1,29 @@
 #! /usr/bin/env python
 #! /usr/bin/env perl
 
-# This script is part of the Metagenomics Assembly workflow
-# It is designed to be used after assembly of reads with idba_ud in preparation for tetranucleotide binning with ESOM
+"""
+This script is part of the Metagenomics Assembly workflow
+It is designed to be used after assembly of reads with idba_ud in preparation for tetranucleotide binning with ESOM
+
+Copyright:
+
+    contigs-to-esom  tetranucleotide binning with ESOM
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 ## load needed modules
 use strict;

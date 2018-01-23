@@ -1,9 +1,32 @@
 #! /usr/bin/env python
-# converts OTU file from QIIME into .list file for mothur
-# incorporates sequence names from provided .names file
 
-# usage: python convert_qiime_otus_to_mothur_list.py otus.txt VAMPS_JGIbtrim30.unique.good.filter.names 31776
-# user must provide the following input manually:
+"""
+converts OTU file from QIIME into .list file for mothur
+incorporates sequence names from provided .names file
+
+usage: python convert_qiime_otus_to_mothur_list.py otus.txt VAMPS_JGIbtrim30.unique.good.filter.names 31776
+user must provide the following input manually:
+
+
+Copyright:
+
+    convert_qiime_otus_to_mothur_list_with_names  converts OTU file from QIIME into .list file for mothur
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 dist = '0.03'
 
