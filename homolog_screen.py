@@ -312,19 +312,20 @@ def b6_iter(handle, start_line=None, out_header=None):
 
     # Check if first line is header
     if line.startswith('#'):  #file in custom format
-        split_line = split(line[2:], '\t')
+        split_line = split(line[1:], '\t')
 
         header = {}
         for spec in split_line:
             header[spec] = split_line.index(spec)
 
         # verify that required keys are all there
-        for spec in required_spec:
+        for spec in required_specs:
             if spec not in header:
+                print(header, file=sys.stderr)
                 raise FormatError("Required format specifier '{}' is "\
                                   "missing from the header".format(spec))
 
-        line = strip(next_line)
+        line = strip(next_line(handle))
     else:  #file in default format
         header = {
                   'qaccver': 0, 
@@ -428,12 +429,13 @@ def parse_snps_file(in_h, line=None):
         while True:  #loop until StopIteration raised
 
             try:
-                acc, position, wildtype, mutant = split_line
+                acc, mt, pt, position, wildtype, mutant = split_line
             except ValueError:
-                raise FormatError("{} requires a tabular SNP file with four "
+                raise FormatError("{} requires a tabular SNP file with six "
                                   "columns, corresponding to accession #, "
-                                  "position, and wildtype and mutatant "
-                                  "alleles".format(os.path.basename(__file__)))
+                                  "model type, parameter type, position, and "
+                                  "wildtype and mutatant alleles"\
+                                  .format(os.path.basename(__file__)))
 
             try:
                 snp_dict[acc].append((position, wildtype, mutant))
@@ -460,38 +462,65 @@ def screen_alignment_quality(hit, e=10, ident=0, cov=0, score=0):
         return False
 
 
-def screen_snp(hit, snps):
+def screen_snp(hit, aro, snps):
     """
     Screen hit for alternative phenotype-conferring SNPs using a dictionary of
     accession number, SNP value pairs.
     """
     try:
-        mutations = snps[hit]
+        mutations = snps[aro]
     except KeyError:
+        print("{} not found in snp database".format(aro), file=sys.stderr)
+
         return True
     else:
+        try:
+            qseq = hit.others['qseq']
+        except KeyError:
+            print("error: the format specifier 'qseq' is required for "
+                  "secondary screening of SNPs".format(), file=sys.stderr)
+            sys.exit(1)
+
+        try:
+            sseq = hit.others['sseq']
+        except KeyError:
+            print("error: the format specifier 'sseq' is required for "
+                  "secondary screening of SNPs".format(), file=sys.stderr)
+            sys.exit(1)
+
+        start = int(hit.subject_start)
+        end = int(hit.subject_end)
+
         for mutation in mutations:
-            position, wildtype, mutant = mutation
+            pos, wt, sub = mutation
+            pos = int(pos)
 
-            try:
-                qseq = hit.others['qseq']
-            except KeyError:
-                print("error: the format specifier 'qseq' is required for "
-                      "secondary screening of SNPs".format(), file=sys.stderr)
-                sys.exit(1)
-
-            aln_start = hit.qstart
-            aln_end = hit.qend
-
-            if position not in range(aln_start, aln_end + 1):
+            if pos not in list(range(start, end + 1)):
                 return False
 
             else:
-                rel_pos = position - aln_start
+                rel_pos = pos - start  #position of snp relative to alignment
 
-                if qseq[re_pos] == mutant:
+                # Handle any gaps
+                i = 0
+                while i != (rel_pos + 1):
+                    if sseq[i] == '-':
+                        rel_pos += 1
+                        i += 1
+                    else:
+                        i += 1
+
+                # Handle database inconsistencies
+                if sseq[rel_pos] != wt:
+                    print("warning: possible inconsistency in database: "
+                          "subject {} with residue {} at SNP position {!s} "
+                          "does not match wildtype residue {}"\
+                          .format(hit.subject, sseq[rel_pos], pos, wt), \
+                          file=sys.stderr)
+                    return False
+
+                if qseq[rel_pos] == sub:
                     return True
-
                 else:
                     return False
 
@@ -510,15 +539,19 @@ def main():
         action=Open,
         mode='rb',
         default=sys.stdin,
-        help="input best-hit alignments in B6/M8 format")
+        help="input best-hit alignments in B6/M8 format. A header, "
+             "differentiated by a starting # character, is required whenever "
+             "format specifiers other than the default BLAST+ format "
+             "specifiers are used")
     parser.add_argument('-o', '--out',
         metavar='out.b6',
         type=str,
         action=Open,
         mode='wt',
         default=sys.stdout,
-        help="output best-hit alignments in B6/M8 format passing screening")
-    screen_method = parser.add_mutually_exclusive_group()
+        help="output best-hit alignments in B6/M8 format passing screening "
+             "[default: output to stdout]")
+    screen_method = parser.add_argument_group(title="screening parameters")
     screen_method.add_argument('-e', '--evalue',
         type=float,
         default=10,
@@ -531,45 +564,50 @@ def main():
         mode='rb',
         help="gene metadata file containing bit-score or other alignment "
              "scoring thresholds")
-    parser.add_argument('-v', '--value',
+    screen_method.add_argument('-v', '--value',
         type=str,
-        default="bitscore_threshold",
         help="entry value in the gene metadata file to use as the alignment "
-             "quality threshold [default: bitscore_threshold]")
-    parser.add_argument('-i', '--identity',
+             "quality threshold")
+    screen_method.add_argument('-i', '--identity',
         type=float,
         default=0,
         help="minimum percent identity required to retain a hit [default: 0]")
-    parser.add_argument('-l', '--length',
+    screen_method.add_argument('-l', '--length',
         dest='aln_len',
         type=int,
         default=0,
         help="minimum alignment length required to retain a hit [default: 0]. "
              "Should ideally be used with --identity, as alignment length is "
              "not useful on its own")
-    parser.add_argument('-s', '--snps',
+    screen_method.add_argument('-s', '--snps',
         metavar='snps.csv',
         type=str,
         action=Open,
         mode='rb',
         help="tabular file containing SNPs (position, along with the wildtype "
              "and mutant alleles) that confer alternative phenotypes to an "
-             "organism. This step will be performed last if any additional "
-             "screening for alignment quality is also specified")
+             "organism. This step can only be used with -m/--meta and will be "
+             "performed last if any additional screening for alignment "
+             "quality is also specified")
     parser.add_argument('--version',
         action='version',
         version='%(prog)s ' + __version__)
     args = parser.parse_args()
     all_args = sys.argv[1:]
 
-    program_info('homolog_screen', all_args, __version__)
+    program_info(os.path.basename(__file__), all_args, __version__)
 
-    if not (args.meta or args.evalue or args.snp or args.aln_len or \
+    if not (args.meta or args.evalue or args.snps or args.aln_len or \
             args.identity):
         parser.error("error: one or more of the following arguments are "
-                     "required: --snps, --evalue, --meta, --identity, "
-                     "or --length")
+                     "required: -s/--snps, -e/--evalue, -m/--meta, "
+                     "-i/--identity, or -l/--length")
 
+    if args.snps and not args.meta:
+        parser.error("error: -m/--meta required when -s/--snps supplied")
+
+    if args.value and not args.meta:
+        parser.error("error: -m/--meta required when -v/--value supplied")
 
     # Track program run-time
     start_time = time()
@@ -591,22 +629,32 @@ def main():
             try:
                 sub_entry = meta_data[hit.subject]
             except KeyError:
-                bitscore = 0
+                score = 0
             else:
-                try:
-                    bitscore = sub_entry[args.value]
-                except KeyError:
-                    print("error: entry value {} not found in gene meta data "
-                          "file".format(args.value), file=sys.stderr)
-                    sys.exit(1)
+                if args.value:
+                    try:
+                        score = sub_entry[args.value]
+                    except KeyError:
+                        print("error: entry value {} not found in gene meta data "
+                              "file".format(args.value), file=sys.stderr)
+                        sys.exit(1)
+                else:
+                    score = 0
         else:
-            bitscore = 0
+            score = 0
 
-        q_pass = screen_alignment_quality(hit, e=args.evalue, score=bitscore, ident=args.identity, cov=args.aln_len)
+        q_pass = screen_alignment_quality(hit, e=args.evalue, score=score, ident=args.identity, cov=args.aln_len)
 
         if q_pass:
             if snps:
-                s_pass = screen_snp(hit, snps)
+                try:
+                    aro_acc = sub_entry['gene_family']
+                except UnboundLocalError:
+                    print("No entry in gene metadata file for {}"\
+                          .format(hit.subject), file=sys.stderr)
+                    sys.exit(1)
+
+                s_pass = screen_snp(hit, aro_acc, snps)
 
                 if s_pass:
                     args.out.write(hit.write())
