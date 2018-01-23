@@ -19,8 +19,8 @@ import sys
 __author__ = "Christopher Thornton"
 __license__ = 'GPLv2'
 __maintainer__ = 'Christopher Thornton'
-__status__ = "Alpha"
-__version__ = "0.0.1"
+__status__ = "Beta"
+__version__ = "0.1.0"
 
 
 class Open(argparse.Action):
@@ -204,11 +204,13 @@ def sub_card(args):
 
     in_h = args.card_in
     out_h = args.card_out
-    supported_models = args.card_models
-    db_version = "1.2.1"
 
-    if args.card_genes:
-        meta_data = {}
+    supported_models = args.card_models
+
+    db_version = '-{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "CARD{}".format(db_version)
+
+    meta_data = {}
 
     if args.card_fasta:
         out_map = {}
@@ -217,7 +219,7 @@ def sub_card(args):
             out_map[model_type] = {"outfile": open(outfile, 'wt'), "counts": 0}
 
     if args.card_snp:
-        args.card_snp.write("#Accession\tPosition\tWild Type\tMutant\n")
+        args.card_snp.write("#Accession\tModel Type\tParameter Type\tPosition\tWildtype\tMutant\n")
 
     # Speed tricks
     append = list.append
@@ -262,7 +264,7 @@ def sub_card(args):
         ontology = join(';', ontology)
 
         try:
-            acc = "ARO:{}".format(json_db[model]["ARO_accession"])
+            aro_acc = "ARO:{}".format(json_db[model]["ARO_accession"])
         except KeyError:
             print("No Accession for:\n{}".format(json.dumps(json_db[model], \
                   sort_keys=True, indent=4, separators=(',', ': ')), \
@@ -272,9 +274,9 @@ def sub_card(args):
             db_totals += 1
         
         try:
-            append(ontologies[ontology], acc)
+            append(ontologies[ontology], aro_acc)
         except KeyError:
-            ontologies[ontology] = [acc]
+            ontologies[ontology] = [aro_acc]
 
         try:
             params = json_db[model]["model_param"]
@@ -290,52 +292,65 @@ def sub_card(args):
                   sort_keys=True, indent=4, separators=(',', ': '))), file=sys.stderr)
             sys.exit(1)
 
+        # Generate SNPs file, if requested
+        if args.card_snp:
+            if "snp" in params:
+                snpkeys = params["snp"]["param_value"]
+                param_type = params["snp"]["param_type"]
+                for snpkey in snpkeys:
+                    wildtype, snp_pos, mutant = snp_re.search(snpkeys[snpkey]).groups()
+                    args.card_snp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(aro_acc, model_type, param_type, snp_pos, wildtype, mutant))
+
+        # Alignment score thresholds
+        if "blastp_bit_score" in params:
+            bitscore = params["blastp_bit_score"]["param_value"]
+        else:
+            bitscore = ''
+
+        product = json_db[model]["ARO_description"]
+
         entries = sequences["sequence"]
         for entry in entries:
-            gene_id = entries[entry]["protein_sequence"]["accession"] if \
-                      "protein" in model_type else \
-                      entries[entry]["dna_sequence"]["accession"]
+            nucl_seq = entries[entry]["dna_sequence"]["sequence"]
+            seqlen = len(nucl_seq)
+            organism = entries[entry]["NCBI_taxonomy"]["NCBI_taxonomy_name"]
 
-            # Generate SNPs file, if requested
-            if args.card_snp:
-                if "snp" in params:
-                    snpkeys = params["snp"]["param_value"]
-                    for snpkey in snpkeys:
-                        wildtype, snp_pos, mutant = snp_re.search(snpkeys[snpkey]).groups()
-                        args.card_snp.write("{}\t{}\t{}\t{}\n".format(gene_id, snp_pos, wildtype, mutant))
+            if "protein" in model_type:
+                seq_acc = entries[entry]["protein_sequence"]["accession"]
+                seq = entries[entry]["protein_sequence"]["sequence"]
+                acc = "{}|{}".format(aro_acc, seq_acc)
+            else:
+                fmax = entries[entry]["dna_sequence"]["fmax"]
+                fmin = entries[entry]["dna_sequence"]["fmin"]
+                strand = entries[entry]["dna_sequence"]["strand"]
+                seq_acc = entries[entry]["dna_sequence"]["accession"]
 
-            # Generate CARD gene metadata
-            if args.card_genes:
-                # Alignment score thresholds
-                if "blastp_bit_score" in params:
-                    bitscore = params["blastp_bit_score"]["param_value"]
-                else:
-                    bitscore = ''
+                acc = "{}|{}|{}|{}-{}".format(aro_acc, seq_acc, strand, fmin, fmax)
+                seq = nucl_seq
 
-                nucl_seq = entries[entry]["dna_sequence"]["sequence"]
-                seqlen = len(nucl_seq)
-                organism = entries[entry]["NCBI_taxonomy"]["NCBI_taxonomy_name"]
-                product = json_db[model]["ARO_description"]
-                ref_db = "CARD-{}".format(db_version)
-
-                append_json(meta_data, gene_id, db=ref_db, bitscore=bitscore, \
-                            genefam=acc, product=product, organism=organism, \
-                            seqlen=seqlen, gene=aro_name)
+            if acc not in meta_data:
+                meta_data[acc] = {
+                                  'organsim': organism,
+                                  'product': product,
+                                  'gene_length': seqlen,
+                                  'gene': aro_name,
+                                  'gene_family': aro_acc,
+                                  'database': ref_db,
+                                  'bitscore_threshold': bitscore
+                                 }
+            else:
+                print("error: redundant accession {}".format(acc), file=sys.stderr)
+                sys.exit(1)
 
             # Generate CARD fasta files by model type, if requested
             if args.card_fasta:
-                model_type = json_db[model]["model_type"]
 
                 try:
                     out_fa = out_map[model_type]["outfile"]
                 except KeyError:
                     continue
     
-                seq_type = "protein_sequence" if "protein" in model_type else \
-                           "dna_sequence"
-
-                sequence = entries[entry][seq_type]["sequence"]
-                out_fa.write(">{}\n{}\n".format(gene_id, sequence))
+                out_fa.write(">{}\n{}\n".format(acc, seq))
 
     # Output internal ontology
     for ontology in ontologies:
@@ -442,15 +457,18 @@ def append_json(json_data, acc, db='', bitscore='', gene='', genefam='', organis
     """
     Append an entry to a JSON database of gene metadata
     """
-    json_data[acc] = {
-                      'organsim': organism,
-                      'product': product,
-                      'gene_length': seqlen,
-                      'gene': gene,
-                      'gene_family': genefam,
-                      'database': db,
-                      'bitscore_threshold': bitscore
-                     }
+    try:
+        json_data[acc]['gene_family'].append(genefam)
+    except KeyError:
+        json_data[acc] = {
+                          'organsim': organism,
+                          'product': product,
+                          'gene_length': seqlen,
+                          'gene': gene,
+                          'gene_family': [genefam],
+                          'database': db,
+                          'bitscore_threshold': bitscore
+                         }
 
     return(json_data)
 
@@ -477,6 +495,9 @@ def main():
     subparsers = parser.add_subparsers(title="subcommands",
         help="exactly one of these commands is "
              "required")
+    parent_parser.add_argument('-v', '--db-version',
+        type=str,
+        help="database version")
     # FOAM-specific arguments
     foam_parser = subparsers.add_parser('foam',
         parents=[parent_parser],
