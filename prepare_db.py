@@ -330,7 +330,7 @@ def sub_card(args):
 
             if acc not in meta_data:
                 meta_data[acc] = {
-                                  'organsim': organism,
+                                  'organism': organism,
                                   'product': product,
                                   'gene_length': seqlen,
                                   'gene': aro_name,
