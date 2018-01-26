@@ -1,10 +1,11 @@
 #! /usr/bin/env python
 
-# extract sequences from FASTA file according to headers in provided file
-# usage:
-# python fasta-get.py file.fa names.txt
 
 """
+extract sequences from FASTA file according to headers in provided file
+usage:
+python fasta-get.py file.fa names.txt
+
 Copyright:
 
     fasta-get.py Extract FASTA sequences based on entry headers

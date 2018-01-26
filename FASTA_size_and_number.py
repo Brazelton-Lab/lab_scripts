@@ -1,14 +1,16 @@
 #! /usr/bin/env python
-# report length of each FASTA sequence and report average
-# usage: python FASTA_size_and_number.py infilename
-# usage: python FASTA_size_and_number.py infilename report sort
-# second usage will report name and length of each FASTA sequence
-# leave out "sort" if you don't want to change the order in the file
+
 
 """
+report length of each FASTA sequence and report average
+usage: python FASTA_size_and_number.py infilename
+usage: python FASTA_size_and_number.py infilename report sort
+second usage will report name and length of each FASTA sequence
+leave out "sort" if you don't want to change the order in the file
+
 Copyright:
 
-    FASTA_size_and_number.py Report length of each sequence and average len
+    FASTA_size_and_number.py  Report length of each sequence and average len
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

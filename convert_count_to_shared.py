@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
 
 """Converts a MOTHUR count file to a MOTHUR shared file
 
@@ -41,6 +40,7 @@ Copyright:
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from __future__ import print_function
 __version__ = '1.0.0'
 __author__ = 'Alex Hyer, William Brazelton'
 

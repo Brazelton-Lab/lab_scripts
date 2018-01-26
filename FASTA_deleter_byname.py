@@ -1,7 +1,8 @@
 #! /usr/bin/env python
-# deletes entries from FASTA alignment that match sequence in given text file
 
 """
+deletes entries from FASTA alignment that match sequence in given text file
+
 Copyright:
 
     FASTA_deleter_byname.py Delete FASTA entries match alignment

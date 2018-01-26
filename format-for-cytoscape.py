@@ -1,12 +1,13 @@
 #! /usr/bin/env python
 
-# adds "X. to the front and ." to the end of each name in the first column if it begins with Otu
-# used to format network attributes file for Cytoscape so that Otu names match
-# assumes comma separated values and unix linebreaks
-# usage:
-# python format-for-cytoscape.py filename.csv
-
 """
+adds "X. to the front and ." to the end of each name in the first column if it begins with Otu
+used to format network attributes file for Cytoscape so that Otu names match
+assumes comma separated values and unix linebreaks
+
+usage:
+python format-for-cytoscape.py filename.csv
+
 Copyright:
 
     format-for-cytoscape.py Modify OTU file for use with Cytoscape

@@ -1,10 +1,33 @@
 #! /usr/bin/env python
-# given list of gene ids (e.g. KEGG IDs), write table with each contig that has each gene id
-# usage:
-# python genes2contigs.py list-of-gene-ids.txt prokka.gff newfilename
-# optionally, can also find corresponding ESOM data point IDs if provided a .names file
-# in this case, usage:
-# python genes2contigs.py list-of-gene-ids.txt prokka.gff newfilename esom.names
+
+"""
+given list of gene ids (e.g. KEGG IDs), write table with each contig that has each gene id
+
+usage:
+python genes2contigs.py list-of-gene-ids.txt prokka.gff newfilename
+optionally, can also find corresponding ESOM data point IDs if provided a .names file
+in this case, usage:
+python genes2contigs.py list-of-gene-ids.txt prokka.gff newfilename esom.names
+
+Copyright:
+
+    genes2contigs  write table with each contig that has each gene id
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 # define files
 import sys

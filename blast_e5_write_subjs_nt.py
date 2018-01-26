@@ -1,9 +1,11 @@
 #! /usr/bin/env python
-# outputs FASTA sequence corresponding to subject start and subject end in m8 file
-# if subject has match over E value cutoff
-# some subjects will be written multiple times, depending on how many hits they have
+
 
 """
+outputs FASTA sequence corresponding to subject start and subject end in m8 file
+if subject has match over E value cutoff
+some subjects will be written multiple times, depending on how many hits they have
+
 Copyright:
 
     blast_e5_wite_subjs_nt.py Output FASTA seqs from BLAST alignment

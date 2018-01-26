@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 
-# extract pairwise distances from matrix and combine with pairs in columns from another file
-# use with cor.mat file from rcor.test function in R and output file from QVALUE
-
-# usage: python combine_matrix_pqvalues.py matrix_filename qvalue_filename
 
 """
+extract pairwise distances from matrix and combine with pairs in columns from another file
+use with cor.mat file from rcor.test function in R and output file from QVALUE
+
+usage: python combine_matrix_pqvalues.py matrix_filename qvalue_filename
+
+
 Copyright:
 
     combine_matrix_pqvalues.py Extract pairwise distances and combine w/ rcor

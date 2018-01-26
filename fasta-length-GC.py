@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 
-# output is a new file with length and GC for each contig provided in input file
-# will process any file with given extension
-# example usage:
-# python fasta-length-GC.py .fa
 
 """
+output is a new file with length and GC for each contig provided in input file
+will process any file with given extension
+
+example usage:
+python fasta-length-GC.py .fa
+
 Copyright:
 
     fasta-length-GC.py Get length and GC of sequences per entry from FASTA file

@@ -1,13 +1,15 @@
 #! /usr/bin/env python
 
-# counts number of FASTA sequences and total bases for each file with given extension
-# example usage:
-# python fasta-summary.py .fa
 
 """
+counts number of FASTA sequences and total bases for each file with given extension
+
+example usage:
+python fasta-summary.py .fa
+
 Copyright:
 
-    fasta-summary.py Print numbers of sequences and bases in FASTA file
+    fasta-summary.py  Print numbers of sequences and bases in FASTA file
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

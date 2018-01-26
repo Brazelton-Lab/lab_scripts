@@ -1,14 +1,16 @@
 #! /usr/bin/env python
 
-# report column with the highest number
-# assumes comma-separated-values and unix linebreaks
-# usage:
-# python find-max-column.py final.an.0.03.subsample.shared.nosingles.transposed.csv
 
 """
+report column with the highest number
+assumes comma-separated-values and unix linebreaks
+
+usage:
+python find-max-column.py final.an.0.03.subsample.shared.nosingles.transposed.csv
+
 Copyright:
 
-    find-max-column.py Report column in CSV with highest number
+    find-max-column.py  Report column in CSV with highest number
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

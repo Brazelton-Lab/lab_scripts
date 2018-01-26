@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 
-from __future__ import print_function
-
-"""convert between database ids
+"""
+convert between database ids
 
 THIS PROGRAM IS UNDER CONSTRUCTION AND CURRENTLY DOESN't DO WHAT IT CLAIMS
 To DO.
@@ -30,6 +29,7 @@ __authors__ = 'Alex Hyer'
 __email__ = 'theonehyer@gmail.com'
 __version__ = '0.0.0.4'
 
+from __future__ import print_function
 import argparse
 from collections import defaultdict
 import copy

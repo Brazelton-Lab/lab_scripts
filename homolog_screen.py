@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """
 Screen the results of a homology search using bit-score thresholds, 
 alternative phenotype-conferring snps, or other scoring metrics.
@@ -18,6 +19,25 @@ the output, add the appropriate file extensions to the output file name
 (e.g. .gz, .bz2). Use /dev/stdin to indicate that input is from standard 
 input. Similarly, leaving out '--out' will result in the output being 
 sent to standard output (stdout).
+
+Copyright:
+
+    homolog_screen  Screen the results of a homology search using bit-score thresholds, alternative phenotype-conferring snps, or other scoring metrics.
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function

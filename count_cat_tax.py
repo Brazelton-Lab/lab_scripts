@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-"""Adds taxonomy information from TSV files to count tables
+"""
+Adds taxonomy information from TSV files to count tables
 
 Copyright:
 

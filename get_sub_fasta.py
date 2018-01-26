@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""extracts entries from samples based on IDs and writes them to a new file
+"""
+extracts entries from samples based on IDs and writes them to a new file
 
 Usage:
 
@@ -24,6 +25,25 @@ Optional Arguments:
     --ids:         One or more IDs to search for IDs can be written as
                    regular expressions
     --id_file:     File where each line is an ID [Default: STDIN]
+
+Copyright:
+
+    get_sub_fasta  extracts entries from samples based on IDs and writes them to a new file
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
 from __future__ import print_function

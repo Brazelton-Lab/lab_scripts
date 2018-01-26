@@ -1,11 +1,33 @@
 #! /usr/bin/env python
-# requires two input files: 
-# 1. a csv file of the abundance of each sequence in each sample, with sequences as rows. You probably want transformed counts, i.e. proportions, not raw counts 
-# 2. a mothur taxonomy file, preferably after reformatting it with taxonomy_edit.py
-# 
-# usage:
-# make-node-attributes.py proportions.csv filename.taxonomy.renamed.txt outfilename.txt
-# outfilename is optional. default is node-attributes.txt
+
+"""
+requires two input files: 
+1. a csv file of the abundance of each sequence in each sample, with sequences as rows. You probably want transformed counts, i.e. proportions, not raw counts 
+2. a mothur taxonomy file, preferably after reformatting it with taxonomy_edit.py
+
+usage:
+make-node-attributes.py proportions.csv filename.taxonomy.renamed.txt outfilename.txt
+outfilename is optional. default is node-attributes.txt
+
+Copyright:
+
+    make-node-attributes  writes both the sample name and the abundance for that seq name separated by tabs
+
+    Copyright (C) 2016  William Brazelton 
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 import sys
 taxfilename = sys.argv[1]

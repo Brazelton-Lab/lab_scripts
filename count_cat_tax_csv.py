@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-"""Adds taxonomy information from CSV files produced by phyloseq package (for example) to otu tables
+"""
+Adds taxonomy information from CSV files produced by phyloseq package (for example) to otu tables
 
 Copyright:
 

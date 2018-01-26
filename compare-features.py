@@ -1,9 +1,12 @@
 #! /usr/bin/env python
-# given list of IDs (e.g. KEGG IDs), will write file of abundance of each ID in each function.tsv file in current directory
-# usage:
-# python compare-features.py list-of-IDs.txt newfilename
+
 
 """
+given list of IDs (e.g. KEGG IDs), will write file of abundance of each ID in each function.tsv file in current directory
+
+usage:
+python compare-features.py list-of-IDs.txt newfilename
+
 Copyright:
 
     compare-features.py Output abundance of each KEGG ID in file

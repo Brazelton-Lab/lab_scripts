@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""extracts entries from samples based on IDs and writes them to a new file
+"""
+extracts entries from samples based on IDs and writes them to a new file
 
 Usage:
 

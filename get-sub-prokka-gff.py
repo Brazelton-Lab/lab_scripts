@@ -1,10 +1,30 @@
 #! /usr/bin/env python
-# given a .gff file from prokka and a set of fasta files containing contigs represented in the gff file,
-# divide the gff file into separate gff files, one for each of the provided contig fasta files
-# to be used to extract separate gff files for ESOM bins that are subsets of a larger assembly
-# must be run from directory containing fasta files
-# usage:
-# python get-sub-prokka-gff.py assembly.gff fasta
+
+"""
+given a .gff file from prokka and a set of fasta files containing contigs represented in the gff file, divide the gff file into separate gff files, one for each of the provided contig fasta files to be used to extract separate gff files for ESOM bins that are subsets of a larger assembly must be run from directory containing fasta files.
+
+usage:
+python get-sub-prokka-gff.py assembly.gff fasta
+
+Copyright:
+
+    get-sub-prokka-gff  divides a gff file into separate gff files, one for each of the provided contig fasta files
+
+    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 # define input files
 import sys

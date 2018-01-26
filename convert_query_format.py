@@ -1,4 +1,5 @@
 #! /usr/bin/env python
+
 """
 Convert the results of a database search from one file format to another
 

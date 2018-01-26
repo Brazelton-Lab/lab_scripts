@@ -1,10 +1,13 @@
 #! /usr/bin/env python
-# edit user-provided ESOM class file with new assignments in user-provided file
-# each line of user-provided file of new assignments should contain a data point number and a class number, separated by tabs
-# usage:
-# python edit-esom-class-file.py esom.cls new-assignments.tsv new-class-filename.cls
+
 
 """
+edit user-provided ESOM class file with new assignments in user-provided file
+each line of user-provided file of new assignments should contain a data point number and a class number, separated by tabs
+
+usage:
+python edit-esom-class-file.py esom.cls new-assignments.tsv new-class-filename.cls
+
 Copyright:
 
     edit-esom-class-file.py Append user data to ESOM class file

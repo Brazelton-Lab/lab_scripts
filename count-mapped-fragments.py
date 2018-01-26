@@ -1,13 +1,16 @@
 #! /usr/bin/env python
-# counts number of "mapped read pairs" = "mapped fragments"
-# this is NOT the same thing as number of "mapped paired reads" = "mapped reads"
-# uses the bowtie2 log file where "mapped read pairs" = "were paired" - "pairs aligned 0 times concordantly or discordantly"
-# i.e. the number of read pairs subtracted by the number of read pairs that did NOT map (concordantly or discordantly)
-# usage:
-# python count-mapped-fragments.py
-# will print to screen the name of every file ending in ".log" and the number calculated from the equation described above
+
 
 """
+counts number of "mapped read pairs" = "mapped fragments"
+this is NOT the same thing as number of "mapped paired reads" = "mapped reads"
+uses the bowtie2 log file where "mapped read pairs" = "were paired" - "pairs aligned 0 times concordantly or discordantly"
+i.e. the number of read pairs subtracted by the number of read pairs that did NOT map (concordantly or discordantly)
+
+usage:
+python count-mapped-fragments.py
+will print to screen the name of every file ending in ".log" and the number calculated from the equation described above
+
 Copyright:
 
     count-mapped-fragments.py Add up mapped fragments from Bowtie2 output
