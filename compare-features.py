@@ -10,6 +10,7 @@ python compare-features.py list-of-IDs.txt newfilename
 Copyright:
 
     compare-features.py Output abundance of each KEGG ID in file
+
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

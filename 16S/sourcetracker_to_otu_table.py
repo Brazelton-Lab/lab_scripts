@@ -19,7 +19,7 @@ Copyright:
 
     sourcetracker_to_otu_table  add a column to an OTU table
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

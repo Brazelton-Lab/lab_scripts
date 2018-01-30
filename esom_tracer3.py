@@ -4,6 +4,7 @@
 Copyright:
 
     esom_tracer3.py Color ESOM best matches by metabolic pathways
+
     Copyright (C) 2016  William Brazelton, Alex Hyer
 
     This program is free software: you can redistribute it and/or modify

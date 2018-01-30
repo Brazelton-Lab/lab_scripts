@@ -24,7 +24,7 @@ Copyright:
 
     homolog_screen  Screen the results of a homology search using bit-score thresholds, alternative phenotype-conferring snps, or other scoring metrics.
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton, Christopher Thornton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -41,7 +41,6 @@ Copyright:
 """
 
 from __future__ import print_function
-
 import argparse
 from bz2 import BZ2File
 from gzip import GzipFile

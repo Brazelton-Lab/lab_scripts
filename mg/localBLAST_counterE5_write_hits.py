@@ -10,7 +10,7 @@ Copyright:
 
     localBLAST_counterE5_write_hits  count number of unique subjects with BLAST hits with greater than X E-value
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

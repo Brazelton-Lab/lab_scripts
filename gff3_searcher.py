@@ -84,7 +84,7 @@ Copyright:
     gff3_searcher  searches the various fields of a GFF3 file for a match
     to any of the user-specified IDs
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -101,7 +101,6 @@ Copyright:
 """
 
 from __future__ import print_function
-
 import argparse
 from bio_utils.iterators.fasta import fasta_iter
 from bio_utils.iterators.gff3 import gff3_iter

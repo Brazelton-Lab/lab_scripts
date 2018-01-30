@@ -6,7 +6,7 @@ Copyright:
 
     group_from_filenames  Creates a group file for a project by providing one or more fasta or fastq formatted files.
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

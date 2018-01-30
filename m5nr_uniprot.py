@@ -12,7 +12,7 @@ Copyright:
 
     m5nr_uniprot  Generates a fasta file of protein sequences and an id mapping file for UniProt using the m5nr seq and function files.
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -29,7 +29,6 @@ Copyright:
 """
 
 from __future__ import print_function
-
 import sys
 import os
 import argparse

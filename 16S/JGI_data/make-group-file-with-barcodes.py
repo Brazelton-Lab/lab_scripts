@@ -8,7 +8,7 @@ Copyright:
 
     make-group-file-with-barcodes  sort sequences in standard.fasta according to bar code
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

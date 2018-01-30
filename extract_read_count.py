@@ -5,6 +5,7 @@ For extracting read count information from idba_ud assemblies
 Copyright:
 
     extract_read_count.py Extract read count data from IDBA_UD assembly
+
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

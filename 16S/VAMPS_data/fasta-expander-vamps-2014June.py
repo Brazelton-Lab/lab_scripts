@@ -6,7 +6,7 @@ Copyright:
 
     fasta-expander-vamps-2014June  expand VAMPS fasta file according to abundance indicate at end of header
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ Copyright:
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
+
 import sys
 filename = sys.argv[1]
 

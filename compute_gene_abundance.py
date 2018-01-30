@@ -10,6 +10,7 @@ Usage:
 Copyright:
 
     compute_gene_abundance.py Compute gene abundances from FAST or FASTR
+
     Copyright (C) 2016  William Brazelton, Alex Hyer
 
     This program is free software: you can redistribute it and/or modify

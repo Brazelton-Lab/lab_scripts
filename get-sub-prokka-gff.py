@@ -10,7 +10,7 @@ Copyright:
 
     get-sub-prokka-gff  divides a gff file into separate gff files, one for each of the provided contig fasta files
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

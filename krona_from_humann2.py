@@ -6,7 +6,7 @@ Copyright:
 
     krona_from_humann2  Rearranges HUMAnN2 abundance output into a TSV for use with ktImportText
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -23,7 +23,6 @@ Copyright:
 """
 
 from __future__ import print_function
-
 import argparse
 import sys
 

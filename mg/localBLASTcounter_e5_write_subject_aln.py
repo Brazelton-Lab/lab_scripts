@@ -10,7 +10,7 @@ Copyright:
 
     localBLASTcounter_e5_write_subject_aln  outputs FASTA sequence corresponding to subject start and subject end in m8 file
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

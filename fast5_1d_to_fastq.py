@@ -4,6 +4,7 @@
 Copyright:
 
     fast5_1d_to_fasta.py Extract 1D read data from PORESEQ FAST5 file
+
     Copyright (C) 2016  William Brazelton, Alex Hyer
 
     This program is free software: you can redistribute it and/or modify

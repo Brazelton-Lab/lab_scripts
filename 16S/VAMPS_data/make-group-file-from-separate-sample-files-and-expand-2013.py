@@ -18,7 +18,7 @@ Copyright:
 
     make-group-file-from-separate-sample-files-and-expand-2013  make group file where the sample name is the fasta filename, not in the fasta header
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton 
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

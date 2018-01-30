@@ -11,6 +11,7 @@ usage: python combine_matrix_pqvalues.py matrix_filename qvalue_filename
 Copyright:
 
     combine_matrix_pqvalues.py Extract pairwise distances and combine w/ rcor
+
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

@@ -8,7 +8,7 @@ Copyright:
 
     merge-taxonomy-shared  transfers taxonomy from .taxonomy file to each OTU in .shared.transposed file 
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

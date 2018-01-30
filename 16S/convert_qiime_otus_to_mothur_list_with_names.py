@@ -12,7 +12,7 @@ Copyright:
 
     convert_qiime_otus_to_mothur_list_with_names  converts OTU file from QIIME into .list file for mothur
 
-    Copyright (C) 2016  William Brazelton <comma-separated list of authors>
+    Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

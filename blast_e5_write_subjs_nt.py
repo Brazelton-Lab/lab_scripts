@@ -9,6 +9,7 @@ some subjects will be written multiple times, depending on how many hits they ha
 Copyright:
 
     blast_e5_wite_subjs_nt.py Output FASTA seqs from BLAST alignment
+
     Copyright (C) 2016  William Brazelton
 
     This program is free software: you can redistribute it and/or modify

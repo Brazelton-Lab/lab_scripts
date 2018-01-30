@@ -16,6 +16,7 @@ Synopsis:
 Copyright:
 
     esom_tracer2.py Color ESOM best matches by phylogenies
+
     Copyright (C) 2016  William Brazelton, Alex Hyer
 
     This program is free software: you can redistribute it and/or modify
