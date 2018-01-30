@@ -1,4 +1,6 @@
 #!/usr/bin/env Rscript
+
+# Create a barplot from Mothur taxonomic data
 # Author: Alex Hyer
 # Last Updated: 2016-05-11
 

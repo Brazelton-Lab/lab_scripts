@@ -1,6 +1,7 @@
 #! /usr/bin/env python
 
-"""Creates a subset BAM file from a FASTA file
+"""
+Creates a subset BAM file from a FASTA file
 
 Notes:
     1. This program will spawn three processes and works most quickly when
@@ -27,7 +28,6 @@ Copyright:
 """
 
 from __future__ import unicode_literals
-
 import argparse
 from bio_utils.iterators import fasta_iter, sam_iter
 import os

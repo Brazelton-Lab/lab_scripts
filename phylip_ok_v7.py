@@ -1,8 +1,29 @@
 #! /usr/bin/env python
+"""
+rewrites FASTA file with only 10 characters in header so that it can be converted to phylip format.
+assumes that the desired 10 characters are the last 10 characters in the element bound by the 1st and 2nd vertical lines"|"
 
-#rewritesFASTAfilewithonly10charactersinheadersothatitcanbeconvertedtophylipformat
-#assumesthatthedesired10charactersarethelast10charactersintheelementboundbythe1stand2ndverticallines"|"
-#usage:pythonphylip_ok.pyfilename
+usage:pythonphylip_ok.pyfilename
+
+Copyright:
+
+    phylip_ok_v7  rewrites FASTA file with only 10 characters in header so that it can be converted to phylip format.
+
+    Copyright (C) 2016  William Brazelton 
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
 
 import sys
 filename=sys.argv[1]

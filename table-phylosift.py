@@ -1,9 +1,31 @@
 #! /usr/bin/env python
 
-# this script can be run before or after kraken or other programs
-# only requirement is that contig name is in first column of input file and that the appropriate phylosift sequence_taxa_summary file is provided
-# example usage:
-# python table-phylosift.py file.length-GC-kraken.txt sequence_taxa_summary.txt
+"""
+this script can be run before or after kraken or other programs
+only requirement is that contig name is in first column of input file and that the appropriate phylosift sequence_taxa_summary file is provided
+
+example usage:
+python table-phylosift.py file.length-GC-kraken.txt sequence_taxa_summary.txt
+
+Copyright:
+
+    table-phylosift  Extracts taxonomy information
+
+    Copyright (C) 2016  William Brazelton
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.﻿
+"""
 
 import sys
 table_filename = sys.argv[1]

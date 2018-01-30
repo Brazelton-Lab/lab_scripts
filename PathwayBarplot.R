@@ -1,6 +1,9 @@
 #!/usr/bin/env Rscript
+
+# Make a barplot given HumanN2 abudnance files
 # Author: Alex Hyer
 # Last Updated: 2016-05-11
+
 
 suppressPackageStartupMessages(library('argparse'))
 
