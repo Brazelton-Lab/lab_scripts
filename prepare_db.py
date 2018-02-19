@@ -220,26 +220,26 @@ def sub_card(args):
     """
     Subcommand for generating internal reference files for the CARD database
     """
-    snp_re = re.compile("([A-Z])([0-9]+)([A-Z])")
 
     in_h = args.card_in
     out_h = args.card_out
 
     supported_models = args.card_models
 
-    db_version = '-{}'.format(args.db_version) if args.db_version else ''
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "CARD{}".format(db_version)
 
+    protein_models = ["protein homolog model", "protein variant model", \
+                      "protein overexpression model", "protein knockout model"]
     meta_data = {}
 
-    if args.card_fasta:
-        out_map = {}
-        for model_type in supported_models:
-            outfile = "CARD-{}.fa".format(model_type.replace(' ', '_'))
-            out_map[model_type] = {"outfile": open(outfile, 'wt'), "counts": 0}
-
-    if args.card_snp:
-        args.card_snp.write("#Accession\tModel Type\tParameter Type\tPosition\tWildtype\tMutant\n")
+    out_map = {}
+    for mtype in supported_models:
+        out_fna = open("CARD-{}.fna".format(mtype.replace(' ', '_')), 'wt') \
+                  if args.fasta else ""
+        out_faa = open("CARD-{}.faa".format(mtype.replace(' ', '_')), 'wt') \
+                  if args.fasta and mtype in protein_models else ""
+        out_map[mtype] = {"fna": out_fna, "faa": out_faa, "counts": 0}
 
     # Speed tricks
     append = list.append
@@ -251,14 +251,22 @@ def sub_card(args):
     db_totals = 0
     ontologies = {}
     for model in json_db:
-        ontology = []
-
         try:
-            categories = json_db[model]["ARO_category"]
-        except KeyError:  #handle database description
+            aro = json_db[model]["ARO_accession"]
+        except KeyError:
             continue
-        except TypeError:  #handle version information
+        except TypeError:
             continue
+
+        db_totals += 1
+
+        model_id = json_db[model]["model_id"]
+        model_name = json_db[model]["model_name"]
+        product = json_db[model]["ARO_description"]
+        mechanisms = []
+        drugs = []
+        drug_classes = []
+        snps = []
 
         model_type = json_db[model]["model_type"]
         if model_type not in supported_models:
@@ -266,124 +274,98 @@ def sub_card(args):
         else:
             out_map[model_type]["counts"] += 1
 
-        for category in categories:
-            cat_name = categories[category]["category_aro_name"]
-            append(ontology, cat_name)
-
-        try:
-            aro_name = json_db[model]["ARO_name"]
-        except KeyError:
-            print("No ARO name for:\n{}".format(json.dumps(json_db[model], \
-                  sort_keys=True, indent=4, separators=(',', ': ')), \
-                  file=sys.stderr))
-            sys.exit(1)
-
-        # No clear hierarchy supplied by CARD for ARO categories, so define 
-        # one and sort categories by new hierarchy
-        ontology = sort_by_level(ontology)
-        ontology = join(';', ontology)
-
-        try:
-            aro_acc = "ARO:{}".format(json_db[model]["ARO_accession"])
-        except KeyError:
-            print("No Accession for:\n{}".format(json.dumps(json_db[model], \
-                  sort_keys=True, indent=4, separators=(',', ': ')), \
-                  file=sys.stderr))
-            sys.exit(1)
-        else:
-            db_totals += 1
-        
-        try:
-            append(ontologies[ontology], aro_acc)
-        except KeyError:
-            ontologies[ontology] = [aro_acc]
-
+        # Parameter values
         try:
             params = json_db[model]["model_param"]
         except KeyError:
-            print("No model parameters available for {}".format(json.dumps(json_db[model], \
-                  sort_keys=True, indent=4, separators=(',', ': '))), file=sys.stderr)
+            continue
+
+        if "blastp_bit_score" in params and "blastn_bit_score" in params:
+            print("model ID {} has both blastp and blastn bitscore values".format(model_id))
             sys.exit(1)
 
         try:
-            sequences = json_db[model]["model_sequences"]
+            scores = params["blastp_bit_score"]["param_value"]
         except KeyError:
-            print("No model sequence for {}".format(json.dumps(json_db[model], \
-                  sort_keys=True, indent=4, separators=(',', ': '))), file=sys.stderr)
-            sys.exit(1)
+            try:
+                scores = params["blastn_bit_score"]["param_value"]
+            except KeyError:
+                scores = ""
 
-        # Generate SNPs file, if requested
-        if args.card_snp:
-            if "snp" in params:
-                snpkeys = params["snp"]["param_value"]
-                param_type = params["snp"]["param_type"]
-                for snpkey in snpkeys:
-                    wildtype, snp_pos, mutant = snp_re.search(snpkeys[snpkey]).groups()
-                    args.card_snp.write("{}\t{}\t{}\t{}\t{}\t{}\n".format(aro_acc, model_type, param_type, snp_pos, wildtype, mutant))
+        if "snp" in params:
+            snpkeys = params["snp"]["param_value"]
+            for snpkey in snpkeys:
+                snps.append(snpkeys[snpkey])
 
-        # Alignment score thresholds
-        if "blastp_bit_score" in params:
-            bitscore = params["blastp_bit_score"]["param_value"]
-        else:
-            bitscore = ''
+        # CARD Categories
+        categories = json_db[model]["ARO_category"]
+        for category in categories:
+            category_name = categories[category]["category_aro_name"]
 
-        product = json_db[model]["ARO_description"]
+            class_name = categories[category]["category_aro_class_name"]
 
-        entries = sequences["sequence"]
-        for entry in entries:
-            nucl_seq = entries[entry]["dna_sequence"]["sequence"]
+            if class_name == "Resistance Mechanism":
+                mechanisms.append(category_name)
+            elif class_name == "Drug Class":
+                drug_classes.append(category_name)
+            elif class_name == "Antibiotic":
+                drugs.append(category_name)
+
+        # CARD sequences
+        seqs = json_db[model]["model_sequences"]["sequence"]
+        for record in seqs:
+            acc = "{}_{}".format(model_id, record)
+            organism = seqs[record]["NCBI_taxonomy"]["NCBI_taxonomy_name"]
+            nucl_seq = seqs[record]["dna_sequence"]["sequence"]
+            seq_acc_nucl = seqs[record]["dna_sequence"]["accession"]
             seqlen = len(nucl_seq)
-            organism = entries[entry]["NCBI_taxonomy"]["NCBI_taxonomy_name"]
 
-            if "protein" in model_type:
-                seq_acc = entries[entry]["protein_sequence"]["accession"]
-                seq = entries[entry]["protein_sequence"]["sequence"]
-                acc = "{}|{}".format(aro_acc, seq_acc)
-            else:
-                fmax = entries[entry]["dna_sequence"]["fmax"]
-                fmin = entries[entry]["dna_sequence"]["fmin"]
-                strand = entries[entry]["dna_sequence"]["strand"]
-                seq_acc = entries[entry]["dna_sequence"]["accession"]
-
-                acc = "{}|{}|{}|{}-{}".format(aro_acc, seq_acc, strand, fmin, fmax)
-                seq = nucl_seq
+            if model_type in protein_models:
+                prot_seq = seqs[record]["protein_sequence"]["sequence"]
 
             if acc not in meta_data:
                 meta_data[acc] = {
                                   'organism': organism,
                                   'product': product,
                                   'gene_length': seqlen,
-                                  'gene': aro_name,
-                                  'gene_family': aro_acc,
+                                  'gene': model_name,
+                                  'GenBank_accession': seq_acc_nucl,
+                                  'gene_family': aro,
                                   'database': ref_db,
-                                  'bitscore_threshold': bitscore
-                                 }
+                                  'bitscore': scores,
+                                  'snp': snps,
+                                  'resistance_mechanism': mechanisms,
+                                  'antibiotic': drugs,
+                                  'drug_class': drug_classes
+                                  }
             else:
-                print("error: redundant accession {}".format(acc), file=sys.stderr)
+                print("error: redundant model {}".format(acc), file=sys.stderr)
                 sys.exit(1)
 
             # Generate CARD fasta files by model type, if requested
-            if args.card_fasta:
+            if args.fasta:
 
                 try:
-                    out_fa = out_map[model_type]["outfile"]
+                    model_map = out_map[model_type]
                 except KeyError:
                     continue
-    
-                out_fa.write(">{}\n{}\n".format(acc, seq))
 
-    # Output internal ontology
-    for ontology in ontologies:
-        out_h.write("{}\t{}\n".format(ontology, reaction_alts(ontologies[ontology])))
+                out_fna = model_map["fna"]
+                out_faa = model_map["faa"]
 
-    # Output internal gene metadata
-    if args.card_genes:
-        json.dump(meta_data, args.card_genes, sort_keys=True, indent=4, separators=(',', ': '))
+                if out_fna:
+                    out_fna.write(">{}\n{}\n".format(acc, nucl_seq))
+
+                if out_faa:
+                    out_faa.write(">{}\n{}\n".format(acc, prot_seq))
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
     # Database statistics:
     print("Total database size: {}".format(db_totals), file=sys.stderr)
     for model_type in out_map:
-        print("    models in '{}':\t{!s}".format(model_type, out_map[model_type]["counts"]), file=sys.stderr)
+        print("  - models in '{}':\t{!s}".format(model_type, out_map[model_type]["counts"]), file=sys.stderr)
 
 
 def sub_kegg(args):
@@ -398,99 +380,6 @@ def sub_uniprot(args):
     Subcommand for generating internal reference files for the uniProt database
     """
     pass
-
-
-_hierarchy = {
-    "antibiotic resistant gene variant or mutant": 1, 
-    "gene conferring resistance via absence": 1, 
-    "gene involved in antibiotic sequestration": 1, 
-    "antibiotic target protection protein": 1, 
-    "antibiotic target modifying enzyme": 1.5, 
-    "antibiotic resistance gene cluster, cassette, or operon": 1, 
-    "antibiotic inactivation enzyme": 1.5, 
-    "protein modulating permeability to antibiotic": 2, 
-    "protein(s) conferring antibiotic resistance via molecular bypass": 2, 
-    "antibiotic target replacement protein": 2, 
-    "gene involved in self-resistance to antibiotic": 2, 
-    "gene altering cell wall charge": 2, 
-    "protein(s) and two-component regulatory system modulating antibiotic efflux": 3, 
-    "gene modulating beta-lactam resistance": 3, 
-    "efflux pump complex or subunit conferring antibiotic resistance": 4
-             }
-
-
-def sort_by_level(ontology, hierarchy=_hierarchy):
-    """
-    Sort CARD categories in ascending order using a custom hierarchy
-    """
-    res_re = re.compile("(?<=determinant of ).+(?= resistance)")
-    anti_re = re.compile("(?<=determinant of resistance to ).+(?= antibiotics)")
-
-    levels = []
-    determs = []
-    others = []
-    # Obtain list of category levels
-    for component in ontology:
-        try:
-            levels.append(hierarchy[component])
-            others.append(component)
-        except KeyError:
-            if "determinant of" in component:
-                determs.append(component)
-            else:
-                print("Category '{}' does not yet exist in custom hierarchy. Please "
-                      "rectify by adding to the hierarchy before attempting to "
-                      "generate the internal ontology".format(';'.join(ontology)), file=sys.stderr)
-                sys.exit(1)
-
-    # Sort categories in ascending order by level
-    order = []
-    for level in sorted(levels):
-        order.append(levels.index(level))
-
-    ontology = [others[i] for i in order]
-
-    # Check if "determinant of ..." is one of the categories
-    if determs:
-        determs = sorted(determs)
-        # Does determinant confer multi-drug resistance?
-        if len(determs) > 1:
-            try:
-                cat_start = [anti_re.search(i).group() for i in determs[:-1]]
-                cat_end = anti_re.search(determs[-1]).group()
-            except AttributeError:
-                cat_start = [res_re.search(i).group() for i in determs[:-1]]
-                cat_end = res_re.search(determs[-1]).group()
-
-            determ = "determinant of multi-drug resistance to {} and {} "\
-                       "antibiotics".format(', '.join(cat_start), cat_end)
-
-        else:
-            determ = determs[0]
-
-        ontology.append(determ)
-
-    return ontology
-
-
-def append_json(json_data, acc, db='', bitscore='', gene='', genefam='', organism='', product='', seqlen=''):
-    """
-    Append an entry to a JSON database of gene metadata
-    """
-    try:
-        json_data[acc]['gene_family'].append(genefam)
-    except KeyError:
-        json_data[acc] = {
-                          'organsim': organism,
-                          'product': product,
-                          'gene_length': seqlen,
-                          'gene': gene,
-                          'gene_family': [genefam],
-                          'database': db,
-                          'bitscore_threshold': bitscore
-                         }
-
-    return(json_data)
 
 
 def reaction_alts(acc_list):
@@ -544,46 +433,35 @@ def main():
         parents=[parent_parser],
         help="generate internal files for the CARD reference database. CARD is not as established a database as KEGG or UniProt. Future updates may break compatibility, requiring modifications to the program")
     card_parser.add_argument('-c', '--card-in',
-        metavar='INFILE',
+        metavar='card.json',
         dest='card_in',
         action=Open,
         mode='rb',
         help="input complete CARD database in JSON format")
     card_parser.add_argument('-co', '--card-out',
-        metavar='OUTFILE',
+        metavar='mapping.json',
         dest='card_out',
         action=Open,
         mode='wt',
         default=sys.stdout,
-        help="use the Antibiotic Resistance Ontology (ARO) to output a tabular "
-             "AR category mapping file, formatted for internal use [default: "
-             "output to stdout]")
-    card_parser.add_argument('-cg', '--card-genes',
-        metavar='OUTFILE',
-        dest='card_genes',
-        action=Open,
-        mode='wt',
-        help="output gene metadata file in JSON format. Metadata file "
-             "contains accessions along with their corresponding gene/gene "
-             "family ids, gene lengths, product and organismal information, "
-             "etc.")
-    card_parser.add_argument('-cs', '--card-snp',
-        metavar='OUTFILE',
-        dest='card_snp',
-        action=Open,
-        mode='wt',
-        help="output tabular file ")
+        help="output relational database in JSON format [default: output to "
+             "stdout]. Contains sequence IDs and corresponding accessions, "
+             "gene families, gene lengths, product and organismal information, "
+             "etc. [default: output to stdout]")
     card_parser.add_argument('-cm', '--card-models',
         metavar='MODEL [,MODEL]',
         dest='card_models',
-        default=["protein homolog model", "protein variant model", "rRNA gene variant model", "protein overexpression model"],
+        default=["protein homolog model", "protein variant model", \
+                 "rRNA gene variant model", "protein overexpression model", \
+                 "protein knockout model"],
         help="Output information on the following CARD model types [default: "
               "'protein homolog model', 'protein variant model', 'rRNA gene "
-              "variant model', 'protein overexpression model']")
-    card_parser.add_argument('--card-fastas',
-        dest='card_fasta',
+              "variant model', 'protein overexpression model', 'protein "
+              "knockout model']")
+    card_parser.add_argument('--fasta',
+        dest='fasta',
         action='store_true',
-        help="")
+        help="generate FASTA files of reference sequences by model type")
     card_parser.set_defaults(func=sub_card)
     # KEGG-specific arguments
     kegg_parser = subparsers.add_parser('kegg',
