@@ -1,5 +1,4 @@
 #! /usr/bin/env python
-
 """
 For internal preparation of reference databases. Output depends on the given
 reference source.
@@ -155,12 +154,37 @@ class Open(argparse.Action):
         setattr(namespace, self.dest, handle)
 
 
+def open_io(infile, mode='rb'):
+    """
+    Open input or output files, using the file extension to dictate how the 
+    file should be opened
+    """
+    algo = io.open  # Default to plaintext
+
+    algo_map = {
+        'bz2': BZ2File,
+        'gz':  GzipFile,
+        'xz':  LZMAFile
+    }
+
+    # Base compression algorithm on file extension
+    ext = value.split('.')[-1]
+    try:
+        algo = algo_map[ext]
+    except KeyError:
+        pass
+
+    handle = io.TextIOWrapper(algo(infile, mode=mode), encoding='utf-8')
+
+    return handle
+
+
 def sub_foam(args, line=None):
     """
     Subcommand for generating internal reference files for the FOAM database
     """
     in_h = args.foam_in
-    out_h = args.foam_out
+    out_h = args.out_map
 
     r = re.compile("((?<=\d\d_).+)")
 
@@ -222,7 +246,7 @@ def sub_card(args):
     """
 
     in_h = args.card_in
-    out_h = args.card_out
+    out_h = args.out_map
 
     supported_models = args.card_models
 
@@ -372,7 +396,117 @@ def sub_kegg(args):
     """
     Subcommand for generating internal reference files for the KEGG database
     """
-    pass
+
+    out_h = args.out_map
+    taxonomy = parse_kegg_taxonomy(args.kegg_tax) if args.kegg_tax else None
+    out_o = args.orthology if args.orthology else None
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "KEGG{}".format(db_version)
+
+    kegg_map = {}  # store KEGG entries
+
+    # Parse DAT files, if provided
+    if args.kegg_dat:
+        if len(args.kegg_dat) != len(args.kegg_fasta):
+            print("error: the number of DAT files provided must be equal to "
+                  "the number of FASTA files", file=sys.stderr)
+            sys.exit(1)
+
+        dat_totals = 0
+        for dat_file in args.kegg_dat:
+            with open_io(dat_file, mode='rb') as dat_h:
+                for line in dat_h:
+                    split_line = line.strip().split('\t')
+                    try:
+                        acc, ko, aa_len, product = split_line
+                    except ValueError:
+                        num_col = len(split_lines)
+                        print("error: unknown file format for {}. Expected "
+                              "four columns, but only {} were provided"
+                              .format(dat_file, num_col), file=sys.stderr)
+                        sys.exit(1)
+
+                    dat_totals += 1
+
+                    tax_code = acc.split(':')[0]
+                    try:
+                        organism = taxonomy[tax_code]
+                    except TypeError:  #no taxonomy file provided
+                        organism = ''
+                    except KeyError:  #no entry in taxonomy file for tax_code
+                        print("error: code {} not found in taxonomy file"\
+                              .format(tax_code), file=sys.stderr)
+                        sys.exit(1)
+
+                    kegg_map[acc] = {
+                                     'organism': organism,
+                                     'product': '',
+                                     'gene_length': int(aa_len) * 3,
+                                     'gene': '',
+                                     'gene_family': ko,
+                                     'database': ref_db,
+                                     }
+
+    # Parse FASTA files
+    fasta_totals = 0
+    for fasta_file in args.kegg_fasta:
+        with open_io(fasta_file, mode='rb') as fasta_h:
+            for record in fasta_iter(fasta_h):
+                fasta_totals += 1
+
+                acc = record.id
+
+                split_desc = record.description.split(';')
+                try:
+                    gene, product = split_desc
+                except ValueError:
+                    print("error: sequence header for {} in {} formatted "
+                          "incorrectly. Header description should be in the "
+                          "form '<gene_id>; <gene_description>'"\
+                          .format(fasta_file, acc), file=sys.stderr)
+                    sys.exit(1)
+                product = product.rstrip()
+
+                gene_len = len(record.seq) * 3
+
+                if acc in kegg_map:
+                    if kegg_map[acc]['gene_length'] != gene_len:
+                        print("error: accession {} has differing gene lengths "
+                              "in FASTA and DAT files".format(acc), \
+                              file=sys.stderr)
+                        sys.exit(1)
+
+                    kegg_map[acc]['product'] = product
+                    kegg_map[acc]['gene'] = gene
+                else:
+                    if args.kegg_dat:
+                        print("error: accession {} in FASTA file does not have a "
+                              "corresponding entry in DAT file".format(acc), \
+                              file=sys.stderr)
+                        sys.exit(1)
+                    else:
+                        kegg_map[acc] = {
+                                         'organism': taxonomy[acc],
+                                         'product': product,
+                                         'gene_length': gene_len,
+                                         'gene': gene,
+                                         'gene_family': '',
+                                         'database': ref_db,
+                                         }
+
+                # Output genes with KO assignments
+                if out_o and kegg_map[acc]['gene_family']:
+                    out_o.write(record.write())
+
+    if args.kegg_dat:
+        if dat_totals != fasta_totals:
+            print("error: DAT file and FASTA file should contain the same number "
+                  "of entries", file=sys.stderr)
+            sys.exit(1)
+
+    # Output internal relational database
+    json.dump(kegg_map, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 def sub_uniprot(args):
@@ -397,6 +531,26 @@ def do_nothing(*args):
     pass
 
 
+def parse_kegg_taxonomy(in_h):
+    tax = {}
+    for line in in_h:
+        if line.startswith('#'):
+            continue
+
+        split_line = line.strip().split('\t')
+        try:
+            ident_1, tax_code, ident_2, taxonomy = split_line
+        except ValueError:
+            num_cols = len(split_line)
+            print("error: unknown taxonomy file format. Four columns expected, "
+                  "{!s} columns provided".format(num_cols), file=sys.stderr)
+            sys.exit(1)
+
+        tax[tax_code] = taxonomy
+
+    return tax
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -407,11 +561,19 @@ def main():
     parent_parser.add_argument('-v', '--db-version',
         type=str,
         help="database version")
+    parent_parser.add_argument('-o', '--out',
+        metavar='OUTFILE',
+        dest='out_map',
+        action=Open,
+        mode='wt',
+        default=sys.stdout,
+        help="output relational database [default: output to stdout]")
     # FOAM-specific arguments
     foam_parser = subparsers.add_parser('foam',
         parents=[parent_parser],
         help="generate internal files for the FOAM ontology")
-    foam_parser.add_argument('-f', '--foam-in',
+    foam_args = foam_parser.add_argument_group("FOAM-specific arguments")
+    foam_args.add_argument('-f', '--foam',
         metavar='INFILE',
         dest='foam_in',
         action=Open,
@@ -419,36 +581,22 @@ def main():
         help="input tabular FOAM ontology file relating Kegg Orthologs (KOs) "
              "to a hierarchical representation of biochemical functions and "
              "pathways")
-    foam_parser.add_argument('-fo', '--foam-out',
-        metavar='OUTFILE',
-        dest='foam_out',
-        action=Open,
-        mode='wt',
-        default=sys.stdout,
-        help="use the FOAM ontology to output a tabular KO to pathway mapping "
-             "file, formatted for internal use [default: output to stdout]")
     foam_parser.set_defaults(func=sub_foam)
     # CARD-specific arguments
     card_parser = subparsers.add_parser('card',
         parents=[parent_parser],
-        help="generate internal files for the CARD reference database. CARD is not as established a database as KEGG or UniProt. Future updates may break compatibility, requiring modifications to the program")
-    card_parser.add_argument('-c', '--card-in',
+        help="generate internal files for the CARD reference database. CARD "
+             "is not as established a database as KEGG or UniProt. Future "
+             "updates may break compatibility, requiring modifications to the "
+             "program")
+    card_args = card_parser.add_argument_group("CARD-specific arguments")
+    card_args.add_argument('-c', '--card',
         metavar='card.json',
         dest='card_in',
         action=Open,
         mode='rb',
         help="input complete CARD database in JSON format")
-    card_parser.add_argument('-co', '--card-out',
-        metavar='mapping.json',
-        dest='card_out',
-        action=Open,
-        mode='wt',
-        default=sys.stdout,
-        help="output relational database in JSON format [default: output to "
-             "stdout]. Contains sequence IDs and corresponding accessions, "
-             "gene families, gene lengths, product and organismal information, "
-             "etc. [default: output to stdout]")
-    card_parser.add_argument('-cm', '--card-models',
+    card_args.add_argument('-cm', '--card-models',
         metavar='MODEL [,MODEL]',
         dest='card_models',
         default=["protein homolog model", "protein variant model", \
@@ -458,7 +606,7 @@ def main():
               "'protein homolog model', 'protein variant model', 'rRNA gene "
               "variant model', 'protein overexpression model', 'protein "
               "knockout model']")
-    card_parser.add_argument('--fasta',
+    card_args.add_argument('--card-fasta',
         dest='fasta',
         action='store_true',
         help="generate FASTA files of reference sequences by model type")
@@ -466,43 +614,37 @@ def main():
     # KEGG-specific arguments
     kegg_parser = subparsers.add_parser('kegg',
         parents=[parent_parser],
-        help="generate internal files for KEGG. Currently not-supported")
-    kegg_parser.add_argument('-k', '--kegg-in',
+        help="generate internal files for KEGG")
+    kegg_args = kegg_parser.add_argument_group("KEGG-specific arguments")
+    kegg_args.add_argument('-k', '--kegg',
         metavar='INFILE',
-        dest='kegg_in',
+        nargs='+',
+        help="input one or more FASTA files containing KEGG protein sequences")
+    kegg_args.add_argument('-kd', '--kegg-dat',
+        metavar='INFILE',
+        nargs='*',
+        help="input zero or more DBGET flat files containing KEGG genes mapped "
+             "to their KO assignments")
+    kegg_args.add_argument('-kt', '--kegg-taxonomy',
+        metavar='INFILE',
+        dest='kegg_tax',
         action=Open,
         mode='rb',
-        help="input DBGET flat file containing KO entries")
-    kegg_parser.add_argument('-km', '--kegg-modules',
+        help="input tabular taxonomy file")
+    kegg_args.add_argument('--kegg-fasta',
         metavar='INFILE',
-        dest='kegg_modules',
-        action=Open,
-        mode='rb',
-        help="input DBGET flat file containing MODULE entries")
-    kegg_parser.add_argument('-ko', '--kegg-out',
-        metavar='OUTFILE',
-        dest='kegg_out',
+        dest='orthologs',
         action=Open,
         mode='wt',
-        default=sys.stdout,
-        help="use the KEGG ontology (ko) to output a tabular KO to pathway "
-             "mapping file, formatted for internal use [default: output to "
-             "stdout]")
-    kegg_parser.add_argument('-kg', '--kegg-genes',
-        metavar='OUTFILE',
-        dest='kegg_genes',
-        action=Open,
-        mode='wt',
-        help="output gene metadata file in JSON format. Metadata file "
-             "contains accessions along with their corresponding gene/gene "
-             "family ids, gene lengths, product and organismal information, "
-             "etc.")
+        help="output FASTA file containing all genes with corresponding KO "
+             "entries")
     kegg_parser.set_defaults(func=sub_kegg)
     # UniProt-specific arguments
     uniprot_parser = subparsers.add_parser('uniprot',
         parents=[parent_parser],
         help="generate internal files for the UniProt protein databases")
-    uniprot_parser.add_argument('-u', '--uniprot-in',
+    uniprot_args = uniprot_parser.add_argument_group("UniProt-specific arguments")
+    uniprot_args.add_argument('-u', '--uniprot',
         metavar='INFILE',
         dest='uniprot_in',
         action=Open,
