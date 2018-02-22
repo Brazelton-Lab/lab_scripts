@@ -25,4 +25,4 @@ with open(outfilename, 'w') as outfile:
 			for i in cols[1:]:			# skip first column
 				if int(i) > max: max = int(i)
 				else: pass
-			if max > MINCOUNT: outfile.write(row)
+			if max > int(MINCOUNT): outfile.write(row)
