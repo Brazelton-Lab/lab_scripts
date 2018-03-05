@@ -29,6 +29,7 @@ import argparse
 from bio_utils.iterators import fasta_iter
 from bz2 import BZ2File
 from gzip import GzipFile
+from lzma import LZMAFile
 import json
 import io
 import os
@@ -168,7 +169,7 @@ def open_io(infile, mode='rb'):
     }
 
     # Base compression algorithm on file extension
-    ext = value.split('.')[-1]
+    ext = infile.split('.')[-1]
     try:
         algo = algo_map[ext]
     except KeyError:
@@ -353,13 +354,13 @@ def sub_card(args):
                                   'product': product,
                                   'gene_length': seqlen,
                                   'gene': model_name,
-                                  'GenBank_accession': seq_acc_nucl,
+                                  'accession': seq_acc_nucl,
                                   'gene_family': aro,
                                   'database': ref_db,
                                   'bitscore': scores,
                                   'snp': snps,
                                   'resistance_mechanism': mechanisms,
-                                  'antibiotic': drugs,
+                                  'compound': drugs,
                                   'drug_class': drug_classes
                                   }
             else:
@@ -399,7 +400,6 @@ def sub_kegg(args):
 
     out_h = args.out_map
     taxonomy = parse_kegg_taxonomy(args.kegg_tax) if args.kegg_tax else None
-    out_o = args.orthology if args.orthology else None
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "KEGG{}".format(db_version)
@@ -408,96 +408,81 @@ def sub_kegg(args):
 
     # Parse DAT files, if provided
     if args.kegg_dat:
-        if len(args.kegg_dat) != len(args.kegg_fasta):
-            print("error: the number of DAT files provided must be equal to "
-                  "the number of FASTA files", file=sys.stderr)
-            sys.exit(1)
 
         dat_totals = 0
-        for dat_file in args.kegg_dat:
-            with open_io(dat_file, mode='rb') as dat_h:
-                for line in dat_h:
-                    split_line = line.strip().split('\t')
-                    try:
-                        acc, ko, aa_len, product = split_line
-                    except ValueError:
-                        num_col = len(split_lines)
-                        print("error: unknown file format for {}. Expected "
-                              "four columns, but only {} were provided"
-                              .format(dat_file, num_col), file=sys.stderr)
-                        sys.exit(1)
+        for line in dat_h:
+            split_line = line.split('\t')
+            try:
+                acc, ko, aa_len, product = split_line
+            except ValueError:
+                num_col = len(split_line)
+                print("error: unknown file format for {}. Expected "
+                      "4 columns, but only {} were provided"
+                      .format(dat_file, num_col), file=sys.stderr)
+                sys.exit(1)
 
-                    dat_totals += 1
+            dat_totals += 1
 
-                    tax_code = acc.split(':')[0]
-                    try:
-                        organism = taxonomy[tax_code]
-                    except TypeError:  #no taxonomy file provided
-                        organism = ''
-                    except KeyError:  #no entry in taxonomy file for tax_code
-                        print("error: code {} not found in taxonomy file"\
-                              .format(tax_code), file=sys.stderr)
-                        sys.exit(1)
+            tax_code = acc.split(':')[0]
+            try:
+                organism = taxonomy[tax_code]
+            except TypeError:  #no taxonomy file provided
+                organism = ''
+            except KeyError:  #no entry in taxonomy file for tax_code
+                print("error: code {} from {} not found in taxonomy file"\
+                      .format(tax_code, acc), file=sys.stderr)
+                organism = ''
 
-                    kegg_map[acc] = {
-                                     'organism': organism,
-                                     'product': '',
-                                     'gene_length': int(aa_len) * 3,
-                                     'gene': '',
-                                     'gene_family': ko,
-                                     'database': ref_db,
-                                     }
+            kegg_map[acc] = {
+                             'organism': organism,
+                             'product': '',
+                             'gene_length': int(aa_len) * 3,
+                             'gene': '',
+                             'gene_family': ko,
+                             'database': ref_db,
+                             }
 
     # Parse FASTA files
     fasta_totals = 0
-    for fasta_file in args.kegg_fasta:
-        with open_io(fasta_file, mode='rb') as fasta_h:
-            for record in fasta_iter(fasta_h):
-                fasta_totals += 1
+    for record in fasta_iter(fasta_h):
+        fasta_totals += 1
 
-                acc = record.id
+        acc = record.id
 
-                split_desc = record.description.split(';')
-                try:
-                    gene, product = split_desc
-                except ValueError:
-                    print("error: sequence header for {} in {} formatted "
-                          "incorrectly. Header description should be in the "
-                          "form '<gene_id>; <gene_description>'"\
-                          .format(fasta_file, acc), file=sys.stderr)
-                    sys.exit(1)
-                product = product.rstrip()
+        split_desc = record.description.split(';')
+        try:
+            gene, product = split_desc
+        except ValueError:
+            gene = ''
+            product = record.description
+        else:
+            product = product.rstrip()
 
-                gene_len = len(record.seq) * 3
+        gene_len = len(record.sequence) * 3
 
-                if acc in kegg_map:
-                    if kegg_map[acc]['gene_length'] != gene_len:
-                        print("error: accession {} has differing gene lengths "
-                              "in FASTA and DAT files".format(acc), \
-                              file=sys.stderr)
-                        sys.exit(1)
+        if acc in kegg_map:
+            if kegg_map[acc]['gene_length'] != gene_len:
+                print("error: accession {} has differing gene lengths in "
+                      "FASTA and DAT files".format(acc), file=sys.stderr)
+                sys.exit(1)
 
-                    kegg_map[acc]['product'] = product
-                    kegg_map[acc]['gene'] = gene
-                else:
-                    if args.kegg_dat:
-                        print("error: accession {} in FASTA file does not have a "
-                              "corresponding entry in DAT file".format(acc), \
-                              file=sys.stderr)
-                        sys.exit(1)
-                    else:
-                        kegg_map[acc] = {
-                                         'organism': taxonomy[acc],
-                                         'product': product,
-                                         'gene_length': gene_len,
-                                         'gene': gene,
-                                         'gene_family': '',
-                                         'database': ref_db,
-                                         }
-
-                # Output genes with KO assignments
-                if out_o and kegg_map[acc]['gene_family']:
-                    out_o.write(record.write())
+            kegg_map[acc]['product'] = product
+            kegg_map[acc]['gene'] = gene
+        else:
+            if args.kegg_dat:
+                print("error: accession {} in FASTA file does not have a "
+                      "corresponding entry in DAT file".format(acc), \
+                      file=sys.stderr)
+                sys.exit(1)
+            else:
+                kegg_map[acc] = {
+                                 'organism': taxonomy[acc],
+                                 'product': product,
+                                 'gene_length': gene_len,
+                                 'gene': gene,
+                                 'gene_family': '',
+                                 'database': ref_db,
+                                 }
 
     if args.kegg_dat:
         if dat_totals != fasta_totals:
@@ -511,9 +496,93 @@ def sub_kegg(args):
 
 def sub_uniprot(args):
     """
-    Subcommand for generating internal reference files for the uniProt database
+    Subcommand for generating internal reference files for the UniProt database
     """
     pass
+
+
+def sub_bacmet(args):
+    """
+    Subcommand for generating internal reference files for the BacMet database
+    """
+    PRODUCT = re.compile('.+?(?=OS\=)')
+    ORG = re.compile('(?<=OS\=).+?(?=[A-Z]{2}\=)')
+
+    in_h = args.bacmet_in
+    in_m = args.bacmet_map
+    out_h = args.out_map
+    out_f = args.bacmet_fa
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "BacMet{}".format(db_version)
+
+    # Parse BacMet mapping info
+    meta_data = {}
+    for line in in_m:
+        line = line.decode('utf-8')
+
+        if line.startswith('#'):
+            continue
+
+        split_line = line.strip().split('\t')
+        try:
+            acc, ident, gene, location, organism, drugs, desc = split_line
+        except ValueError:
+            num_cols = len(split_line)
+            print("error: unknown mapping file format. Seven columns expected, "
+                  "{!s} columns provided".format(num_cols), file=sys.stderr)
+            sys.exit(1)
+
+        drugs = drugs.split(',')
+        drugs = [i.lstrip() for i in drugs]
+
+        meta_data[ident] = {'accession': acc,
+                           'gene': gene,
+                           'gene_length': '',
+                           'database': ref_db,
+                           'organism': organism,
+                           'product': '',
+                           'compound': drugs
+                          }
+
+    # Parse BacMet FASTA file
+    for record in fasta_iter(in_h):
+        header = record.id.split('|')
+        ident = header[0]
+        seq_len = len(record.sequence)
+
+        try:
+            product = PRODUCT.search(record.description).group()
+        except AttributeError:
+            product = record.description
+        product = product.strip()
+
+        if ident in meta_data:
+            meta_data[ident]['gene_length'] = seq_len * 3
+            meta_data[ident]['product'] = product
+        else:
+            try:
+                organism = ORG.search(record.description).group()
+            except AttributeError:
+                organism = ''
+            organism = organism.strip()
+
+            gene = header[1]
+            acc = header[3]
+            meta_data[ident] = {'accession': acc,
+                                'gene': gene,
+                                'gene_length': seq_len * 3,
+                                'database': ref_db,
+                                'organism': organism,
+                                'product': product,
+                                'compound': []
+                               }
+
+        # Output FASTA with simplified headers
+        out_f.write(">{}\n{}\n".format(ident, record.sequence))
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 def reaction_alts(acc_list):
@@ -534,6 +603,8 @@ def do_nothing(*args):
 def parse_kegg_taxonomy(in_h):
     tax = {}
     for line in in_h:
+        line = line.decode('utf-8')
+
         if line.startswith('#'):
             continue
 
@@ -618,26 +689,23 @@ def main():
     kegg_args = kegg_parser.add_argument_group("KEGG-specific arguments")
     kegg_args.add_argument('-k', '--kegg',
         metavar='INFILE',
-        nargs='+',
-        help="input one or more FASTA files containing KEGG protein sequences")
+        dest='kegg_fasta',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of KEGG protein sequences")
     kegg_args.add_argument('-kd', '--kegg-dat',
         metavar='INFILE',
-        nargs='*',
-        help="input zero or more DBGET flat files containing KEGG genes mapped "
-             "to their KO assignments")
+        dest='kegg_dat',
+        action=Open,
+        mode='rb',
+        help="input DBGET flat file of KEGG genes mapped to their KO "
+             "assignments")
     kegg_args.add_argument('-kt', '--kegg-taxonomy',
         metavar='INFILE',
         dest='kegg_tax',
         action=Open,
         mode='rb',
         help="input tabular taxonomy file")
-    kegg_args.add_argument('--kegg-fasta',
-        metavar='INFILE',
-        dest='orthologs',
-        action=Open,
-        mode='wt',
-        help="output FASTA file containing all genes with corresponding KO "
-             "entries")
     kegg_parser.set_defaults(func=sub_kegg)
     # UniProt-specific arguments
     uniprot_parser = subparsers.add_parser('uniprot',
@@ -651,6 +719,31 @@ def main():
         mode='rb',
         help="input DBGET flat file containing UniProt entries")
     uniprot_parser.set_defaults(func=sub_uniprot)
+    # BacMet-specific arguments
+    bacmet_parser = subparsers.add_parser('bacmet',
+        parents=[parent_parser],
+        help="generate internal files for the BacMet reference databases")
+    bacmet_args = bacmet_parser.add_argument_group("BacMet-specific arguments")
+    bacmet_args.add_argument('-b', '--bacmet',
+        metavar='INFILE',
+        dest='bacmet_in',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of BacMet protein sequences")
+    bacmet_args.add_argument('-bm', '--bacmet-map',
+        metavar='MAP',
+        dest='bacmet_map',
+        action=Open,
+        mode='rb',
+        help="input BacMet mapping file")
+    bacmet_args.add_argument('-bf', '--bacmet-fasta',
+        dest='bacmet_fa',
+        action=Open,
+        mode='wt',
+        default="BacMet.fa",
+        help="generate FASTA file with simplified headers [default: "
+             "./BacMet.fa]")
+    bacmet_parser.set_defaults(func=sub_bacmet)
     args = parser.parse_args()
 
     args.func(args)
