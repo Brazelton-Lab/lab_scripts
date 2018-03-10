@@ -406,11 +406,13 @@ def sub_kegg(args):
 
     kegg_map = {}  # store KEGG entries
 
+    no_tax = []
     # Parse DAT files, if provided
     if args.kegg_dat:
 
         dat_totals = 0
-        for line in dat_h:
+        for line in args.kegg_dat:
+            line = line.decode('utf-8')
             split_line = line.split('\t')
             try:
                 acc, ko, aa_len, product = split_line
@@ -429,8 +431,8 @@ def sub_kegg(args):
             except TypeError:  #no taxonomy file provided
                 organism = ''
             except KeyError:  #no entry in taxonomy file for tax_code
-                print("error: code {} from {} not found in taxonomy file"\
-                      .format(tax_code, acc), file=sys.stderr)
+                if tax_code not in no_tax:
+                    no_tax.append(tax_code)
                 organism = ''
 
             kegg_map[acc] = {
@@ -444,7 +446,7 @@ def sub_kegg(args):
 
     # Parse FASTA files
     fasta_totals = 0
-    for record in fasta_iter(fasta_h):
+    for record in fasta_iter(args.kegg_fa):
         fasta_totals += 1
 
         acc = record.id
@@ -455,8 +457,7 @@ def sub_kegg(args):
         except ValueError:
             gene = ''
             product = record.description
-        else:
-            product = product.rstrip()
+        product = product.lstrip()
 
         gene_len = len(record.sequence) * 3
 
@@ -483,6 +484,12 @@ def sub_kegg(args):
                                  'gene_family': '',
                                  'database': ref_db,
                                  }
+
+    if args.kegg_tax:
+        for tax_codes in no_tax:
+            print("warning: code {} from sequences in the FASTA file is "
+                  "missing from the taxonomy file".format(tax_code), \
+                  file=sys.stderr)
 
     if args.kegg_dat:
         if dat_totals != fasta_totals:
@@ -539,6 +546,7 @@ def sub_bacmet(args):
         meta_data[ident] = {'accession': acc,
                            'gene': gene,
                            'gene_length': '',
+                           'gene_family': '',
                            'database': ref_db,
                            'organism': organism,
                            'product': '',
@@ -572,6 +580,7 @@ def sub_bacmet(args):
             meta_data[ident] = {'accession': acc,
                                 'gene': gene,
                                 'gene_length': seq_len * 3,
+                                'gene_family': '',
                                 'database': ref_db,
                                 'organism': organism,
                                 'product': product,
@@ -689,7 +698,7 @@ def main():
     kegg_args = kegg_parser.add_argument_group("KEGG-specific arguments")
     kegg_args.add_argument('-k', '--kegg',
         metavar='INFILE',
-        dest='kegg_fasta',
+        dest='kegg_fa',
         action=Open,
         mode='rb',
         help="input FASTA file of KEGG protein sequences")
