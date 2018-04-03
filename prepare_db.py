@@ -362,7 +362,7 @@ def sub_card(args):
                                   'resistance_mechanism': mechanisms,
                                   'compound': drugs,
                                   'drug_class': drug_classes,
-                                  'model': model_name
+                                  'model': model_type
                                   }
             else:
                 print("error: redundant model {}".format(acc), file=sys.stderr)
