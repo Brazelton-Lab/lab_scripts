@@ -40,7 +40,7 @@ __author__ = "Christopher Thornton"
 __license__ = 'GPLv2'
 __maintainer__ = 'Christopher Thornton'
 __status__ = "Beta"
-__version__ = "0.1.0"
+__version__ = "0.1.2"
 
 
 class Open(argparse.Action):
@@ -361,7 +361,8 @@ def sub_card(args):
                                   'snp': snps,
                                   'resistance_mechanism': mechanisms,
                                   'compound': drugs,
-                                  'drug_class': drug_classes
+                                  'drug_class': drug_classes,
+                                  'model': model_name
                                   }
             else:
                 print("error: redundant model {}".format(acc), file=sys.stderr)
