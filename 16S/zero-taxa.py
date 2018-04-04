@@ -13,13 +13,9 @@ outfilename = infilename.replace('.csv','.zeros.csv')
 with open(listfilename) as listfile:
 	l = []
 	for row in listfile:
-		try: 
-			row = row.split(',')
-			i = row[0]
-			l.append(i.strip('\n'))
-		except: 
-			i = row
-			l.append(i.strip('\n'))
+		row = row.split(',')
+		i = row[0]
+		l.append(i.strip('\n'))
 
 with open(outfilename, 'w') as outfile:
 	with open(infilename) as infile:
@@ -45,7 +41,7 @@ with open(outfilename, 'w') as outfile:
 			j = cols[0]
 			if j in l:
 				outfile.write(j)
-				for col in cols[:pos]: outfile.write(',' + col)
+				for col in cols[1:pos]: outfile.write(',' + col)
 				outfile.write(',0')
 				for col in cols[pos+1:]: outfile.write(',' + col)
 			else: outfile.write(row)
