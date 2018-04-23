@@ -1,9 +1,6 @@
 #!/usr/bin python3
 # -*- coding: utf-8 -*-
 """
-Created on 2018-03-15
-
-@author: Nickolas Lee
 
 Copyright:
 
