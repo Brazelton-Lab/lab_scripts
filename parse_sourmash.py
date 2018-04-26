@@ -4,8 +4,8 @@
 
 Copyright:
 
-    heatmap  Produces a heatmap from the raw sourmash output.
-
+    parse_sourmash  Extracts similarity information from sourmash comparison output files
+    
     Copyright (C) 2016  William Brazelton, Nickolas Lee
 
     This program is free software: you can redistribute it and/or modify
@@ -37,11 +37,12 @@ import argparse
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Produces a heatmap from the raw sourmash output.")
+    ap = argparse.ArgumentParser(description="Extracts similarity information from sourmash comparison output files.")
     ap.add_argument("input", help="The name of the input file. It typically lacks a file type ending.")
     ap.add_argument("lables", help="A file containing an ordered list of lables on each line corresponding to the files compared by sourmash.")
+    ap.add_argument("-o", "--output", default="sourmash", help="The name of the output csv file not including the file ending.")
+    ap.add_argument("-p", "--plot", action="store_true", default=False, help="Whether to save a heatmap plot of the data.")
     ap.add_argument("-s", "--suffix", default="_clustermap.png", help="The end of the file name of the output plot file including the file type.")
-    ap.add_argument("-f", "--save_file", action="store_true", default=False, help="Whether to save the plot as a file. The default is to display without saving.")
     args = ap.parse_args()
     
     exp = args.input
@@ -51,16 +52,21 @@ def main():
     with open(labels) as file:
         for line in file:
             if line:
-                names.append(line)
+                names.append(line.strip())
     data = pd.DataFrame(d, index=names, columns=names)
-    
+
     cm = seaborn.clustermap(data)
-    plt.setp(cm.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-    if args.save_file:
+    if args.plot:
+        plt.setp(cm.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
         cm.savefig(exp + args.suffix)
-    else:
-        plt.show()
-        
+    
+    count = 0
+    for ind in cm.dendrogram_row.reordered_ind:
+        data.loc[names[ind], "sourmash_plot_order"] = count
+        count += 1
+    data.index.rename("id", inplace=True)
+    data.to_csv(args.output+".csv")
+
 
 if __name__ == "__main__":
     main()

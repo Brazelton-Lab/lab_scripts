@@ -25,9 +25,8 @@ Copyright:
 
 __author__ = 'Nickolas Lee'
 __license__ = 'GPLv3'
-__maintainer__ = __author__
 __status__ = 'Production'
-__version__ = '1.0'
+__version__ = '1.1'
 
 
 import pandas as pd
@@ -40,13 +39,14 @@ def main():
     ap.add_argument("-a", dest="ale", nargs="+", required=True, help="One or more input .ale files with or without the header info.")
     ap.add_argument("-b", dest="bowtie2", nargs="+", required=True, help="One or more input bowtie2 files.")
     ap.add_argument("-m", dest="metaquast", nargs="+", required=False, help="One or more input metaquast files.")
+    ap.add_argument("--other", nargs="+", required=False, help="One or more input csv files with the same name index.")
     ap.add_argument("-o", dest="output", default="combined_stats.csv", help="The file output name.")
     args = ap.parse_args()
 
     combine_stats(args.output, args.ale, args.bowtie2, args.metaquast)
 
     
-def combine_stats(output, ale_file, bt2_file, metaquast_file=None, 
+def combine_stats(output, ale_file, bt2_file, metaquast_file=None, other=None,
                   a_id="file_name", b_id="file_name", m_id="Assembly"):
     ale = merge_files(ale_file, a_id)
     bt2 = merge_files(bt2_file, b_id)
@@ -70,6 +70,9 @@ def combine_stats(output, ale_file, bt2_file, metaquast_file=None,
     results = ale.merge(bt2, on="id")
     if metaquast_file:
         results = results.merge(mqt, on="id")
+    if other:
+        for o in other:
+            results = results.merge(o, on="id")
     results.to_csv(output, index=False)
     
     
