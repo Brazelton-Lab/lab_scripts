@@ -52,7 +52,7 @@ def main():
     with open(labels) as file:
         for line in file:
             if line:
-                names.append(line.strip())
+                names.append(line.strip().replace(".fasta",""))
     data = pd.DataFrame(d, index=names, columns=names)
 
     cm = seaborn.clustermap(data)

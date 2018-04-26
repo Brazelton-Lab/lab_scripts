@@ -43,7 +43,7 @@ def main():
     ap.add_argument("-o", dest="output", default="combined_stats.csv", help="The file output name.")
     args = ap.parse_args()
 
-    combine_stats(args.output, args.ale, args.bowtie2, args.metaquast)
+    combine_stats(args.output, args.ale, args.bowtie2, args.metaquast, other=args.other)
 
     
 def combine_stats(output, ale_file, bt2_file, metaquast_file=None, other=None,
@@ -63,7 +63,6 @@ def combine_stats(output, ale_file, bt2_file, metaquast_file=None, other=None,
             temp = pd.read_csv(file, sep="\t")
             data = data.append(temp)
         mqt = pd.DataFrame(data)
-#        mqt = merge_files(metaquast_file, m_id, sep="\t")  # tab separated values
         mqt_re = re.compile("(.*)")  # everything
         create_id(mqt, mqt_re, m_id, reg_group=1)
     
@@ -72,7 +71,8 @@ def combine_stats(output, ale_file, bt2_file, metaquast_file=None, other=None,
         results = results.merge(mqt, on="id")
     if other:
         for o in other:
-            results = results.merge(o, on="id")
+            extra = pd.read_csv(o)
+            results = results.merge(extra, on="id")
     results.to_csv(output, index=False)
     
     
