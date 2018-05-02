@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.6
 # -*- coding: utf-8 -*-
 """
 
@@ -26,7 +26,7 @@ Copyright:
 __author__ = 'Nickolas Lee'
 __license__ = 'GPLv3'
 __status__ = 'Production'
-__version__ = '1.1'
+__version__ = '1.2'
 
 
 import pandas as pd
@@ -39,15 +39,30 @@ def main():
     ap.add_argument("-a", dest="ale", nargs="+", required=True, help="One or more input .ale files with or without the header info.")
     ap.add_argument("-b", dest="bowtie2", nargs="+", required=True, help="One or more input bowtie2 files.")
     ap.add_argument("-m", dest="metaquast", nargs="+", required=False, help="One or more input metaquast files.")
-    ap.add_argument("--other", nargs="+", required=False, help="One or more input csv files with the same name index.")
+    ap.add_argument("--other", nargs="+", required=False, help="One or more input csv files with an index labled \'id\'.")
+    ap.add_argument("--manual", action="store_true", default=False, required=False, help="Only combines files found in --other. No other input arguments are used.")
     ap.add_argument("-o", dest="output", default="combined_stats.csv", help="The file output name.")
     args = ap.parse_args()
 
-    combine_stats(args.output, args.ale, args.bowtie2, args.metaquast, other=args.other)
+    if not args.manual:
+        combine_stats(args.output, args.ale, args.bowtie2, args.metaquast, other=args.other)
+    else:
+        if args.other:
+            first = True
+            for o in args.other:
+                if first:
+                    results = pd.read_csv(o)
+                    first = False 
+                extra = pd.read_csv(o)
+                results = results.merge(extra, on="id")
+            results.to_csv(args.output, index=False)
+        else:
+            print("Nothing to work on.")
 
-    
+
 def combine_stats(output, ale_file, bt2_file, metaquast_file=None, other=None,
                   a_id="file_name", b_id="file_name", m_id="Assembly"):
+
     ale = merge_files(ale_file, a_id)
     bt2 = merge_files(bt2_file, b_id)
     
