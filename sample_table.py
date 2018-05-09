@@ -37,7 +37,7 @@ def parse_commas(argument):
     return(argument)
 
 
-def get_new_id(infile, sep=',', pad=8):
+def get_new_id(infile, pref_len=2, sep=','):
     with open(infile) as in_h:
         header = in_h.readline()
         header = header.split(sep)
@@ -53,7 +53,7 @@ def get_new_id(infile, sep=',', pad=8):
             line = line.strip().split(sep)
             sample = line[index]
             try:
-                sample_number = int(sample[2:])
+                sample_number = int(sample[pref_len:])
             except ValueError:
                 print("Error: sample IDs must consist of two alphabetical characters followed by one or more integers", file=sys.stderr)
                 sys.exit(1)
@@ -90,6 +90,10 @@ def main():
         type=int,
         default=5,
         help="pad the sample ID number with zeros to this width [default: 5]")
+    parser.add_argument('-c', '--code',
+        type=str,
+        default='LC',
+        help="project code [default: LC]")
     args = parser.parse_args()
 
     # Current date in ISO format
@@ -117,10 +121,12 @@ def main():
               file=sys.stderr)
         sys.exit(1)
 
-    first_id = get_new_id(args.master, sep=args.sep)
+    # Find the sample ID range
+    first_id = get_new_id(args.master, pref_len=len(args.code), sep=args.sep)
     last_id = first_id + nlabel
-
     sample_range = "{}-{}".format(first_id, last_id - 1)
+
+    # Write or append to output files
     output = "{}{}_{}_{}.csv".format(args.out_dir, assignee.replace(" ", "_"), \
              sample_range, current_date)
 
@@ -135,6 +141,7 @@ def main():
 
     print("Identifying number of first sample in series: {}".format(str(first_id).zfill(args.pad)), file=sys.stdout)
 
+    # Allow time to note ID number before exiting
     sleep(2)
     leave = input('Press any key to exit')
 
