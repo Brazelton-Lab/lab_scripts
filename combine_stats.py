@@ -41,7 +41,7 @@ def main():
     ap.add_argument("-m", dest="metaquast", nargs="+", required=False, help="One or more input metaquast files.")
     ap.add_argument("--other", nargs="+", required=False, help="One or more input csv files with an index labled \'id\'.")
     ap.add_argument("--manual", action="store_true", default=False, required=False, help="Only combines files found in --other. No other input arguments are used.")
-    ap.add_argument("-o", dest="output", default="combined_stats.csv", help="The file output name.")
+    ap.add_argument("-o", dest="output", default="final_stats.csv", help="The file output name.")
     args = ap.parse_args()
 
     if not args.manual:

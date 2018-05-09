@@ -26,7 +26,7 @@ Copyright:
 __author__ = 'Nickolas Lee'
 __license__ = 'GPLv3'
 __status__ = 'Production'
-__version__ = '1.0'
+__version__ = '2.0'
 
 
 import matplotlib.pyplot as plt
@@ -39,26 +39,34 @@ import argparse
 def main():
     ap = argparse.ArgumentParser(description="Extracts similarity information from sourmash comparison output files.")
     ap.add_argument("input", help="The name of the input file. It typically lacks a file type ending.")
-    ap.add_argument("lables", help="A file containing an ordered list of lables on each line corresponding to the files compared by sourmash.")
+    ap.add_argument("-l", "--lables", required=False, help="A file containing an ordered list of lables on each line corresponding to the files compared by sourmash.")
+    ap.add_argument("-c", "--csv", action="store_true", default=False, help="Whether the input file is a csv. Otherwise assumes the input is a binary.")
     ap.add_argument("-o", "--output", default="sourmash", help="The name of the output csv file not including the file ending.")
     ap.add_argument("-p", "--plot", action="store_true", default=False, help="Whether to save a heatmap plot of the data.")
     ap.add_argument("-s", "--suffix", default="_clustermap.png", help="The end of the file name of the output plot file including the file type.")
     args = ap.parse_args()
     
-    exp = args.input
-    labels = args.lables
-    names = []
-    d = np.load(exp)
-    with open(labels) as file:
-        for line in file:
-            if line:
-                names.append(line.strip().replace(".fasta",""))
-    data = pd.DataFrame(d, index=names, columns=names)
+    if not args.csv:
+        if not args.lables:
+            raise BaseException("lables must be specified when working with binary input")
+        labels = args.lables
+        names = []
+        d = np.load(args.input)
+        with open(labels) as file:
+            for line in file:
+                if line:
+                    names.append(line.strip())
+        data = pd.DataFrame(d, index=names, columns=names)
+    else:
+        d = pd.read_csv(args.input)
+        data = pd.DataFrame(d)
+        data.index = data.columns
+        names = data.columns
 
     cm = seaborn.clustermap(data)
     if args.plot:
         plt.setp(cm.ax_heatmap.yaxis.get_majorticklabels(), rotation=0)
-        cm.savefig(exp + args.suffix)
+        cm.savefig(args.input.replace(".csv","") + args.suffix)
     
     count = 0
     for ind in cm.dendrogram_row.reordered_ind:
