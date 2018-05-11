@@ -1,7 +1,7 @@
 #! /usr/bin/env python3
 """
-Generates new sample tables and appends to a master table based on supplied
-inputs.
+Generates sample table and new labels based on the number of desired labels
+and the last sample identifier used.
 
 Copyright:
 
@@ -28,6 +28,7 @@ import argparse
 from datetime import date
 import os
 import re
+import subprocess
 import sys
 from time import sleep
 
@@ -91,28 +92,32 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('-m', '--master',
-        default='C:\\Users\\user\Documents\LC2018\LC_2018.sample_table.master.csv',
+        default='C:\\Users\\user\\Documents\\LC2018\\LC_2018.sample_table.master.csv',
         help="master sample table [default: C:\\Users\\user\Documents\LC2018\\"
              "LC_2018.sample_table.master.csv]")
-    parser.add_argument('-o', '--out_dir',
+    parser.add_argument('-o', '--out-dir',
+        metavar='DIR',
+        dest='out_dir',
         default='C:\\Users\\user\Desktop\\',
-        help="output directory [default: C:\\Users\\user\Desktop\]")
+        help="output directory [default: C:\\Users\\user\\Desktop\]")
     parser.add_argument('-i', '--id',
         type=int,
         help="first sample ID number to be assigned to the new table. Ignores "
              "the last sample ID number found in the master table")
     parser.add_argument('-f', '--fields',
         dest='fields',
-        default="CruiseID,PrivateID,ContainerType,SampleType,SampleQuantity,\
+        default="Date,CruiseID,PrivateID,ContainerType,SampleType,SampleQuantity,\
                  StorageMethod",
         type=parse_commas,
         help="comma-separated list of additional field names to include in "
              "the sample table [default: CruiseID, PrivateID, ContainerType, "
              "SampleType, SampleQuantity, StorageMethod]")
     parser.add_argument('-s', '--sep',
+        metavar='CHAR',
         default=',',
         help="field separator character [default: ,]")
     parser.add_argument('-p', '--pad',
+        metavar='INT',
         type=int,
         default=5,
         help="pad the sample ID number with zeros to this width [default: 5]")
@@ -120,26 +125,59 @@ def main():
         type=str,
         default='LC',
         help="project code [default: LC]")
+    parser.add_argument('-z', '--zpl-dir',
+        metavar='DIR',
+        dest='zpl_dir',
+        default='C:\\Users\\user\\Documents\\ZPL\\',
+        help="directory to store the zpl files [default: C:\\Users\\user\\Documents\\ZPL\\]")
+    parser.add_argument('-n', '--net',
+        metavar='BAT',
+        default='C:\\Users\\user\\Documents\\netprint.bat',
+        help="location of network printer batch file [default: C:\\Users\\user\\Documents\\netprint.bat]")
     args = parser.parse_args()
+
+    sep = args.sep
+
+    zpl_template = ("^XA\n^FO30,40^ATN^FDLost City 2018^FS\n^FO280,35^FDMM,A{0}{1}"
+                   "^BQN,2,6,H^FS\n^FO278,190^ATN^FD{0}{1}^FS\n^FO30,120^ARN^FD{2}"
+                   "^FS\n^FO30,172^ARN2^FB250,2,,L^FD{3}^FS\n^XZ\n")
 
     # Current date in ISO format
     current_date = date.today().isoformat().replace('-', '')
 
-    # Check if master table exists and is not empty
-    if not os.path.isfile(args.master):
-        with open(args.master, 'w') as master_h:
-            master_h.write("SampleID,Owner,Date\n")
-
-    # Obtain input from user
-    assignee = input('Enter your name: ')
-    # Verify that input does not contain separator character
-    if args.sep in assignee:
-        print("Error: name '{}' cannot contain the same character '{}' that "
-              "is used as the field separator".format(assignee, args.sep))
+    # verify that network printer batch file exists
+    if not os.path.exists(args.net):
+        print("Error: cannot find location of the network printer batch file. "
+              "Please contact an administrator for assistance")
         leave = input('Press any key to exit')
         sys.exit(1)
 
-    nlabel = input('Enter the desired number of labels: ')
+    # make output directories if they don't already exist
+    for directory in [args.out_dir, args.zpl_dir]:
+        if not os.path.exists(directory):
+            os.mkdirs(directory)
+
+    # Check if master table exists and is not empty
+    if not os.path.isfile(args.master):
+        with open(args.master, 'w') as master_h:
+            master_h.write("SampleID{0}Owner{0}{1}\n".format(sep, \
+                           sep.join(args.fields)))
+
+    # Obtain input from user
+    assignee = input('Enter your name, given followed by family (e.g. Jane Doe): ')
+    # Verify that input does not contain separator character
+    if args.sep in assignee:
+        print("Error: name '{}' cannot contain the same character '{}' that "
+              "is used as the field separator".format(assignee, sep))
+        leave = input('Press any key to exit')
+        sys.exit(1)
+
+    owner = assignee.split(' ')
+    name_field = "{}. {}".format(owner[0][0].upper(), ' '.join(owner[1:]))
+    if len(name_field) > 18:
+        name_field = "{}*".format(name_field[0:17])
+
+    nlabel = input('Enter the number of labels to print: ')
     # Verify that input is of correct type
     try:
         nlabel = int(nlabel)
@@ -149,29 +187,51 @@ def main():
         leave = input('Press any key to exit')
         sys.exit(1)
 
+    description = input("Optional description to be added to the label (enter "
+                        "to skip):")
+    # Verify that input length is less than 36 characters
+    if len(description) > 36:
+        print("Error: optional description must be less than 36 characters "
+              "long", file=sys.stderr)
+        leave = input('Press any key to exit')
+        sys.exit(1)
+
     # Find the sample ID range
     first_id = get_new_id(args.master, args.code, sep=args.sep)
     last_id = first_id + nlabel
     sample_range = "{}-{}".format(first_id, last_id - 1)
 
     # Write or append to output files
-    output = "{}{}_{}_{}.csv".format(args.out_dir, assignee.replace(" ", "_"), \
+    output = "{}{}_{}_{}.csv".format(args.out_dir, assignee.replace(" ", "_").lower(), \
              sample_range, current_date)
+
+    zpl = "{}{}_{}_{}.zpl".format(args.zpl_dir, assignee.replace(" ", "_").lower(), \
+          sample_range, current_date)
 
     print("Outputting table of sample IDs in {}".format(output), \
           file=sys.stdout)
     nfields = len(args.fields)
-    ncomma = "," * nfields
-    with open(output, 'w') as out_h, open(args.master, 'a') as master_h:
-        out_h.write('SampleID,Owner,Date,{}\n'.format(','.join(args.fields)))
+    nsep = sep * nfields
+    with open(output, 'w') as out_h, open(zpl, 'w') as zpl_h, \
+        open(args.master, 'a') as master_h:
+        out_h.write('SampleID{0}Owner{0}{1}\n'.format(sep, sep.join(args.fields)))
         for sid in list(range(first_id, last_id)):
-            out_h.write('LC{},{},{}{}\n'.format(str(sid).zfill(args.pad), \
-                        assignee, current_date, ncomma))
-            master_h.write('LC{},{},{}\n'.format(str(sid).zfill(args.pad), \
-                           assignee, current_date))
+            sid_full = str(sid).zfill(args.pad)
+            out_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, sid_full, assignee, nsep))
+            master_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, sid_full, assignee, nsep))
+            zpl_h.write(zpl_template.format(args.code, sid_full, name_field, description))
 
-    print("Identifying number of first sample in series: {}"\
-          .format(str(first_id).zfill(args.pad)), file=sys.stdout)
+    # Print labels
+    print("Generating {} labels\n".format(str(nlabel)), file=sys.stdout)
+#    p = subprocess.Popen([args.net, zpl])
+#    try:
+#        outs, errs = p.communicate(timeout=60)
+#    except TimeoutExpired:
+#        proc.kill()
+#        outs, errs = p.communicate()
+
+#    if errs:
+#        print("{}".format(errs), file=sys.stderr)
 
     # Allow time to note ID number before exiting
     sleep(2)
