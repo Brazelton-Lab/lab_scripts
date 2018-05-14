@@ -88,7 +88,10 @@ def get_new_id(infile, prefix, sep=','):
     return(new)
 
 
-def split_lines(field):
+def wrap_text(field):
+    """Split on word, if necessary, to prevent final line from exceeding the 
+    maximum number of characters allowed per line.
+    """
     max_char_per_line = 18
     
     desc = field.split(' ')
@@ -101,18 +104,22 @@ def split_lines(field):
             if final_line_len > max_char_per_line:
                 # Final line too long, must split word between two lines
                 first_line = desc[0:position]
+
                 # Split word into two
                 word_subset = ''
                 for index, character in enumerate(word):
                     word_subset += character
                     if len(' '.join(first_line + [word_subset])) >= max_char_per_line - 1:
                         break
+
                 if len(word_subset) < len(word):
                     first_line.append(word_subset + '-')
                     final_line = [word[index + 1:]] + desc[position + 1:]
+
                 desc = first_line + final_line
             else:
                 break
+
     return(' '.join(desc))
 
 
@@ -162,6 +169,9 @@ def main():
         metavar='BAT',
         default='C:\\Users\\user\\Documents\\netprint.bat',
         help="location of network printer batch file [default: C:\\Users\\user\\Documents\\netprint.bat]")
+    parser.add_argument('--reprint',
+        action='store_true',
+        help="reprint a range of labels")
     args = parser.parse_args()
 
     sep = args.sep
@@ -204,7 +214,7 @@ def main():
                            sep.join(args.fields)))
 
     # Obtain input from user
-    assignee = input('Enter your name, given followed by family (e.g. Jane Doe): ')
+    assignee = input('Enter your name (e.g. Jane Doe): ')
     # Verify that input does not contain separator character
     if args.sep in assignee:
         print("Error: name '{}' cannot contain the same character '{}' that "
@@ -227,8 +237,9 @@ def main():
         leave = input('Press any key to exit')
         sys.exit(1)
 
-    description = input("Optional description to be added to the label (enter "
-                        "to skip):")
+    description = input("Enter optional description to be added to the label, "
+                        "up to {!s} characters long (press enter to skip): "\
+                        .format(max_char_per_line * 2))
 
     # Verify that input length is less than maximum total characters allowed
     if len(description) >= max_char_per_line * 2:
@@ -238,35 +249,64 @@ def main():
         sys.exit(1)
 
     # Verify that each line is less than maximim characters allowed per line
-    description = split_lines(description)
+    description = wrap_text(description)
 
     # Find the sample ID range
-    first_id = get_new_id(args.master, args.code, sep=args.sep)
+    if args.reprint:
+        first_id = input('Enter the ID number of the first label to print: ')
+        try:
+            first_id = int(first_id)
+        except ValueError:
+            print("Error: ID number must be an integer value\n", \
+                  file=sys.stderr)
+            leave = input('Press any key to exit')
+            sys.exit(1)
+    else:
+        first_id = get_new_id(args.master, args.code, sep=args.sep)
+
     last_id = first_id + nlabel
     sample_range = "{}-{}".format(first_id, last_id - 1)
 
     # Write or append to output files
-    output = "{}{}_{}_{}.csv".format(args.out_dir, assignee.replace(" ", "_").lower(), \
-             sample_range, current_date)
-
     zpl = "{}{}_{}_{}.zpl".format(args.zpl_dir, assignee.replace(" ", "_").lower(), \
           sample_range, current_date)
 
-    print("Outputting table of sample IDs in {}".format(output), \
-          file=sys.stdout)
-    nfields = len(args.fields)
-    nsep = sep * nfields
-    with open(output, 'w') as out_h, open(zpl, 'w') as zpl_h, \
-        open(args.master, 'a') as master_h:
-        out_h.write('SampleID{0}Owner{0}{1}\n'.format(sep, sep.join(args.fields)))
-        for sid in list(range(first_id, last_id)):
-            sid_full = str(sid).zfill(args.pad)
-            out_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, sid_full, assignee, nsep))
-            master_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, sid_full, assignee, nsep))
-            zpl_h.write(zpl_template.format(args.code, sid_full, name_field, description))
+    if not args.reprint:
+        output = "{}{}_{}_{}.csv".format(args.out_dir, \
+                 assignee.replace(" ", "_").lower(), sample_range, current_date)
+
+        print("\nOutputting table of sample IDs in {}".format(output), \
+              file=sys.stdout)
+
+        nfields = len(args.fields)
+        nsep = sep * nfields
+        with open(output, 'w') as out_h, open(zpl, 'w') as zpl_h, \
+            open(args.master, 'a') as master_h:
+            out_h.write('SampleID{0}Owner{0}{1}\n'.format(sep, \
+                        sep.join(args.fields)))
+
+            for sid in list(range(first_id, last_id)):
+                sid_full = str(sid).zfill(args.pad)
+
+                out_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, \
+                            sid_full, assignee, nsep))
+                master_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, \
+                               sid_full, assignee, nsep))
+                zpl_h.write(zpl_template.format(args.code, sid_full, \
+                            name_field, description))
+    else:
+        with open(zpl, 'w') as zpl_h:
+            for sid in list(range(first_id, last_id)):
+                sid_full = str(sid).zfill(args.pad)
+
+                zpl_h.write(zpl_template.format(args.code, sid_full, \
+                            name_field, description))
 
     # Print labels
-    print("Generating {} labels\n".format(str(nlabel)), file=sys.stdout)
+    plural = "s" if nlabel > 1 else ''
+    print("\nGenerating {0} label{1}\n".format(str(nlabel), plural), \
+          file=sys.stdout)
+
     p = subprocess.Popen([args.net, zpl])
     try:
         outs, errs = p.communicate(timeout=60)
@@ -275,10 +315,15 @@ def main():
         outs, errs = p.communicate()
 
     if errs:
-        print("{}".format(errs), file=sys.stderr)
+        print(errs, file=sys.stderr)
 
-    # Allow time to note ID number before exiting
+    # Allow time to read output before exiting
     sleep(2)
+
+    if args.reprint:
+        print("\nNew labels have been printed. Please edit the sample tables "
+              "manually if applicable")
+
     leave = input('Press any key to exit')
 
 if __name__ == "__main__":
