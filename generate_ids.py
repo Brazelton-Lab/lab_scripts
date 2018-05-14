@@ -5,7 +5,7 @@ and the last sample identifier used.
 
 Copyright:
 
-    sample_tables generates sample tables
+    generate_ids.py generates project IDs with accompanying labels and tables
     Copyright (C) 2018  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
@@ -52,7 +52,7 @@ def get_new_id(infile, prefix, sep=','):
         try:
             index = header.index('SampleID')
         except ValueError:
-            print("Error: no column named 'SampleID' found in {}"\
+            print("Error: no column named 'SampleID' found in {\n}"\
                   .format(infile), file=sys.stderr)
             leave = input('Press any key to exit')
             sys.exit(1)
@@ -66,7 +66,7 @@ def get_new_id(infile, prefix, sep=','):
             if not ID.match(sample):
                 print("Error: sample IDs must consist of one or more "
                       "alphabetical characters followed by one or more "
-                      "integers", file=sys.stderr)
+                      "integers\n", file=sys.stderr)
                 leave = input('Press any key to exit')
                 sys.exit(1)
 
@@ -76,7 +76,7 @@ def get_new_id(infile, prefix, sep=','):
             except ValueError:
                 print("Error: sample IDs must consist of one or more "
                       "alphabetical characters followed by one or more "
-                      "integers", file=sys.stderr)
+                      "integers\n", file=sys.stderr)
                 leave = input('Press any key to exit')
                 sys.exit(1)
             samples.append(sample_number)
@@ -86,6 +86,34 @@ def get_new_id(infile, prefix, sep=','):
     else:
         new = sorted(samples)[-1] + 1
     return(new)
+
+
+def split_lines(field):
+    max_char_per_line = 18
+    
+    desc = field.split(' ')
+    for position, word in enumerate(desc):
+        current_line = desc[0:position + 1]
+        nchar = len(' '.join(current_line))
+        if nchar >= max_char_per_line:
+            final_line = desc[position:]
+            final_line_len = len(' '.join(final_line))
+            if final_line_len > max_char_per_line:
+                # Final line too long, must split word between two lines
+                first_line = desc[0:position]
+                # Split word into two
+                word_subset = ''
+                for index, character in enumerate(word):
+                    word_subset += character
+                    if len(' '.join(first_line + [word_subset])) >= max_char_per_line - 1:
+                        break
+                if len(word_subset) < len(word):
+                    first_line.append(word_subset + '-')
+                    final_line = [word[index + 1:]] + desc[position + 1:]
+                desc = first_line + final_line
+            else:
+                break
+    return(' '.join(desc))
 
 
 def main():
@@ -138,21 +166,33 @@ def main():
 
     sep = args.sep
 
-    zpl_template = ("^XA\n^FO30,40^ATN^FDLost City 2018^FS\n^FO280,35^FDMM,A{0}{1}"
-                   "^BQN,2,6,H^FS\n^FO278,190^ATN^FD{0}{1}^FS\n^FO30,120^ARN^FD{2}"
-                   "^FS\n^FO30,172^ARN2^FB250,2,,L^FD{3}^FS\n^XZ\n")
+    max_char_per_line = 18
+
+    zpl_template = ("^XA\n^FO30,35^ATN^FDLost City 2018^FS\n"
+                    "^FO280,35^FDMM,A{0}{1}^BQN,2,6,H^FS\n"
+                    "^FO265,195^ATN^FB174,2,,C^FD{0}{1}^FS\n"
+                    "^FO30,95^ARN^FD{2}^FS\n"
+                    "^FO30,135^ARN^FD{0}{1}^FS\n"
+                    "^FO30,175^ARN^FB250,2,,L^FD{3}^FS\n^XZ\n")
 
     # Current date in ISO format
     current_date = date.today().isoformat().replace('-', '')
 
-    # verify that network printer batch file exists
+    # Verify that length of code plus padding is less than max sampleID length
+    if len(args.code) + args.pad > 8:
+        print("Error: the sample ID contains too many characters for this "
+              "label. Please contact an administrator for assistance.")
+        leave = input('Press any key to exit')
+        sys.exit(1)
+
+    # Verify that network printer batch file exists
     if not os.path.exists(args.net):
         print("Error: cannot find location of the network printer batch file. "
               "Please contact an administrator for assistance")
         leave = input('Press any key to exit')
         sys.exit(1)
 
-    # make output directories if they don't already exist
+    # Make output directories if they don't already exist
     for directory in [args.out_dir, args.zpl_dir]:
         if not os.path.exists(directory):
             os.mkdirs(directory)
@@ -168,7 +208,7 @@ def main():
     # Verify that input does not contain separator character
     if args.sep in assignee:
         print("Error: name '{}' cannot contain the same character '{}' that "
-              "is used as the field separator".format(assignee, sep))
+              "is used as the field separator\n".format(assignee, sep))
         leave = input('Press any key to exit')
         sys.exit(1)
 
@@ -182,19 +222,23 @@ def main():
     try:
         nlabel = int(nlabel)
     except ValueError:
-        print("Error: number of labels must be an integer value", \
+        print("Error: number of labels must be an integer value\n", \
               file=sys.stderr)
         leave = input('Press any key to exit')
         sys.exit(1)
 
     description = input("Optional description to be added to the label (enter "
                         "to skip):")
-    # Verify that input length is less than 36 characters
-    if len(description) > 36:
-        print("Error: optional description must be less than 36 characters "
-              "long", file=sys.stderr)
+
+    # Verify that input length is less than maximum total characters allowed
+    if len(description) >= max_char_per_line * 2:
+        print("Error: optional description must be less than {!s} characters "
+              "long\n".format(max_char_per_line * 2), file=sys.stderr)
         leave = input('Press any key to exit')
         sys.exit(1)
+
+    # Verify that each line is less than maximim characters allowed per line
+    description = split_lines(description)
 
     # Find the sample ID range
     first_id = get_new_id(args.master, args.code, sep=args.sep)
@@ -223,15 +267,15 @@ def main():
 
     # Print labels
     print("Generating {} labels\n".format(str(nlabel)), file=sys.stdout)
-#    p = subprocess.Popen([args.net, zpl])
-#    try:
-#        outs, errs = p.communicate(timeout=60)
-#    except TimeoutExpired:
-#        proc.kill()
-#        outs, errs = p.communicate()
+    p = subprocess.Popen([args.net, zpl])
+    try:
+        outs, errs = p.communicate(timeout=60)
+    except TimeoutExpired:
+        proc.kill()
+        outs, errs = p.communicate()
 
-#    if errs:
-#        print("{}".format(errs), file=sys.stderr)
+    if errs:
+        print("{}".format(errs), file=sys.stderr)
 
     # Allow time to note ID number before exiting
     sleep(2)
