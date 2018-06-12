@@ -1,7 +1,6 @@
 #! /usr/bin/env python
 """
-For internal preparation of reference databases. Output depends on the given
-reference source.
+Prepare reference databases for internal use.
 
 Copyright:
 
@@ -29,6 +28,7 @@ import argparse
 from bio_utils.iterators import fasta_iter
 from bz2 import BZ2File
 from gzip import GzipFile
+import hashlib
 from lzma import LZMAFile
 import json
 import io
@@ -347,6 +347,9 @@ def sub_card(args):
 
             if model_type in protein_models:
                 prot_seq = seqs[record]["protein_sequence"]["sequence"]
+                checksum = hashlib.md5(prot_seq.encode('utf-8'))
+            else:
+                checksum = hashlib.md5(nucl_seq.encode('utf-8'))
 
             if acc not in meta_data:
                 meta_data[acc] = {
@@ -359,10 +362,11 @@ def sub_card(args):
                                   'database': ref_db,
                                   'bitscore': scores,
                                   'snp': snps,
-                                  'resistance_mechanism': mechanisms,
+                                  'mechanism': mechanisms,
                                   'compound': drugs,
                                   'drug_class': drug_classes,
-                                  'model': model_type
+                                  'model': model_type,
+                                  'md5': checksum.hexdigest()
                                   }
             else:
                 print("error: redundant model {}".format(acc), file=sys.stderr)
@@ -416,7 +420,7 @@ def sub_kegg(args):
             line = line.decode('utf-8')
             split_line = line.split('\t')
             try:
-                acc, ko, aa_len, product = split_line
+                acc, ko, aa_len, gene = split_line
             except ValueError:
                 num_col = len(split_line)
                 print("error: unknown file format for {}. Expected "
@@ -440,9 +444,10 @@ def sub_kegg(args):
                              'organism': organism,
                              'product': '',
                              'gene_length': int(aa_len) * 3,
-                             'gene': '',
+                             'gene': gene,
                              'gene_family': ko,
                              'database': ref_db,
+                             'md5': ''
                              }
 
     # Parse FASTA files
@@ -461,6 +466,7 @@ def sub_kegg(args):
         product = product.lstrip()
 
         gene_len = len(record.sequence) * 3
+        checksum = hashlib.md5(record.sequence.encode('utf-8'))
 
         if acc in kegg_map:
             if kegg_map[acc]['gene_length'] != gene_len:
@@ -469,7 +475,9 @@ def sub_kegg(args):
                 sys.exit(1)
 
             kegg_map[acc]['product'] = product
-            kegg_map[acc]['gene'] = gene
+            if gene:
+                kegg_map[acc]['gene'] = gene
+            kegg_map[acc]['md5'] = checksum.hexdigest()
         else:
             if args.kegg_dat:
                 print("error: accession {} in FASTA file does not have a "
@@ -484,6 +492,7 @@ def sub_kegg(args):
                                  'gene': gene,
                                  'gene_family': '',
                                  'database': ref_db,
+                                 'md5': checksum.hexdigest()
                                  }
 
     if args.kegg_tax:
@@ -515,6 +524,7 @@ def sub_bacmet(args):
     """
     PRODUCT = re.compile('.+?(?=OS\=)')
     ORG = re.compile('(?<=OS\=).+?(?=[A-Z]{2}\=)')
+    DRUG = re.compile('(?P<drug>.+?)( \[class\: )(?P<class>.+?(?=\]))')
 
     in_h = args.bacmet_in
     in_m = args.bacmet_map
@@ -523,6 +533,8 @@ def sub_bacmet(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "BacMet{}".format(db_version)
+
+    header = in_m.readline()
 
     # Parse BacMet mapping info
     meta_data = {}
@@ -534,15 +546,27 @@ def sub_bacmet(args):
 
         split_line = line.strip().split('\t')
         try:
-            acc, ident, gene, location, organism, drugs, desc = split_line
+            ident, gene, acc, organism, location, compounds = split_line
         except ValueError:
             num_cols = len(split_line)
-            print("error: unknown mapping file format. Seven columns expected, "
+            print("error: unknown mapping file format. Six columns expected, "
                   "{!s} columns provided".format(num_cols), file=sys.stderr)
             sys.exit(1)
 
-        drugs = drugs.split(',')
-        drugs = [i.lstrip() for i in drugs]
+        compounds = compounds.split(', ')
+        drugs = []
+        classes = []
+        for compound in compounds:
+            matched = DRUG.search(compound)
+            if matched:
+                drug = matched.group('drug')
+                drug_class = matched.group('class')
+            else:
+                drug = compound
+                drug_class = 'Metal'
+
+            drugs.append(drug)
+            classes.append(drug_class)
 
         meta_data[ident] = {'accession': acc,
                            'gene': gene,
@@ -551,7 +575,9 @@ def sub_bacmet(args):
                            'database': ref_db,
                            'organism': organism,
                            'product': '',
-                           'compound': drugs
+                           'md5': '',
+                           'compound': drugs,
+                           'drug_class': list(dict.fromkeys(classes))
                           }
 
     # Parse BacMet FASTA file
@@ -559,6 +585,7 @@ def sub_bacmet(args):
         header = record.id.split('|')
         ident = header[0]
         seq_len = len(record.sequence)
+        checksum = hashlib.md5(record.sequence.encode('utf-8'))
 
         try:
             product = PRODUCT.search(record.description).group()
@@ -569,6 +596,7 @@ def sub_bacmet(args):
         if ident in meta_data:
             meta_data[ident]['gene_length'] = seq_len * 3
             meta_data[ident]['product'] = product
+            meta_data[ident]['md5'] = checksum.hexdigest()
         else:
             try:
                 organism = ORG.search(record.description).group()
@@ -585,7 +613,9 @@ def sub_bacmet(args):
                                 'database': ref_db,
                                 'organism': organism,
                                 'product': product,
-                                'compound': []
+                                'md5': checksum.hexdigest(),
+                                'compound': [],
+                                'drug_class': []
                                }
 
         # Output FASTA with simplified headers
