@@ -418,7 +418,7 @@ def sub_kegg(args):
         dat_totals = 0
         for line in args.kegg_dat:
             line = line.decode('utf-8')
-            split_line = line.split('\t')
+            split_line = line.strip().split('\t')
             try:
                 acc, ko, aa_len, gene = split_line
             except ValueError:
