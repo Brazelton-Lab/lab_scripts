@@ -518,6 +518,61 @@ def sub_uniprot(args):
     pass
 
 
+def sub_vfdb(args):
+    """
+    Subcommand for generating internal reference files for the virulence 
+    factor database
+    """
+    DESC = re.compile('((?<=\().+?)\) (.+?) \[(.+?)\] \[(.+?)\]')
+    IDENT = re.compile('(^VFG[0-9]+)\(gb\|(.+(?=\)))')
+
+    in_h = args.vfdb_in
+    out_h = args.out_map
+    out_f = args.vfdb_fa
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "VFDB{}".format(db_version)
+
+    meta_data = {}
+    # Parse VFDB FASTA file of protein sequences
+    for record in fasta_iter(in_h):
+        try:
+            ident, acc = IDENT.search(record.id).groups()
+        except ValueError:
+            print("error: identifier {} formatted incorrectly".format(record.id))
+            sys.exit(1)
+        except AttributeError:
+            ident = record.id
+            acc = ''
+
+        try:
+            gene, product, short, organism = DESC.search(record.description).groups()
+        except ValueError:
+            print("error: description {} formatted incorrectly".format(record.description))
+            sys.exit(1)
+        except AttributeError:
+            print("error: no match for {} to description regex".format(record.description))
+            sys.exit(1)
+
+        checksum = hashlib.md5(record.sequence.encode('utf-8'))
+
+        meta_data[ident] = {'accession': acc,
+                           'gene': gene,
+                           'gene_length': len(record.sequence) * 3,
+                           'gene_family': '',
+                           'database': ref_db,
+                           'organism': organism,
+                           'product': product,
+                           'md5': checksum.hexdigest(),
+                          }
+        
+        # Output FASTA with simplified headers
+        out_f.write(">{}\n{}\n".format(ident, record.sequence))
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+
+
 def sub_bacmet(args):
     """
     Subcommand for generating internal reference files for the BacMet database
@@ -780,10 +835,29 @@ def main():
         dest='bacmet_fa',
         action=Open,
         mode='wt',
-        default="BacMet.fa",
+        default="BacMet.faa",
         help="generate FASTA file with simplified headers [default: "
-             "./BacMet.fa]")
+             "BacMet.faa]")
     bacmet_parser.set_defaults(func=sub_bacmet)
+    # VFDB-specific arguments
+    vfdb_parser = subparsers.add_parser('vfdb',
+        parents=[parent_parser],
+        help="generate internal files for the Virulence Factor reference database")
+    vfdb_args = vfdb_parser.add_argument_group("VFDB-specific arguments")
+    vfdb_args.add_argument('-vf', '--vfdb',
+        metavar='INFILE',
+        dest='vfdb_in',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of VFDB protein sequences")
+    vfdb_args.add_argument('-vo', '--vfdb-fa',
+        dest='vfdb_fa',
+        action=Open,
+        mode='wt',
+        default="VFDB-setA.faa",
+        help="generate FASTA file with simplified headers [default: "
+             "VFDB-setA.faa]")
+    vfdb_parser.set_defaults(func=sub_vfdb)
     args = parser.parse_args()
 
     args.func(args)
