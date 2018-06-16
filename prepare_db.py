@@ -539,7 +539,8 @@ def sub_vfdb(args):
         try:
             ident, acc = IDENT.search(record.id).groups()
         except ValueError:
-            print("error: identifier {} formatted incorrectly".format(record.id))
+            print("error: identifier {} has unexpected format"\
+                  .format(record.id), file=sys.stderr)
             sys.exit(1)
         except AttributeError:
             ident = record.id
@@ -548,10 +549,12 @@ def sub_vfdb(args):
         try:
             gene, product, short, organism = DESC.search(record.description).groups()
         except ValueError:
-            print("error: description {} formatted incorrectly".format(record.description))
+            print("error: description {} has unexpected format"\
+                  .format(record.description), file=sys.stderr)
             sys.exit(1)
         except AttributeError:
-            print("error: no match for {} to description regex".format(record.description))
+            print("error: no match for {} to description regex"\
+                  .format(record.description), file=sys.stderr)
             sys.exit(1)
 
         checksum = hashlib.md5(record.sequence.encode('utf-8'))
@@ -571,6 +574,125 @@ def sub_vfdb(args):
 
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def sub_integrall(args):
+    """
+    Subcommand for generating internal reference files for INTEGRALL
+    """
+    HEADER = re.compile('(?<=\|).+?(?=\|)')
+
+    in_h = args.integrall_in
+    in_m = args.integrall_map
+    out_h = args.out_map
+    out_f = args.integrall_fa
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "INTEGRALL{}".format(db_version)
+
+    # Parse INTEGRALL glossary of terms file
+    terms = {}
+    if in_m:
+        for line in in_m:
+            line = line.decode('utf-8')
+
+            if line.startswith('#'):
+                continue
+
+            split_line = line.strip().split('\t')
+            try:
+                term, product, function = split_line
+            except ValueError:
+                try:
+                    term, product = split_line
+                except ValueError:
+                    num_cols = len(split_line)
+                    print("error: unknown mapping file format. Three columns expected, "
+                          "{!s} columns provided".format(num_cols), file=sys.stderr)
+                    sys.exit(1)
+
+            terms[term] = product
+
+    meta_data = {}
+    ids = []
+    # Parse INTEGRALL FASTA file of protein sequences
+    for record in fasta_iter(in_h):
+        header = "{} {}|".format(record.id, record.description)
+        matched = HEADER.findall(header)
+
+        try:
+            acc, idb, ident, organism, gene = matched
+        except ValueError:
+            print("error: header {} has unexpected format".format(header), \
+                  file=sys.stderr)
+            continue
+
+        if ident not in ids:
+            ids.append(ident)
+        else:
+            print("error: duplicate identifier {} found".format(ident), file=sys.stderr)
+            sys.exit(1)
+
+        checksum = hashlib.md5(record.sequence.encode('utf-8'))
+
+        product = ''
+        word = ''
+        for char in gene:
+            word += char
+            if word in terms:
+                product = terms[word]
+                break
+
+        meta_data[ident] = {'accession': acc,
+                           'gene': gene,
+                           'gene_length': len(record.sequence),
+                           'gene_family': '',
+                           'database': ref_db,
+                           'organism': organism,
+                           'product': product,
+                           'md5': checksum.hexdigest(),
+                          }
+        
+        # Output FASTA with simplified headers
+        out_f.write(">{}\n{}\n".format(ident, record.sequence))
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+
+
+def sub_ice(args):
+    """
+    Subcommand for generating internal reference files for ICEberg
+    """
+    HEADER = re.compile('(?<=\|).+?(?=\|)')
+
+    in_h = args.ice_in
+    out_h = args.out_map
+    out_f = args.ice_fa
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+
+    # Parse ICEberg FASTA file of protein sequences
+    for record in fasta_iter(in_h):
+        header = "{} {}|".format(record.id, record.description)
+        matched = HEADER.findall(header)
+
+        meta_data[ident] = {'accession': acc,
+                           'gene': gene,
+                           'gene_length': len(record.sequence),
+                           'gene_family': '',
+                           'database': ref_db,
+                           'organism': organism,
+                           'product': product,
+                           'md5': checksum.hexdigest(),
+                          }
+        
+        # Output FASTA with simplified headers
+        out_f.write(">{}\n{}\n".format(ident, record.sequence))
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+    ref_db = "ICEberg{}".format(db_version)
 
 
 def sub_bacmet(args):
@@ -593,47 +715,48 @@ def sub_bacmet(args):
 
     # Parse BacMet mapping info
     meta_data = {}
-    for line in in_m:
-        line = line.decode('utf-8')
+    if in_m:
+        for line in in_m:
+            line = line.decode('utf-8')
 
-        if line.startswith('#'):
-            continue
+            if line.startswith('#'):
+                continue
 
-        split_line = line.strip().split('\t')
-        try:
-            ident, gene, acc, organism, location, compounds = split_line
-        except ValueError:
-            num_cols = len(split_line)
-            print("error: unknown mapping file format. Six columns expected, "
-                  "{!s} columns provided".format(num_cols), file=sys.stderr)
-            sys.exit(1)
+            split_line = line.strip().split('\t')
+            try:
+                ident, gene, acc, organism, location, compounds = split_line
+            except ValueError:
+                num_cols = len(split_line)
+                print("error: unknown mapping file format. Six columns expected, "
+                      "{!s} columns provided".format(num_cols), file=sys.stderr)
+                sys.exit(1)
 
-        compounds = compounds.split(', ')
-        drugs = []
-        classes = []
-        for compound in compounds:
-            matched = DRUG.search(compound)
-            if matched:
-                drug = matched.group('drug')
-                drug_class = matched.group('class')
-            else:
-                drug = compound
-                drug_class = 'Metal'
+            compounds = compounds.split(', ')
+            drugs = []
+            classes = []
+            for compound in compounds:
+                matched = DRUG.search(compound)
+                if matched:
+                    drug = matched.group('drug')
+                    drug_class = matched.group('class')
+                else:
+                    drug = compound
+                    drug_class = 'Metal'
 
-            drugs.append(drug)
-            classes.append(drug_class)
+                drugs.append(drug)
+                classes.append(drug_class)
 
-        meta_data[ident] = {'accession': acc,
-                           'gene': gene,
-                           'gene_length': '',
-                           'gene_family': '',
-                           'database': ref_db,
-                           'organism': organism,
-                           'product': '',
-                           'md5': '',
-                           'compound': drugs,
-                           'drug_class': list(dict.fromkeys(classes))
-                          }
+            meta_data[ident] = {'accession': acc,
+                                'gene': gene,
+                                'gene_length': '',
+                                'gene_family': '',
+                                'database': ref_db,
+                                'organism': organism,
+                                'product': '',
+                                'md5': '',
+                                'compound': drugs,
+                                'drug_class': list(dict.fromkeys(classes))
+                               }
 
     # Parse BacMet FASTA file
     for record in fasta_iter(in_h):
@@ -858,6 +981,31 @@ def main():
         help="generate FASTA file with simplified headers [default: "
              "VFDB-setA.faa]")
     vfdb_parser.set_defaults(func=sub_vfdb)
+    # INTEGRALL-specific arguments
+    integrall_parser = subparsers.add_parser('integrall',
+        parents=[parent_parser],
+        help="generate internal files for the INTEGRALL reference database")
+    integrall_args = integrall_parser.add_argument_group("INTEGRALL-specific arguments")
+    integrall_args.add_argument('-if', '--integrall',
+        metavar='INFILE',
+        dest='integrall_in',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of INTEGRALL protein sequences")
+    integrall_args.add_argument('-im', '--integrall-map',
+        metavar='MAP',
+        dest='integrall_map',
+        action=Open,
+        mode='rb',
+        help="input INTEGRALL glossary file")
+    integrall_args.add_argument('-io', '--integrall-fa',
+        dest='integrall_fa',
+        action=Open,
+        mode='wt',
+        default="INTEGRALL.faa.gz",
+        help="generate FASTA file with simplified headers [default: "
+             "INTEGRALL.faa.gz]")
+    integrall_parser.set_defaults(func=sub_integrall)
     args = parser.parse_args()
 
     args.func(args)
