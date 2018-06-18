@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 """
 Prepare reference databases for internal use.
 
@@ -367,13 +367,13 @@ def sub_card(args):
                                   'drug_class': drug_classes,
                                   'model': model_type,
                                   'md5': checksum.hexdigest()
-                                  }
+                                 }
             else:
                 print("error: redundant model {}".format(acc), file=sys.stderr)
                 sys.exit(1)
 
             # Generate CARD fasta files by model type, if requested
-            if args.fasta:
+            if args.card_fa:
 
                 try:
                     model_map = out_map[model_type]
@@ -448,7 +448,7 @@ def sub_kegg(args):
                              'gene_family': ko,
                              'database': ref_db,
                              'md5': ''
-                             }
+                            }
 
     # Parse FASTA files
     fasta_totals = 0
@@ -493,7 +493,7 @@ def sub_kegg(args):
                                  'gene_family': '',
                                  'database': ref_db,
                                  'md5': checksum.hexdigest()
-                                 }
+                                }
 
     if args.kegg_tax:
         for tax_codes in no_tax:
@@ -560,14 +560,14 @@ def sub_vfdb(args):
         checksum = hashlib.md5(record.sequence.encode('utf-8'))
 
         meta_data[ident] = {'accession': acc,
-                           'gene': gene,
-                           'gene_length': len(record.sequence) * 3,
-                           'gene_family': '',
-                           'database': ref_db,
-                           'organism': organism,
-                           'product': product,
-                           'md5': checksum.hexdigest(),
-                          }
+                            'gene': gene,
+                            'gene_length': len(record.sequence) * 3,
+                            'gene_family': '',
+                            'database': ref_db,
+                            'organism': organism,
+                            'product': product,
+                            'md5': checksum.hexdigest(),
+                           }
         
         # Output FASTA with simplified headers
         out_f.write(">{}\n{}\n".format(ident, record.sequence))
@@ -644,14 +644,16 @@ def sub_integrall(args):
                 break
 
         meta_data[ident] = {'accession': acc,
-                           'gene': gene,
-                           'gene_length': len(record.sequence),
-                           'gene_family': '',
-                           'database': ref_db,
-                           'organism': organism,
-                           'product': product,
-                           'md5': checksum.hexdigest(),
-                          }
+                            'gene': gene,
+                            'gene_length': len(record.sequence),
+                            'gene_family': '',
+                            'database': ref_db,
+                            'mge': acc,
+                            'mge_type': "integron",
+                            'organism': organism,
+                            'product': product,
+                            'md5': checksum.hexdigest(),
+                           }
         
         # Output FASTA with simplified headers
         out_f.write(">{}\n{}\n".format(ident, record.sequence))
@@ -671,21 +673,25 @@ def sub_ice(args):
     out_f = args.ice_fa
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "ICEberg{}".format(db_version)
 
+    meta_data = {}
     # Parse ICEberg FASTA file of protein sequences
     for record in fasta_iter(in_h):
         header = "{} {}|".format(record.id, record.description)
         matched = HEADER.findall(header)
 
         meta_data[ident] = {'accession': acc,
-                           'gene': gene,
-                           'gene_length': len(record.sequence),
-                           'gene_family': '',
-                           'database': ref_db,
-                           'organism': organism,
-                           'product': product,
-                           'md5': checksum.hexdigest(),
-                          }
+                            'gene': gene,
+                            'gene_length': len(record.sequence),
+                            'gene_family': '',
+                            'database': ref_db,
+                            'mge': '',
+                            'mge_type': "ICE",
+                            'organism': organism,
+                            'product': product,
+                            'md5': checksum.hexdigest(),
+                           }
         
         # Output FASTA with simplified headers
         out_f.write(">{}\n{}\n".format(ident, record.sequence))
@@ -693,6 +699,118 @@ def sub_ice(args):
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
     ref_db = "ICEberg{}".format(db_version)
+
+
+def sub_aclame(args):
+    """
+    Subcommand for generating internal reference files for ACLAME
+    """
+    DESC = re.compile('((?<=NCBI annotation\: ).+?) \# Family\: (.+?) \# MgeID\: (.+?) \# MgeName\: (.+)')
+
+    in_h = args.aclame_in1
+    in_h2 = args.aclame_in2
+    in_m = args.aclame_map
+    out_h = args.out_map
+    out_f = args.aclame_fa.write if args.aclame_fa else do_nothing
+
+    db_version = ' v{}'.format(args.db_version) if args.db_version else ''
+    ref_db = "ACLAME{}".format(db_version)
+
+    # Parse ACLAME mapping file
+    mges = {}
+    if in_m:
+        ACC = re.compile('(?<=genbank\:acc\:).+?(?=;)')
+        for line in in_m:
+            line = line.decode('utf-8')
+
+            if line.startswith('#'):
+                continue
+
+            split_line = line.strip().split('\t')
+            ncol = len(split_line)
+            if ncol != 15:
+                print("error: unknown mapping file format. Fifteen columns expected, "
+                      "{!s} columns provided".format(num_cols), file=sys.stderr)
+                sys.exit(1)
+
+            # Store MGE type, host, and NCBI accession
+            cross_ref = "{};".format(split_line[-1])
+            try:
+                acc = ACC.search(cross_ref).group(0)
+            except AttributeError:
+                print("error: unable to determine accession from {}"\
+                      .format(split_line[-1]), file=sys.stderr)
+                sys.exit(1)
+
+            # Need to verfiy that columns are the same across DB versions
+            mges[split_line[1]] = (split_line[7], split_line[12], acc)
+
+    meta_data = {}
+    # Parse ACLAME FASTA file of protein sequences
+    for record in fasta_iter(in_h):
+        ident = ''.join(record.id.strip().split(':')[1:])
+        matched = DESC.search(record.description)
+
+        try:
+            product, fam, mge_id, mge_name = matched.groups()
+        except ValueError:
+            print("error: unable to parse sequence header '{}'"\
+                  .format(record.description), file=sys.stderr)
+            sys.exit(1)
+        except AttributeError:
+            print("error: unable to parse sequence header '{}'"\
+                  .format(record.description), file=sys.stderr)
+            sys.exit(1)
+
+        checksum = hashlib.md5(record.sequence.encode('utf-8'))
+
+        try:
+            mge_type, host, acc = mges[mge_name]
+        except KeyError:
+            print("warning: no match to '{}' found in mapping file"\
+                  .format(mge_name), file=sys.stderr)
+            acc, host, mge_type = ''
+
+        meta_data[ident] = {'accession': acc,
+                            'gene': '',
+                            'gene_length': len(record.sequence) * 3,
+                            'gene_family': '',
+                            'database': ref_db,
+                            'mge': mge_name,
+                            'mge_type': mge_type,
+                            'organism': host,
+                            'product': product,
+                            'md5': checksum.hexdigest(),
+                           }
+        
+        # Output FASTA with simplified headers
+        out_f(">{}\n{}\n".format(ident, record.sequence))
+
+    # Parse ACLAME FASTA file of nucleotide sequences, if provided
+    if in_h2:
+        nomatch = 0
+        GENE = re.compile('(?<=\# GeneName\: ).+?(?= \#)')
+        for record in fasta_iter(in_h2):
+            ident = ''.join(record.id.strip().split(':')[1:])
+
+            try:
+                gene = GENE.search(record.description).group(0)
+            except AttributeError:
+                gene = ''
+            except ValueError:
+                gene = ''
+
+            try:
+                meta_data[ident]['gene'] = gene
+            except KeyError:
+                nomatch += 1
+
+        if nomatch:
+            print("warning: found {!s} sequences in the nucleotides FASTA that were "
+                  "not found in the proteins FASTA".format(nomatch), file=sys.stderr)
+
+    # Output internal relational database
+    json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
 
 def sub_bacmet(args):
@@ -862,7 +980,7 @@ def main():
         parents=[parent_parser],
         help="generate internal files for the FOAM ontology")
     foam_args = foam_parser.add_argument_group("FOAM-specific arguments")
-    foam_args.add_argument('-f', '--foam',
+    foam_args.add_argument('-fi', '--foam-in',
         metavar='INFILE',
         dest='foam_in',
         action=Open,
@@ -879,7 +997,8 @@ def main():
              "updates may break compatibility, requiring modifications to the "
              "program")
     card_args = card_parser.add_argument_group("CARD-specific arguments")
-    card_args.add_argument('-c', '--card',
+    card_args.add_argument('-ci', '--card-in',
+        required=True,
         metavar='card.json',
         dest='card_in',
         action=Open,
@@ -895,17 +1014,18 @@ def main():
               "'protein homolog model', 'protein variant model', 'rRNA gene "
               "variant model', 'protein overexpression model', 'protein "
               "knockout model']")
-    card_args.add_argument('--card-fasta',
-        dest='fasta',
+    card_args.add_argument('--card-fas',
+        dest='card_fa',
         action='store_true',
         help="generate FASTA files of reference sequences by model type")
     card_parser.set_defaults(func=sub_card)
     # KEGG-specific arguments
     kegg_parser = subparsers.add_parser('kegg',
         parents=[parent_parser],
-        help="generate internal files for KEGG")
+        help="generate internal files for the KEGG protein database")
     kegg_args = kegg_parser.add_argument_group("KEGG-specific arguments")
-    kegg_args.add_argument('-k', '--kegg',
+    kegg_args.add_argument('-ki', '--kegg-in',
+        required=True,
         metavar='INFILE',
         dest='kegg_fa',
         action=Open,
@@ -940,9 +1060,11 @@ def main():
     # BacMet-specific arguments
     bacmet_parser = subparsers.add_parser('bacmet',
         parents=[parent_parser],
-        help="generate internal files for the BacMet reference databases")
+        help="generate internal files for the BacMet reference databases of "
+             "resistance genes")
     bacmet_args = bacmet_parser.add_argument_group("BacMet-specific arguments")
-    bacmet_args.add_argument('-b', '--bacmet',
+    bacmet_args.add_argument('-bi', '--bacmet-in',
+        required=True,
         metavar='INFILE',
         dest='bacmet_in',
         action=Open,
@@ -954,7 +1076,7 @@ def main():
         action=Open,
         mode='rb',
         help="input BacMet mapping file")
-    bacmet_args.add_argument('-bf', '--bacmet-fasta',
+    bacmet_args.add_argument('-bf', '--bacmet-fa',
         dest='bacmet_fa',
         action=Open,
         mode='wt',
@@ -967,13 +1089,14 @@ def main():
         parents=[parent_parser],
         help="generate internal files for the Virulence Factor reference database")
     vfdb_args = vfdb_parser.add_argument_group("VFDB-specific arguments")
-    vfdb_args.add_argument('-vf', '--vfdb',
+    vfdb_args.add_argument('-vi', '--vfdb-in',
+        required=True,
         metavar='INFILE',
         dest='vfdb_in',
         action=Open,
         mode='rb',
         help="input FASTA file of VFDB protein sequences")
-    vfdb_args.add_argument('-vo', '--vfdb-fa',
+    vfdb_args.add_argument('-vf', '--vfdb-fa',
         dest='vfdb_fa',
         action=Open,
         mode='wt',
@@ -984,9 +1107,10 @@ def main():
     # INTEGRALL-specific arguments
     integrall_parser = subparsers.add_parser('integrall',
         parents=[parent_parser],
-        help="generate internal files for the INTEGRALL reference database")
+        help="generate internal files for the INTEGRALL integron database")
     integrall_args = integrall_parser.add_argument_group("INTEGRALL-specific arguments")
-    integrall_args.add_argument('-if', '--integrall',
+    integrall_args.add_argument('-ii', '--integral-in',
+        required=True,
         metavar='INFILE',
         dest='integrall_in',
         action=Open,
@@ -998,7 +1122,7 @@ def main():
         action=Open,
         mode='rb',
         help="input INTEGRALL glossary file")
-    integrall_args.add_argument('-io', '--integrall-fa',
+    integrall_args.add_argument('-if', '--integrall-fa',
         dest='integrall_fa',
         action=Open,
         mode='wt',
@@ -1006,9 +1130,48 @@ def main():
         help="generate FASTA file with simplified headers [default: "
              "INTEGRALL.faa.gz]")
     integrall_parser.set_defaults(func=sub_integrall)
+    # ACLAME-specific arguments
+    aclame_parser = subparsers.add_parser('aclame',
+        parents=[parent_parser],
+        help="generate internal files for the ACLAME reference database of MGEs")
+    aclame_args = aclame_parser.add_argument_group("ACLAME-specific arguments")
+    aclame_args.add_argument('-a1', '--aclame-in1',
+        required=True,
+        metavar='INFILE',
+        dest='aclame_in1',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of ACLAME protein sequences")
+    aclame_args.add_argument('-a2', '--aclame-in2',
+        metavar='INFILE',
+        dest='aclame_in2',
+        action=Open,
+        mode='rb',
+        help="input FASTA file of ACLAME nucleotide sequences")
+    aclame_args.add_argument('-am', '--aclame-map',
+        metavar='MAP',
+        dest='aclame_map',
+        action=Open,
+        mode='rb',
+        help="input ACLAME MGE mapping file")
+    aclame_args.add_argument('-af', '--aclame-fa',
+        dest='aclame_fa',
+        action=Open,
+        mode='wt',
+        default="ACLAME.faa.gz",
+        help="generate FASTA file with simplified headers [default: "
+             "ACLAME.faa.gz]")
+    aclame_parser.set_defaults(func=sub_aclame)
     args = parser.parse_args()
 
+    # Run info
+
     args.func(args)
+
+    # Print database statistics
+    #print("Total database size: {}".format(db_totals), file=sys.stderr)
+    #for model_type in out_map:
+    #    print("  - models in '{}':\t{!s}".format(model_type, out_map[model_type]["counts"]), file=sys.stderr)
 
 
 if __name__ == "__main__":
