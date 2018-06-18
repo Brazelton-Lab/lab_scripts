@@ -35,12 +35,13 @@ import io
 import os
 import re
 import sys
+import textwrap
 
 __author__ = "Christopher Thornton"
 __license__ = 'GPLv2'
 __maintainer__ = 'Christopher Thornton'
 __status__ = "Beta"
-__version__ = "0.1.2"
+__version__ = "0.4.1"
 
 
 class Open(argparse.Action):
@@ -254,6 +255,8 @@ def sub_card(args):
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "CARD{}".format(db_version)
 
+    print("Generating internal files for {}".format(ref_db))
+
     protein_models = ["protein homolog model", "protein variant model", \
                       "protein overexpression model", "protein knockout model"]
     meta_data = {}
@@ -393,9 +396,11 @@ def sub_card(args):
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
     # Database statistics:
-    print("Total database size: {}".format(db_totals), file=sys.stderr)
     for model_type in out_map:
-        print("  - models in '{}':\t{!s}".format(model_type, out_map[model_type]["counts"]), file=sys.stderr)
+        print("Found {!s} models in {}".format(out_map[model_type]["counts"], \
+              model_type), file=sys.stderr)
+
+    return(len(meta_data.keys()))
 
 
 def sub_kegg(args):
@@ -408,6 +413,8 @@ def sub_kegg(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "KEGG{}".format(db_version)
+
+    print("Generating internal files for {}".format(ref_db))
 
     kegg_map = {}  # store KEGG entries
 
@@ -510,6 +517,8 @@ def sub_kegg(args):
     # Output internal relational database
     json.dump(kegg_map, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
+    return(len(meta_data.keys()))
+
 
 def sub_uniprot(args):
     """
@@ -532,6 +541,8 @@ def sub_vfdb(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "VFDB{}".format(db_version)
+
+    print("Generating internal files for {}".format(ref_db))
 
     meta_data = {}
     # Parse VFDB FASTA file of protein sequences
@@ -575,6 +586,8 @@ def sub_vfdb(args):
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
+    return(len(meta_data.keys()))
+
 
 def sub_integrall(args):
     """
@@ -589,6 +602,8 @@ def sub_integrall(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "INTEGRALL{}".format(db_version)
+
+    print("Generating internal files for {}".format(ref_db))
 
     # Parse INTEGRALL glossary of terms file
     terms = {}
@@ -661,6 +676,8 @@ def sub_integrall(args):
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
+    return(len(meta_data.keys()))
+
 
 def sub_ice(args):
     """
@@ -674,6 +691,8 @@ def sub_ice(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "ICEberg{}".format(db_version)
+
+    print("Generating internal files for {}".format(ref_db))
 
     meta_data = {}
     # Parse ICEberg FASTA file of protein sequences
@@ -700,6 +719,8 @@ def sub_ice(args):
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
     ref_db = "ICEberg{}".format(db_version)
 
+    return(len(meta_data.keys()))
+
 
 def sub_aclame(args):
     """
@@ -715,6 +736,8 @@ def sub_aclame(args):
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "ACLAME{}".format(db_version)
+
+    print("Generating internal files for {}".format(ref_db))
 
     # Parse ACLAME mapping file
     mges = {}
@@ -811,6 +834,8 @@ def sub_aclame(args):
 
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+
+    return(len(meta_data.keys()))
 
 
 def sub_bacmet(args):
@@ -919,6 +944,8 @@ def sub_bacmet(args):
 
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
+
+    return(len(meta_data.keys()))
 
 
 def reaction_alts(acc_list):
@@ -1164,15 +1191,17 @@ def main():
     aclame_parser.set_defaults(func=sub_aclame)
     args = parser.parse_args()
 
-    # Run info
+    # Print run info
+    all_args = sys.argv[1:]
+    print("{} {!s}".format('prepare_db.py', __version__), file=sys.stderr)
+    print(textwrap.fill("Command line parameters: {}"\
+          .format(' '.join(all_args)), 79), file=sys.stderr)
+    print("", file=sys.stderr)
 
-    args.func(args)
+    db_totals = args.func(args)
 
     # Print database statistics
-    #print("Total database size: {}".format(db_totals), file=sys.stderr)
-    #for model_type in out_map:
-    #    print("  - models in '{}':\t{!s}".format(model_type, out_map[model_type]["counts"]), file=sys.stderr)
-
+    print("\nTotal database size: {}\n".format(db_totals), file=sys.stderr)
 
 if __name__ == "__main__":
     main()
