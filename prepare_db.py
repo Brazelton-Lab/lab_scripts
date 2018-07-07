@@ -360,8 +360,8 @@ def sub_card(args):
                                   'product': product,
                                   'gene_length': seqlen,
                                   'gene': model_name,
-                                  'accession': seq_acc_nucl,
-                                  'gene_family': aro,
+                                  'Dbxref': 'GB:{}'.format(seq_acc_nucl),
+                                  'Ontology_term': 'CARD_ARO:{}'.format(aro),
                                   'database': ref_db,
                                   'bitscore': scores,
                                   'snp': snps,
@@ -427,7 +427,7 @@ def sub_kegg(args):
             line = line.decode('utf-8')
             split_line = line.strip().split('\t')
             try:
-                acc, ko, aa_len, gene = split_line
+                acc, ko, aa_len, domains = split_line
             except ValueError:
                 num_col = len(split_line)
                 print("error: unknown file format for {}. Expected "
@@ -451,9 +451,11 @@ def sub_kegg(args):
                              'organism': organism,
                              'product': '',
                              'gene_length': int(aa_len) * 3,
-                             'gene': gene,
-                             'gene_family': ko,
+                             'gene': '',
+                             'Ontology_term': ['KEGG_KO:{}'.format(i) for i in \
+                                               ko.split(',')],
                              'database': ref_db,
+                             'domains': domains.split(' '),
                              'md5': ''
                             }
 
@@ -464,13 +466,12 @@ def sub_kegg(args):
 
         acc = record.id
 
-        split_desc = record.description.split(';')
+        split_desc = record.description.split(';', 1)
         try:
             gene, product = split_desc
         except ValueError:
             gene = ''
             product = record.description
-        product = product.lstrip()
 
         gene_len = len(record.sequence) * 3
         checksum = hashlib.md5(record.sequence.encode('utf-8'))
@@ -481,9 +482,9 @@ def sub_kegg(args):
                       "FASTA and DAT files".format(acc), file=sys.stderr)
                 sys.exit(1)
 
-            kegg_map[acc]['product'] = product
+            kegg_map[acc]['product'] = product.lstrip()
             if gene:
-                kegg_map[acc]['gene'] = gene
+                kegg_map[acc]['gene'] = gene.lstrip()
             kegg_map[acc]['md5'] = checksum.hexdigest()
         else:
             if args.kegg_dat:
@@ -492,12 +493,23 @@ def sub_kegg(args):
                       file=sys.stderr)
                 sys.exit(1)
             else:
+                tax_code = acc.split(':')[0]
+                try:
+                    organism = taxonomy[tax_code]
+                except TypeError:  #no taxonomy file provided
+                    organism = ''
+                except KeyError:  #no entry in taxonomy file for tax_code
+                    if tax_code not in no_tax:
+                        no_tax.append(tax_code)
+                    organism = ''
+
                 kegg_map[acc] = {
                                  'organism': taxonomy[acc],
-                                 'product': product,
+                                 'product': product.lstrip(),
                                  'gene_length': gene_len,
-                                 'gene': gene,
-                                 'gene_family': '',
+                                 'gene': gene.lstrip(),
+                                 'Ontology_term': '',
+                                 'domains': [],
                                  'database': ref_db,
                                  'md5': checksum.hexdigest()
                                 }
@@ -570,10 +582,9 @@ def sub_vfdb(args):
 
         checksum = hashlib.md5(record.sequence.encode('utf-8'))
 
-        meta_data[ident] = {'accession': acc,
+        meta_data[ident] = {'Dbxref': 'RefSeq:{}'.format(acc),
                             'gene': gene,
                             'gene_length': len(record.sequence) * 3,
-                            'gene_family': '',
                             'database': ref_db,
                             'organism': organism,
                             'product': product,
@@ -658,17 +669,18 @@ def sub_integrall(args):
                 product = terms[word]
                 break
 
-        meta_data[ident] = {'accession': acc,
+        meta_data[ident] = {'Dbxref': 'GB:{}'.format(acc),
                             'gene': gene,
                             'gene_length': len(record.sequence),
-                            'gene_family': '',
                             'database': ref_db,
-                            'mge': acc,
-                            'mge_type': "integron",
                             'organism': organism,
                             'product': product,
                             'md5': checksum.hexdigest(),
                            }
+
+        if ident.startswith('i'):
+            meta_data['mobile_element'] = 'true',
+            meta_data['mobile_element_type'] = "integron:{}".format(gene),
         
         # Output FASTA with simplified headers
         out_f.write(">{}\n{}\n".format(ident, record.sequence))
@@ -700,13 +712,12 @@ def sub_ice(args):
         header = "{} {}|".format(record.id, record.description)
         matched = HEADER.findall(header)
 
-        meta_data[ident] = {'accession': acc,
+        meta_data[ident] = {'Dbxref': 'GB:{}'.format(acc),
                             'gene': gene,
                             'gene_length': len(record.sequence),
-                            'gene_family': '',
                             'database': ref_db,
-                            'mge': '',
-                            'mge_type': "ICE",
+                            'mobile_element': 'true',
+                            'mobile_element_type': "transposon:integrating conjugative element {}".format(mge),
                             'organism': organism,
                             'product': product,
                             'md5': checksum.hexdigest(),
@@ -794,14 +805,13 @@ def sub_aclame(args):
                   .format(mge_name), file=sys.stderr)
             acc, host, mge_type = ''
 
-        meta_data[ident] = {'accession': acc,
+        meta_data[ident] = {'Dbxref': 'RefSeq:{}'.format(acc),
                             'gene': '',
                             'gene_length': len(record.sequence) * 3,
-                            'gene_family': '',
                             'database': ref_db,
-                            'mge': mge_name,
-                            'mge_type': mge_type,
-                            'organism': host,
+                            'mobile_element': 'true',
+                            'mobile_element_type': '{}:{}'.format(mge_type, gene)
+                            'host': host,
                             'product': product,
                             'md5': checksum.hexdigest(),
                            }
@@ -889,10 +899,9 @@ def sub_bacmet(args):
                 drugs.append(drug)
                 classes.append(drug_class)
 
-            meta_data[ident] = {'accession': acc,
+            meta_data[ident] = {'Dbxref': 'UniProtKB:{}'.format(acc),
                                 'gene': gene,
                                 'gene_length': '',
-                                'gene_family': '',
                                 'database': ref_db,
                                 'organism': organism,
                                 'product': '',
@@ -927,10 +936,9 @@ def sub_bacmet(args):
 
             gene = header[1]
             acc = header[3]
-            meta_data[ident] = {'accession': acc,
+            meta_data[ident] = {'Dbxref': 'UniProtKB:{}'.format(acc),
                                 'gene': gene,
                                 'gene_length': seq_len * 3,
-                                'gene_family': '',
                                 'database': ref_db,
                                 'organism': organism,
                                 'product': product,
