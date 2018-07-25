@@ -505,7 +505,7 @@ def sub_kegg(args):
                              'gene_length': int(aa_len) * 3,
                              'gene': '',
                              'Ontology_term': ['KEGG_KO:{}'.format(i) for i in \
-                                               ko.split(',')],
+                                               ko.split(',') if ko],
                              'database': ref_db,
                              'domains': domains.split(' '),
                              'md5': ''
