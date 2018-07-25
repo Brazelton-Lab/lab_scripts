@@ -476,11 +476,16 @@ def sub_kegg(args):
             try:
                 acc, ko, aa_len, domains = split_line
             except ValueError:
-                num_col = len(split_line)
-                print("error: unknown file format for {}. Expected "
-                      "4 columns, but only {} were provided"
-                      .format(args.kegg_dat, num_col), file=sys.stderr)
-                sys.exit(1)
+                try:
+                    acc, ko, aa_len = split_line
+                except ValueError:
+                    num_col = len(split_line)
+                    print("error: unknown format for DAT file. Expected "
+                          "3-4 columns, but only {} were provided"
+                          .format(args.kegg_dat, num_col), file=sys.stderr)
+                    sys.exit(1)
+                else:
+                    domains = ''
 
             dat_totals += 1
 
