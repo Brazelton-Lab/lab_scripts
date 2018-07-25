@@ -906,7 +906,7 @@ def sub_bacmet(args):
     in_h = args.bacmet_in
     in_m = args.bacmet_map
     out_h = args.out_map
-    out_f = args.bacmet_fa
+    out_f = args.bacmet_fa.write if args.bacmet_fa else do_nothing
 
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "BacMet{}".format(db_version)
@@ -995,7 +995,7 @@ def sub_bacmet(args):
                                }
 
         # Output FASTA with simplified headers
-        out_f.write(">{}\n{}\n".format(ident, record.sequence))
+        out_f(">{}\n{}\n".format(ident, record.sequence))
 
     # Output internal relational database
     json.dump(meta_data, out_h, sort_keys=True, indent=4, separators=(',', ': '))
@@ -1014,7 +1014,7 @@ def reaction_alts(acc_list):
         return(acc_list[0])
 
 
-def do_nothing(*args):
+def do_nothing(*args, **kwargs):
     pass
 
 
@@ -1162,9 +1162,7 @@ def main():
         dest='bacmet_fa',
         action=Open,
         mode='wt',
-        default="BacMet.faa",
-        help="generate FASTA file with simplified headers [default: "
-             "BacMet.faa]")
+        help="generate FASTA file with simplified headers")
     bacmet_parser.set_defaults(func=sub_bacmet)
     # VFDB-specific arguments
     vfdb_parser = subparsers.add_parser('vfdb',
