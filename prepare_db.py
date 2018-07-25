@@ -405,7 +405,7 @@ def sub_card(args):
                                   'organism': organism,
                                   'product': product,
                                   'gene_length': seqlen,
-                                  'gene': model_name,
+                                  'gene': gene,
                                   'Dbxref': 'GB:{}'.format(seq_acc_nucl),
                                   'Ontology_term': 'CARD_ARO:{}'.format(aro),
                                   'database': ref_db,
