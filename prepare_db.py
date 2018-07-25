@@ -581,7 +581,7 @@ def sub_kegg(args):
     # Output internal relational database
     json.dump(kegg_map, out_h, sort_keys=True, indent=4, separators=(',', ': '))
 
-    return(len(meta_data.keys()))
+    return(len(kegg_map.keys()))
 
 
 def sub_uniprot(args):
