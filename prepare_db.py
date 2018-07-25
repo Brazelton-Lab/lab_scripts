@@ -247,6 +247,11 @@ def sub_card(args):
     Subcommand for generating internal reference files for the CARD database
     """
 
+    GENE1 = re.compile("(?<=\()[A-Za-z1-9\-]+(?=\))")
+    GENE2 = re.compile("(^[A-Z]{1}[a-z]+\s[a-z]+\s+(?:mutant\s|intrinsic\s)?(?:porin\s)?)([A-Za-z1-9\-]+)(\s.*?)?")
+    beta_lactams = ["penem", "penam", "cephamycin", "cephalosporin", \
+                    "carbapenem", "monobactam"]
+
     in_h = args.card_in
     out_h = args.out_map
 
@@ -255,7 +260,7 @@ def sub_card(args):
     db_version = ' v{}'.format(args.db_version) if args.db_version else ''
     ref_db = "CARD{}".format(db_version)
 
-    print("Generating internal files for {}".format(ref_db))
+    print("Generating internal files for {}".format(ref_db), file=sys.stderr)
 
     protein_models = ["protein homolog model", "protein variant model", \
                       "protein overexpression model", "protein knockout model"]
@@ -264,9 +269,9 @@ def sub_card(args):
     out_map = {}
     for mtype in supported_models:
         out_fna = open("CARD-{}.fna".format(mtype.replace(' ', '_')), 'wt') \
-                  if args.fasta else ""
+                  if args.card_fa else ""
         out_faa = open("CARD-{}.faa".format(mtype.replace(' ', '_')), 'wt') \
-                  if args.fasta and mtype in protein_models else ""
+                  if args.card_fa and mtype in protein_models else ""
         out_map[mtype] = {"fna": out_fna, "faa": out_faa, "counts": 0}
 
     # Speed tricks
@@ -295,12 +300,42 @@ def sub_card(args):
         drugs = []
         drug_classes = []
         snps = []
-
+        
         model_type = json_db[model]["model_type"]
         if model_type not in supported_models:
             continue
         else:
             out_map[model_type]["counts"] += 1
+
+        if model_type in protein_models:
+            split_name = model_name.split()
+            if len(split_name) > 1:
+                try:
+                    gene = GENE1.search(model_name).group()
+                except AttributeError:
+                    try:
+                        gene = GENE2.search(model_name).group(2)
+                    except AttributeError:
+                        gene = model_name
+
+                if 'antibiotic resistant' in gene:
+                    gene = gene.split()[-1]
+                elif 'conferring' in gene:
+                    gene = gene.split()
+                    index = gene.index('conferring')
+                    gene = gene[index - 1]
+                elif 'beta-lactamase' in gene:
+                    gene = gene.split()
+                    index = gene.index('beta-lactamase')
+                    gene = gene[index - 1]
+                elif 'intrinsic' in gene:
+                    gene = gene.split()[-1]
+            else:
+                gene = model_name
+        elif model_type == "rRNA gene variant model":
+            gene = "16S rRNA"
+        else:
+            gene = model_name
 
         # Parameter values
         try:
@@ -354,6 +389,17 @@ def sub_card(args):
             else:
                 checksum = hashlib.md5(nucl_seq.encode('utf-8'))
 
+            drug_family = []
+            for p, d in enumerate(drug_classes):
+                if d in beta_lactams:
+                    drug_family.append(d)
+                    drug_classes[p] = 'Beta-lactam'
+                    continue
+
+                d_split = d.split()
+                if d_split[-1] == 'antibiotic':
+                    drug_classes[p] = ' '.join(d_split[:-1])
+
             if acc not in meta_data:
                 meta_data[acc] = {
                                   'organism': organism,
@@ -366,8 +412,9 @@ def sub_card(args):
                                   'bitscore': scores,
                                   'snp': snps,
                                   'mechanism': mechanisms,
-                                  'compound': drugs,
-                                  'drug_class': drug_classes,
+                                  'compound': [i.capitalize() for i in drugs],
+                                  'drug_class': list(set([i.capitalize() for i in drug_classes])),
+                                  'drug_family': drug_family,
                                   'model': model_type,
                                   'md5': checksum.hexdigest()
                                  }
@@ -810,7 +857,7 @@ def sub_aclame(args):
                             'gene_length': len(record.sequence) * 3,
                             'database': ref_db,
                             'mobile_element': 'true',
-                            'mobile_element_type': '{}:{}'.format(mge_type, gene)
+                            'mobile_element_type': '{}:{}'.format(mge_type, gene),
                             'host': host,
                             'product': product,
                             'md5': checksum.hexdigest(),
@@ -900,7 +947,7 @@ def sub_bacmet(args):
                 classes.append(drug_class)
 
             meta_data[ident] = {'Dbxref': 'UniProtKB:{}'.format(acc),
-                                'gene': gene,
+                                'gene': gene.split('/')[0],
                                 'gene_length': '',
                                 'database': ref_db,
                                 'organism': organism,
