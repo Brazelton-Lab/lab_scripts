@@ -479,7 +479,7 @@ def sub_kegg(args):
                 num_col = len(split_line)
                 print("error: unknown file format for {}. Expected "
                       "4 columns, but only {} were provided"
-                      .format(dat_file, num_col), file=sys.stderr)
+                      .format(args.kegg_dat, num_col), file=sys.stderr)
                 sys.exit(1)
 
             dat_totals += 1
