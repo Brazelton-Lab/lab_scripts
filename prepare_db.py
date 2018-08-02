@@ -412,9 +412,9 @@ def sub_card(args):
                                   'bitscore': scores,
                                   'snp': snps,
                                   'mechanism': mechanisms,
-                                  'compound': [i.capitalize() for i in drugs],
+                                  'compound': list(set([i.capitalize() for i in drugs])),
                                   'drug_class': list(set([i.capitalize() for i in drug_classes])),
-                                  'drug_family': drug_family,
+                                  'drug_family': list(set([i.capitalize() for i in drug_family])),
                                   'model': model_type,
                                   'md5': checksum.hexdigest()
                                  }
