@@ -251,6 +251,7 @@ def sub_card(args):
     GENE2 = re.compile("(^[A-Z]{1}[a-z]+\s[a-z]+\s+(?:mutant\s|intrinsic\s)?(?:porin\s)?)([A-Za-z1-9\-]+)(\s.*?)?")
     beta_lactams = ["penem", "penam", "cephamycin", "cephalosporin", \
                     "carbapenem", "monobactam"]
+    tetracyclines = ["tetracycline", "glycylcycline"]
 
     in_h = args.card_in
     out_h = args.out_map
@@ -307,6 +308,7 @@ def sub_card(args):
         else:
             out_map[model_type]["counts"] += 1
 
+        # Rename genes to conform to standards
         if model_type in protein_models:
             split_name = model_name.split()
             if len(split_name) > 1:
@@ -394,6 +396,10 @@ def sub_card(args):
                 if d in beta_lactams:
                     drug_family.append(d)
                     drug_classes[p] = 'Beta-lactam'
+                    continue
+                elif d in tetracyclines:
+                    drug_family.append(d)
+                    drug_classes[p] = 'Tetracycline'
                     continue
 
                 d_split = d.split()
