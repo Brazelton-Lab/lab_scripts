@@ -275,8 +275,8 @@ def qualityCheck(out_log_name, file_type, *files):
 
 def fastaOrFastq(in_file, cat = False):
     #Determines if file is a FASTA or FASTQ file, can read concatenated files
-    fastaFileTypes = ['fasta', 'fa', 'fas', 'ffn', 'fna',\
-                      'faa', 'frn', 'mpfa']
+    fastaFileTypes = ['fasta', 'fa', 'fas', 'ffn', 'fna',
+                      'faa', 'frn', 'mpfa', 'rbp']
     fastqFileTypes = ['fastq', 'fq']
     fileTypesSet = [fastaFileTypes, fastqFileTypes]
     split_name = in_file.split('.')
