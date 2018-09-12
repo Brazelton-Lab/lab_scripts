@@ -41,6 +41,14 @@ def parse_commas(argument):
     return(argument)
 
 
+def quit(output):
+    """Generic function for exiting the program
+    """
+    print(output, file=sys.stderr)
+    leave = input('Press any key to exit')
+    sys.exit(1)
+
+
 def get_new_id(infile, prefix, sep=','):
     """return the next number in the series from the most recent identifying
     number in the master table."""
@@ -141,12 +149,13 @@ def main():
              "the last sample ID number found in the master table")
     parser.add_argument('-f', '--fields',
         dest='fields',
-        default="Date,CruiseID,PrivateID,ContainerType,SampleType,SampleQuantity,\
-                 StorageMethod",
         type=parse_commas,
+        default="SampleID,Owner,Date,CruiseID,PrivateID,ContainerType,\
+                 SampleType,SampleQuantity,StorageMethod,Description",
         help="comma-separated list of additional field names to include in "
-             "the sample table [default: CruiseID, PrivateID, ContainerType, "
-             "SampleType, SampleQuantity, StorageMethod]")
+             "the sample table [default: SampleID, Owner, CruiseID, "
+             "PrivateID, ContainerType, SampleType, SampleQuantity, "
+             "StorageMethod, Description]")
     parser.add_argument('-s', '--sep',
         metavar='CHAR',
         default=',',
@@ -185,22 +194,36 @@ def main():
                     "^FO30,135^ARN^FD{0}{1}^FS\n"
                     "^FO30,175^ARN^FB250,2,,L^FD{3}^FS\n^XZ\n")
 
+    fields = args.fields if args.fields else []
+
+    # Add required columns to the sample table
+    if "Owner" not in fields:
+        fields = ["Owner"] + fields
+
+    if "SampleID" not in fields:
+        fields = ["SampleID"] + fields
+
+    if "Description" not in fields:
+        fields.append("Description")
+
+    id_index = fields.index("SampleID")
+    owner_index = fields.index("Owner")
+    desc_index = fields.index("Description")
+
+    header = "{0}\n".format(sep.join(fields))
+
     # Current date in ISO format
     current_date = date.today().isoformat().replace('-', '')
 
     # Verify that length of code plus padding is less than max sampleID length
     if len(args.code) + args.pad > 8:
-        print("Error: the sample ID contains too many characters for this "
-              "label. Please contact an administrator for assistance.")
-        leave = input('Press any key to exit')
-        sys.exit(1)
+        quit("Error: the sample ID contains too many characters for this "
+             "label. Please contact an administrator for assistance.")
 
     # Verify that network printer batch file exists
     if not os.path.exists(args.net):
-        print("Error: cannot find location of the network printer batch file. "
-              "Please contact an administrator for assistance")
-        leave = input('Press any key to exit')
-        sys.exit(1)
+        quit("Error: cannot find location of the network printer batch file. "
+             "Please contact an administrator for assistance")
 
     # Make output directories if they don't already exist
     for directory in [args.out_dir, args.zpl_dir]:
@@ -210,17 +233,22 @@ def main():
     # Check if master table exists and is not empty
     if not os.path.isfile(args.master):
         with open(args.master, 'w') as master_h:
-            master_h.write("SampleID{0}Owner{0}{1}\n".format(sep, \
-                           sep.join(args.fields)))
+            master_h.write(header)
+    else:
+        with open(args.master, 'r') as master_h:
+            # Verify header matches input fields
+            master_header = master_h.readline()
+            if header != master_header:
+                quit("Error: the input fields do not match the order of the "
+                     "header in the current master table. Please contact an "
+                     "administrator for assistance")
 
     # Obtain input from user
     assignee = input('Enter your name (e.g. Jane Doe): ')
     # Verify that input does not contain separator character
     if args.sep in assignee:
-        print("Error: name '{}' cannot contain the same character '{}' that "
-              "is used as the field separator\n".format(assignee, sep))
-        leave = input('Press any key to exit')
-        sys.exit(1)
+        quit("Error: name '{}' cannot contain the same character '{}' that "
+             "is used as the field separator\n".format(assignee, sep))
 
     owner = assignee.split(' ')
     name_field = "{}. {}".format(owner[0][0].upper(), ' '.join(owner[1:]))
@@ -232,24 +260,19 @@ def main():
     try:
         nlabel = int(nlabel)
     except ValueError:
-        print("Error: number of labels must be an integer value\n", \
-              file=sys.stderr)
-        leave = input('Press any key to exit')
-        sys.exit(1)
+        quit("Error: number of labels must be an integer value\n")
 
-    description = input("Enter optional description to be added to the label, "
-                        "up to {!s} characters long (press enter to skip): "\
-                        .format(max_char_per_line * 2))
+    raw_desc = input("Enter optional description to be added to the label, "
+                     "up to {!s} characters long (press enter to skip): "\
+                     .format(max_char_per_line * 2))
 
     # Verify that input length is less than maximum total characters allowed
-    if len(description) >= max_char_per_line * 2:
-        print("Error: optional description must be less than {!s} characters "
-              "long\n".format(max_char_per_line * 2), file=sys.stderr)
-        leave = input('Press any key to exit')
-        sys.exit(1)
+    if len(raw_desc) >= max_char_per_line * 2:
+        quit("Error: optional description must be less than {!s} characters "
+             "long\n".format(max_char_per_line * 2))
 
     # Verify that each line is less than maximim characters allowed per line
-    description = wrap_text(description)
+    description = wrap_text(raw_desc)
 
     # Find the sample ID range
     if args.reprint:
@@ -257,10 +280,7 @@ def main():
         try:
             first_id = int(first_id)
         except ValueError:
-            print("Error: ID number must be an integer value\n", \
-                  file=sys.stderr)
-            leave = input('Press any key to exit')
-            sys.exit(1)
+            quit("Error: ID number must be an integer value\n")
     else:
         first_id = get_new_id(args.master, args.code, sep=args.sep)
 
@@ -278,20 +298,27 @@ def main():
         print("\nOutputting table of sample IDs in {}".format(output), \
               file=sys.stdout)
 
-        nfields = len(args.fields)
-        nsep = sep * nfields
+        nfields = len(fields)
         with open(output, 'w') as out_h, open(zpl, 'w') as zpl_h, \
             open(args.master, 'a') as master_h:
-            out_h.write('SampleID{0}Owner{0}{1}\n'.format(sep, \
-                        sep.join(args.fields)))
+            # Write local table header
+            out_h.write('{0}\n'.format(sep.join(fields)))
 
             for sid in list(range(first_id, last_id)):
                 sid_full = str(sid).zfill(args.pad)
 
-                out_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, \
-                            sid_full, assignee, nsep))
-                master_h.write('{1}{2}{0}{3}{4}\n'.format(sep, args.code, \
-                               sid_full, assignee, nsep))
+                out_row = [""] * nfields
+                out_row[id_index] = "{}{!s}".format(args.code, sid_full)
+                out_row[owner_index] = assignee
+                out_row[desc_index] = raw_desc
+
+                # Write to local table
+                out_h.write('{}\n'.format(sep.join(out_row)))
+
+                # Update master table
+                master_h.write('{}\n'.format(sep.join(out_row)))
+
+                # Generate labeller code
                 zpl_h.write(zpl_template.format(args.code, sid_full, \
                             name_field, description))
     else:
@@ -322,7 +349,7 @@ def main():
 
     if args.reprint:
         print("\nNew labels have been printed. Please edit the sample tables "
-              "manually if applicable")
+              "manually if applicable", file=sys.stdout)
 
     leave = input('Press any key to exit')
 
