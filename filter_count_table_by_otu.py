@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 # keep rows in count table that match the OTU names in provided list
 # assumes comma-delimited format
 # only looks at first column of list file and first column of count table
