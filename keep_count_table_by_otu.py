@@ -1,6 +1,6 @@
 #! /usr/bin/env python
 
-# delete rows in count table that match the OTU names in provided list
+# keep rows in count table that match the OTU names in provided list
 # assumes comma-delimited format
 # only looks at first column of list file and first column of count table
 # unaffected by additional columns, e.g. taxonomy columns are ok
@@ -25,6 +25,5 @@ with open(outfilename, 'w') as outfile:
 			break
 		for row in tablefile:
 			cols = row.split(',')
-			if cols[0] in otus: pass
-			else: outfile.write(row)
+			if cols[0] in otus: outfile.write(row)
 			
