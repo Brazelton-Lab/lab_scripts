@@ -27,7 +27,7 @@ Copyright:
 """
 
 import argparse
-from bio_utils.iterators import fasta_iter, gff3_iter
+from bio_utils.iterators import fasta_iter, GFF3Reader
 import os
 import sys
 
@@ -36,7 +36,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.9'
+__version__ = '1.1.10'
 
 
 def main(args):
@@ -58,6 +58,8 @@ def main(args):
 
     if args.tool == 'prokka':
 
+        gff_reader = GFF3Reader(args.GFF3)
+
         naughty_gene_calls = {}
         for entry in fasta_iter(args.FAA):
             if '*' in entry.sequence:
@@ -73,7 +75,7 @@ def main(args):
             gh.write('gene_callers_id\tsource\taccession\t'
                      'function\te_value{0}'.format(os.linesep))
 
-            for entry in gff3_iter(args.GFF3):
+            for entry in gff_reader.iterate():
 
                 if 'ID' not in entry.attributes.keys():
                     continue
