@@ -51,14 +51,14 @@ Copyright:
 
 from __future__ import print_function
 import argparse
-from bio_utils.iterators.gff3 import gff3_iter
+from bio_utils.iterators import GFF3Reader
 import re
 from screed.fasta import fasta_iter
 from screed.fastq import fastq_iter
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.0.0.0'
+__version__ = '1.0.0.1'
 
 
 def append_coverages(entries, table, gff3_files):
@@ -84,11 +84,14 @@ def append_coverages(entries, table, gff3_files):
 def create_id_conversion_dict(gff3_file):
     temp_dict = {}
     with open(gff3_file, 'rU') as gff3_handle:
-        for entry in gff3_iter(gff3_handle):
-            contig_id = entry['seqid']
-            prokka_id = entry['attributes'].lstrip('ID=').split(';')[0]
+        gff_reader = GFF3Reader(gff3_handle)
+
+        for entry in gff_reader.iterate():
+            contig_id = entry.seqid
+            prokka_id = entry.attributes['ID']
             if prokka_id not in temp_dict:
                 temp_dict[prokka_id] = contig_id
+
     return temp_dict
 
 

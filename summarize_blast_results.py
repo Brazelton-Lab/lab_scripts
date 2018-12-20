@@ -25,19 +25,19 @@ Copyright:
 
 from __future__ import print_function
 import argparse
-from bio_utils.iterators import gff3_iter
-from bio_utils.iterators import b6_iter
-from bio_utils.iterators import fasta_iter
+from bio_utils.iterators import B6Reader, fasta_iter, GFF3Reader
 import sys
 
-__version__ = '0.0.0.9'
+__version__ = '0.0.0.10'
 __author__ = 'Alex Hyer'
 
 
 def create_id_conversion_dict(gff3_file):
     temp_dict = {}
     with open(gff3_file, 'rU') as gff3_handle:
-        for entry in gff3_iter(gff3_handle, parse_attr=True):
+        gff_reader = GFF3Reader(gff3_handle)
+
+        for entry in gff_reader.iterate(parse_attr=True):
             contig_id = entry.seqid
             try:
                 prokka_id = entry.attributes['ID']
@@ -45,6 +45,7 @@ def create_id_conversion_dict(gff3_file):
                     temp_dict[prokka_id] = contig_id
             except KeyError:
                 continue
+
     return temp_dict
 
 
@@ -72,9 +73,10 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                        short_read_length, eValue, alignLen):
     already_hit = {}
     with open(blast_table_file, 'rU') as blast_handle:
-        for entry in b6_iter(blast_handle):
+        b6_reader = B6Reader(blast_handle)
+        for entry in b6_reader.iterate():
             if eValue is None or float(entry.evalue) <= eValue:
-                if alignLen is None or int(entry.align_len) >= alignLen:
+                if alignLen is None or int(entry.length) >= alignLen:
                     prokka_id = entry.subject
                     if prokka_id in id_conversion_dict:
                         contig_id = id_conversion_dict[prokka_id]
@@ -82,7 +84,7 @@ def obtain_unique_rpks(blast_table_file, id_conversion_dict, conversion_table,
                             if prokka_id not in already_hit:
                                 rpk = (float(conversion_table[contig_id]) /
                                        float(short_read_length)) * 1000
-                                reads = (rpk / 1000) * entry.align_len
+                                reads = (rpk / 1000) * entry.lenth
                                 already_hit[prokka_id] = (rpk, reads)
     return already_hit
 

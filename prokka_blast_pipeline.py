@@ -31,7 +31,7 @@ Copyright:
 
 from __future__ import division
 import argparse
-from bio_utils.iterators import fasta_iter, gff3_iter
+from bio_utils.iterators import fasta_iter, GFF3Reader
 from Bio.Blast.NCBIWWW import qblast
 from Bio.Blast import NCBIXML
 from collections import defaultdict
@@ -46,7 +46,7 @@ __email__ = 'theonehyer@gmail.com'
 __license__ = 'GPLv3'
 __maintainer__ = 'Alex Hyer'
 __status__ = 'Production'
-__version__ = '1.1.1'
+__version__ = '1.1.2'
 
 
 def main(args):
@@ -66,7 +66,8 @@ def main(args):
 
     # Get contigs that contain a feature ID matching a given Gene ID
     contigs = []
-    for entry in gff3_iter(args.gff3):
+    gff_reader= GFF3Reader(args.gff3)
+    for entry in gff_reader.iterate():
         try:  # Ignore features without a gene_feature field
             if entry.attributes['gene_feature'] in ids:
                 contigs.append(entry.seqid)
@@ -80,7 +81,7 @@ def main(args):
     prokka_to_contig = defaultdict(str)
     prokka_to_gene = defaultdict(str)
     args.gff3.seek(0)
-    for entry in gff3_iter(args.gff3):
+    for entry in gff_reader.iterate():
         if entry.seqid in contigs and 'gene_feature' in entry.attributes:
             prokka_to_contig[entry.attributes['ID']] = entry.seqid
             prokka_to_gene[entry.attributes['ID']] = entry.attributes[

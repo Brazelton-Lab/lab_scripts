@@ -102,15 +102,14 @@ Copyright:
 
 from __future__ import print_function
 import argparse
-from bio_utils.iterators.fasta import fasta_iter
-from bio_utils.iterators.gff3 import gff3_iter
+from bio_utils.iterators import fasta_iter, GFF3Reader
 import glob
 import os
 import re
 import sys
 
 __author__ = 'Alex Hyer'
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 
 def compile_ids(ids):
     compiled_ids = []
@@ -121,7 +120,9 @@ def compile_ids(ids):
 
 def gff3_line_by_id_retriever(gff3_handle, ids, fields='all', line=False):
     """ids is list of re.compiled ids"""
-    for entry in gff3_iter(gff3_handle, parse_attr=True):
+    gff_reader = GFF3Reader(gff3_handle)
+
+    for entry in gff_reader.iterate(parse_attr=True):
         if line is True:
             for id in ids:
                 if len(re.findall(id, entry.write())) != 0:
