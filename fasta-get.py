@@ -2,7 +2,8 @@
 
 
 """
-extract sequences from FASTA file according to headers in provided file
+extract sequences from FASTA file according to names in provided file
+ignores text in the names file after the first tab
 usage:
 python fasta-get.py file.fa names.txt
 
@@ -32,7 +33,10 @@ outfilename = fastafilename + '.select.fa'
 
 l = []
 with open(namesfilename) as namesfile:
-	for name in namesfile: l.append(name.strip('\n'))
+	for name in namesfile: 
+		name = name.split('\t')
+		name = name[0]
+		l.append(name.strip('\n'))
 
 from Bio import SeqIO
 
