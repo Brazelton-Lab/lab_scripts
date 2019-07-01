@@ -166,7 +166,7 @@ def main():
         else:
             subject_id = subject
 
-        seqio.write_io(out_h, "{}\t{}\t{}\t{}\t-\t-\t-\t-\t-\t-\t-\t-"\
+        seqio.write_io(out_h, "{}\t{}\t{}\t{}\t-\t-\t-\t-\t-\t-\t-\t-\n"\
             .format(target, subject_id, pident, alength))
 
     # Calculate and print program run-time
