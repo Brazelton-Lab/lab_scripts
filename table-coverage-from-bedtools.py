@@ -2,21 +2,13 @@
 
 """
 calculates avg coverage per contig from bedtools genomecov output
-and adds the avg coverage number to the last column of a provided tab-delimited file
-only requirement for the tab-delimited file is that the first column contains contig names that match the contig names in the bedtools-generated file
-.fasta file can be provided instead of tab-delimited file if desired - this functionality is triggered by the filename ending in exactly '.fasta'
-
-example usage:
-bedtools genomecov -ibam sample.sort.bam > sample.sort.bam.cov
-python table-coverage-from-bedtools.py contigs.txt sample.sort.bam.cov
-or
-python table-coverage-from-bedtools.py contigs.fasta sample.sort.bam.cov
+collects contig coverages from all .cov files in working directory into a single .csv file
 
 Copyright:
 
     table-coverage-from-bedtools  calculates avg coverage per contig from bedtools genomecov output
 
-    Copyright (C) 2016  William Brazelton
+    Copyright (C) 2020  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -33,58 +25,49 @@ Copyright:
 """
 
 import sys
-table_filename = sys.argv[1]
-bedtools_filename = sys.argv[2]
+import glob
+Dall = {}
+print 'collecting names of all contigs......',
+for filename in glob.glob("*.cov"):			# just collect all contig names by looping through all .cov files
+	with open(filename) as bedtools:
+		for line in bedtools:
+			cols = line.split('\t')
+			contig_name = cols[0]
+			Dall[contig_name] = []	
+# now Dall has complete list of contigs
+print 'done'
 
-outfilename = ''
-words = bedtools_filename.split('.')
-for word in words[:-1]:
-	outfilename = outfilename + word + '.' 
-outfilename = outfilename + 'cov.txt'
-print 'will write to', outfilename
-
-D = {}
-with open(bedtools_filename) as bedtools:
-	for line in bedtools:
-		cols = line.split('\t')
-		contig_name = cols[0]
-		cov = cols[1]
-		bases = cols[2]
-		length = cols[3]
-		total_coverage = float(cov) * float(bases) / float(length) 
-		if contig_name in D: D[contig_name] = D[contig_name] + total_coverage
-		else: D[contig_name] = total_coverage
-
-status = 'none'
-if table_filename[-3:] == '.fa': status = 'fasta'
-elif table_filename[-4:] == '.fna': status = 'fasta'
-elif table_filename[-6:] == '.fasta': status = 'fasta'
-else: status = 'table'
-if status == 'fasta':
-	l = []
-	from Bio import SeqIO
-	for fasta in SeqIO.parse(table_filename,"fasta"):
-		l.append(fasta.id)
+print 'collecting contig coverages from samples:'
+samples = []
+for filename in glob.glob("*.cov"):
+	samples.append(filename)
+	print filename
+	d = {}
+	with open(filename) as bedtools:
+		for line in bedtools:
+			cols = line.split('\t')
+			contig_name = cols[0]
+			cov = cols[1]
+			bases = cols[2]
+			length = cols[3]
+			total_coverage = float(cov) * float(bases) / float(length) 
+			if contig_name in d: d[contig_name] = d[contig_name] + total_coverage
+			else: d[contig_name] = total_coverage
 		
-	with open(outfilename,'w') as outfile:
-		outfile.write('Contig' + '\t' + bedtools_filename + '\n')
-		for contig in l:
-			outfile.write(contig + '\t')
-			try: outfile.write(str(D[contig]) + '\n')
-			except:
-				outfile.write(contig + '\t' + '\n')
-				print 'missing', contig
+		# loop through all contigs in Dall
+		for contig in Dall:
+			if contig in d: Dall[contig].append(d[contig]) # add the coverage for this sample to the list of coverages for this contig in Dall
+			else: Dall[contig].append(0)					# if this contig was not in this sample, add a 0 to the list of coverages for this contig in Dall
 
-elif status == 'table':		
-	with open(outfilename,'w') as outfile:
-		with open(table_filename) as table_file:
-			first_line = table_file.readline()
-			outfile.write(first_line.replace('\n','\t'))
-			outfile.write(bedtools_filename + '\n')
-			for row in table_file:
-				columns = row.split('\t') 		
-				outfile.write(row.replace('\n','\t'))
-				try: outfile.write(str(D[columns[0]]) + '\n')
-				except: 
-					outfile.write('\n')
-					print 'missing', columns[0]
+print 'writing to contig-coverages.csv......',
+outfilename = "contig-coverages.csv"
+with open(outfilename,'w') as outfile:
+	for sample in samples:
+		outfile.write(',' + sample)
+	outfile.write('\n')
+	for contig in Dall:
+		outfile.write(contig)
+		for i in Dall[contig]:
+			outfile.write(',' + str(i))
+		outfile.write('\n')
+print 'done'
