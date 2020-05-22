@@ -11,7 +11,11 @@ import glob
 for genbankfilename in glob.glob("*.gb*"):
 	with open(genbankfilename) as g:
 		if "LOCUS " in g.readline():
-			fastafilename = genbankfilename + '.faa'
+			fs = genbankfilename.split('.')
+			fastafilename = fs[0]
+			for e in fs[1:-1]:
+				fastafilename = fastafilename + '.' + e
+			fastafilename = fastafilename + '.faa'
 			with open(fastafilename, 'w') as f:
 				for seq_record in SeqIO.parse(g, "genbank"):
 					definition =  seq_record.description
