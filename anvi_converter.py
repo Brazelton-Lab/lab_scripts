@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#! /usr/bin/env python3
 
 """Convert various file types to TSVs for use with anvi'o
 
