@@ -8,6 +8,7 @@ are and what they consist of, and to take FASTA files and produce a tsv for
 anvi'o describing which contig is in which bin.
 
 Updated in 2020 to handle prodigal GFF3 files and their annotations, instead of prokka GFF3 files that the previous version of this program was customized for.
+Updated again in July 2020 to be compatible with anvio's new gene_locations formation that includes call_type and aa_sequence.
 
 Copyright:
 
@@ -65,16 +66,20 @@ def main(args):
 		gff_reader = GFF3Reader(args.gff3)
 
 		naughty_gene_calls = {}
+		d = {}
 		for entry in fasta_iter(args.faa):
 			if '*' in entry.sequence:
 				naughty_gene_calls[entry.id] = ''
+			
+			# added the following line to create a dictionary of aa sequences. might have memory problems?
+			d[entry.id] = entry.sequence
 
 		with open(args.prefix + '.gene_locations.tsv', 'w') as lh, \
 				open(args.prefix + '.genes.tsv', 'w') as gh:
 
 			caller_id = 1
 			lh.write('gene_callers_id\tcontig\tstart\tstop\t'
-					 'direction\tpartial\tsource\tversion{0}'
+					 'direction\tpartial\tcall_type\tsource\tversion\taa_sequence{0}'
 					 .format(os.linesep))
 			gh.write('gene_callers_id\tsource\taccession\t'
 					 'function\te_value{0}'.format(os.linesep))
@@ -89,17 +94,21 @@ def main(args):
 
 				if entry.type == 'CDS': #and \				commented this out because I don't want to skip entries without a "gene" attribute
 						#'gene' in entry.attributes.keys():
-
+					
+					# find aa sequence in provided .faa file					
+					aa_seq = d[entry.attributes['ID']]
+					#except: aa_seq = 'not_found'
+					
 					# Reformat data for gene locations file
 					direction = 'f' if entry.strand == '+' else 'r'
 					program, version = entry.source.split('_')				# changed this from ":"
-					lh.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\tv{7}{8}'
+					lh.write('{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\t{8}\t{9}{10}'
 							 .format(str(caller_id),
 									 entry.seqid,
 									 str(entry.start - 1),
-									 str(entry.end - 3),
+									 str(entry.end),	# deleted " - 3 " because anvio said it gave the wrong number of amino acids compared to the provided aa_sequence
 									 direction,
-									 '0', program, version, os.linesep))
+									 '0', '1', program, version, aa_seq, os.linesep))
 
 					# Reformat data for genes file
 					if 'Alias' in entry.attributes.keys():		# only proceed if specified field is present in attributes (but still want such genes to appear in gene_locations file above)
