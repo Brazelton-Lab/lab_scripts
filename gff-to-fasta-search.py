@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#! /usr/bin/env python3
 
 # searches lines of a gff file for user-provided text
 # corresponding sequence name in FASTA file is written to new file
