@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 """
 gff3_searcher v. 1.5.0a1 - a program to filter annotations
