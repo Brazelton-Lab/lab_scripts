@@ -31,9 +31,9 @@ elif not args.output:
 		Goutfile = args.gff + 'select.gff'
 	elif args.mode == 'gene':
 		Foutfile = args.gff + 'select.faa'
-               	Goutfile = args.gff + 'select.gff'
+		Goutfile = args.gff + 'select.gff'
 
-l = []		# make list of sequence IDs whose gff entries contain the search term
+l = []	# make list of sequence IDs whose gff entries contain the search term
 with open(args.gff) as g, open(Goutfile, 'w') as Go:
 	Go.write('##gff-version 3\n')
 	for line in g:
@@ -45,9 +45,9 @@ with open(args.gff) as g, open(Goutfile, 'w') as Go:
 				Go.write(line)
 			elif args.mode == "contig":
 				cols = line.split('\t')
-                        	ID = cols[0]
-                        	l.append(ID)
-                        	Go.write(line)
+				ID = cols[0]
+				l.append(ID)
+				Go.write(line)
 			
 with open(args.fasta) as f, open(Foutfile, 'w') as Fo:
 	status = 'no'
