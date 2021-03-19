@@ -5,6 +5,7 @@
 # coverage table should be formatted like that produced by the table-coverage-from-bedtools.py script.
 
 import sys
+import os
 import argparse
 from Bio import SeqIO
 
@@ -13,18 +14,29 @@ parser = argparse.ArgumentParser(description='Sums coverages for all contigs bel
 parser.add_argument('-i','--inputdir', help='directory containing FASTA files representing each bin', required=True)
 parser.add_argument('-e','--extension', help='file extension of each FASTA file (e.g. fa or fasta)', required=True)
 parser.add_argument('-c','--covfile', help='table of coverages where each row is one contig with the contig names in the first column', required=True)
+parser.add_argument('-l', '--lengths', help='tab-delimited table of lengths of each contig with the contig name in the first column and the length in the second column', required=True)
 parser.add_argument('-o','--outfile', help='output table', required=True)
 args = parser.parse_args()
 
 path = args.inputdir + '/*.' + args.extension.strip('.') # in case the user already provided the dot
 
 Dfinal = {} # final dictionary of bin coverages to be built during the operation of the script
+Lfinal = {} # final dictionary of total contig lengths for each bin
 
 # remember first line of cov table for later
 with open(args.covfile) as c:
 	for line in c:
 		firstline = line
 		break
+
+# make dictionary of contig lengths
+L = {}
+with open(args.lengths) as lf:
+	for line in lf:
+		cols = line.split('\t')
+		name = cols[0]
+		length = cols[1]
+		L[name] = length
 
 import glob
 for fastafile in glob.glob(path):
@@ -37,6 +49,9 @@ for fastafile in glob.glob(path):
 
 	# construct dictionary of contig coverages for this bin
 	d = {}
+	# sum the lengths of all contigs in this bin
+	total_length = 0
+
 	with open(args.covfile) as c:
 		for line in c:	break # skip first line
 		for line in c:
@@ -46,20 +61,26 @@ for fastafile in glob.glob(path):
 				newlist = []
 				for i in cols[1:]:				# clean up the \n from the last entry and make all values into floats
 					if isinstance(i,str): 
-						newlist.append(float(i.strip('\n')))
-					else: newlist.append(float(i))
+						j = float(i.strip('\n')) * float(L[id])	# weight the average coverage by the length of the contig
+						newlist.append(j)
+					else: 
+						j = float(i) * float(L[id])
+						newlist.append(float(j))
 				d[id] = newlist
-				
+				total_length = total_length + float(L[id])
+	
 	# sum coverages for all contigs in this bin
-	for contig in d:
-		l = []
-		for i in d: l.append(d[i])	# make list of lists containing coverages
-		m = [sum(x) for x in zip(*l)] 	# sum each column of the list
+	l = []
+	for i in d: l.append(d[i])	# make list of lists containing coverages
+	m = [sum(x) for x in zip(*l)] 	# sum each column of the list
+	
+	bin_name = os.path.basename(fastafile)
+	bin_name = bin_name.strip(args.extension)
+	bin_name = bin_name.rstrip('.')
+	Dfinal[bin_name] = m	# bin name, defined by fasta file, assigned to the new list of summed values
 		
-		bin_name = fastafile.strip(args.extension)
-		bin_name = bin_name.strip(args.inputdir)
-		bin_name = bin_name.strip('/')
-		Dfinal[bin_name.rstrip('.')] = m	# bin name, defined by fasta file, assigned to the new list of summed values
+        # store total length in a dictionary
+	Lfinal[bin_name] = total_length
 
 # after Dfinal is completely built, write it to a file
 with open(args.outfile, 'w') as o:
@@ -70,7 +91,8 @@ with open(args.outfile, 'w') as o:
 		o.write(i)
 		for each in Dfinal[i]:
 			o.write(',')
-			o.write(str(each))
+			avg = float(each) / float(Lfinal[i])
+			o.write(str(avg))
 		o.write('\n')
     		
     			
