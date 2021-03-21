@@ -1,6 +1,6 @@
 #! /usr/bin/env python3
 
-# sums coverages for all contigs that belong to each bin provided by user
+# sums (or calculates weighted average of) coverages for all contigs that belong to each bin provided by user
 # bins defined by FASTA file containing contig names in FASTA header
 # coverage table should be formatted like that produced by the table-coverage-from-bedtools.py script.
 
@@ -9,13 +9,13 @@ import os
 import argparse
 from Bio import SeqIO
 
-parser = argparse.ArgumentParser(description='Sums coverages for all contigs belonging to each bin')
+parser = argparse.ArgumentParser(description='Sums coverages for all contigs belonging to each bin. If a lengths file is provided, then a weighted average will be calculated instead of a sum')
 
-parser.add_argument('-i','--inputdir', help='directory containing FASTA files representing each bin', required=True)
-parser.add_argument('-e','--extension', help='file extension of each FASTA file (e.g. fa or fasta)', required=True)
-parser.add_argument('-c','--covfile', help='table of coverages where each row is one contig with the contig names in the first column', required=True)
-parser.add_argument('-l', '--lengths', help='tab-delimited table of lengths of each contig with the contig name in the first column and the length in the second column', required=True)
-parser.add_argument('-o','--outfile', help='output table', required=True)
+parser.add_argument('-i','--inputdir', required=True, help='directory containing FASTA files representing each bin')
+parser.add_argument('-e','--extension', required=True, help='file extension of each FASTA file (e.g. fa or fasta)')
+parser.add_argument('-c','--covfile', required=True, help='table of coverages where each row is one contig with the contig names in the first column')
+parser.add_argument('-l', '--lengths', required=False, help='optional: tab-delimited table of lengths of each contig with the contig name in the first column and the length in the second column')
+parser.add_argument('-o','--outfile', required=True, help='output table')
 args = parser.parse_args()
 
 path = args.inputdir + '/*.' + args.extension.strip('.') # in case the user already provided the dot
@@ -29,14 +29,16 @@ with open(args.covfile) as c:
 		firstline = line
 		break
 
-# make dictionary of contig lengths
-L = {}
-with open(args.lengths) as lf:
-	for line in lf:
-		cols = line.split('\t')
-		name = cols[0]
-		length = cols[1]
-		L[name] = length
+# make dictionary of contig lengths if provided
+if args.lengths:
+	L = {}
+	with open(args.lengths) as lf:
+		for line in lf:
+			cols = line.split('\t')
+			name = cols[0]
+			length = cols[1]
+			L[name] = length
+else: pass
 
 import glob
 for fastafile in glob.glob(path):
@@ -61,13 +63,21 @@ for fastafile in glob.glob(path):
 				newlist = []
 				for i in cols[1:]:				# clean up the \n from the last entry and make all values into floats
 					if isinstance(i,str): 
-						j = float(i.strip('\n')) * float(L[id])	# weight the average coverage by the length of the contig
-						newlist.append(j)
+						if args.lengths:
+							j = float(i.strip('\n')) * float(L[id])	# weight the average coverage by the length of the contig
+							newlist.append(j)
+						else: 
+							j = float(i.strip('\n'))
+							newlist.append(j)
 					else: 
-						j = float(i) * float(L[id])
-						newlist.append(float(j))
+						if args.lengths:
+							j = float(i) * float(L[id])
+							newlist.append(float(j))
+						else:
+							j = float(i)
+							newlist.append(float(j))
 				d[id] = newlist
-				total_length = total_length + float(L[id])
+				if args.lengths: total_length = total_length + float(L[id])
 	
 	# sum coverages for all contigs in this bin
 	l = []
@@ -79,8 +89,8 @@ for fastafile in glob.glob(path):
 	bin_name = bin_name.rstrip('.')
 	Dfinal[bin_name] = m	# bin name, defined by fasta file, assigned to the new list of summed values
 		
-        # store total length in a dictionary
-	Lfinal[bin_name] = total_length
+        # optional: store total length in a dictionary
+	if args.lengths: Lfinal[bin_name] = total_length
 
 # after Dfinal is completely built, write it to a file
 with open(args.outfile, 'w') as o:
@@ -91,8 +101,9 @@ with open(args.outfile, 'w') as o:
 		o.write(i)
 		for each in Dfinal[i]:
 			o.write(',')
-			avg = float(each) / float(Lfinal[i])
-			o.write(str(avg))
+			if args.lengths: newcov = float(each) / float(Lfinal[i])
+			else: newcov = each
+			o.write(str(newcov))
 		o.write('\n')
     		
     			
