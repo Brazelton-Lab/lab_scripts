@@ -43,6 +43,7 @@ from Bio import SeqIO
 
 with open(outfilename,'a') as outfile:
 	for fasta in SeqIO.parse(fastafilename,'fasta'):
-		fasta.id.split = fasta.id.split("_")
-		fasta.id.split = fasta.id.split[0]
-		if fasta.id.split in l: SeqIO.write(fasta,outfile,'fasta')
+		fasta-header = fasta.id
+		fasta-header = fasta-header.split("_")
+		fasta-header = fasta-header[0]
+		if fasta-header in l: SeqIO.write(fasta,outfile,'fasta')
