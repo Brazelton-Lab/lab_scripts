@@ -10,7 +10,7 @@ python fasta-get-faa.py file.faa names.txt
 
 Copyright:
 
-    fasta-get.py Extract FASTA sequences based on entry headers
+    fasta-get-faa.py Extract FASTA sequences based on entry headers
     Copyright (C) 2022  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
@@ -45,5 +45,6 @@ with open(outfilename,'a') as outfile:
 	for fasta in SeqIO.parse(fastafilename,'fasta'):
 		header = fasta.id
 		header = header.split("_")
-		header = header[0]
+		header = 'c_' + header[1]
+		print(header)
 		if header in l: SeqIO.write(fasta,outfile,'fasta')
