@@ -16,7 +16,7 @@ input file if supplied with '-'.
 Copyright:
 
     amr2b6 Convert AMRFInder output to B6 format
-    Copyright (C) 2018  William Brazelton
+    Copyright (C) 2022  William Brazelton
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,7 +45,7 @@ __author__ = "Christopher Thornton"
 __license__ = 'GPLv3'
 __maintainer__ = 'Christopher Thornton'
 __status__ = "Alpha"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 
 def main():
@@ -145,10 +145,10 @@ def main():
 
         line = line.rstrip().split('\t')
 
-        target = line[header_map['Target identifier']]
+        target = line[header_map['Protein identifier']]
         subject = line[header_map['HMM id']]
-        pident = line[header_map['% Identity to reference protein']] if \
-            line[header_map['% Identity to reference protein']] != "NA" else "-"
+        pident = line[header_map['% Identity to reference sequence']] if \
+            line[header_map['% Identity to reference sequence']] != "NA" else "-"
         alength = line[header_map['Alignment length']] if \
             line[header_map['Alignment length']] != "NA" else "-"
 
@@ -161,7 +161,7 @@ def main():
                     "corresponding entry for field {} in database {}"\
                     .format(args.csv, nline, subject, field, args.map_file), \
                     file=sys.stderr)
-                print(map_invert, file=sys.sdterr)
+                print(map_invert, file=sys.stderr)
                 sys.exit(1)
         else:
             subject_id = subject
