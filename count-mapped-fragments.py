@@ -2,6 +2,8 @@
 
 
 """
+v2: modified to report the total number of pairs, whether mapped or not
+original:
 counts number of "mapped read pairs" = "mapped fragments"
 this is NOT the same thing as number of "mapped paired reads" = "mapped reads"
 uses the bowtie2 log file where "mapped read pairs" = "were paired" - "pairs aligned 0 times concordantly or discordantly"
@@ -47,6 +49,7 @@ for filename in glob.glob('*.log'):
 			else: pass
 		try:
 			mapped_pairs = pairs - not_mapped
-			print mapped_pairs,
-			print filename
+			#print mapped_pairs,
+			output=str(filename) + ',' + str(pairs)
+			print output
 		except: pass
